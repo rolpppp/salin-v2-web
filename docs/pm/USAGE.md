@@ -38,3 +38,10 @@
 
 **Wave 4 closed** (Oct 11): 3 agents in parallel, ~813K reported tokens, ~16 min wall clock. PM resolved three merge conflicts (Today page, LogSpendingSlot, covers.ts) and removed a double `cover_used` event.
 
+
+**Wave 5a (Oct 12).** PM wrote the P-8 contracts (`lib/onboarding/draft.ts`, `step.ts`) first so three agents could run in parallel.
+
+| When (Oct 12) | Agent | Model | Ticket(s) | Reported | Cache reads | Tool calls | Duration |
+|---|---|---|---|---|---|---|---|
+| ~00:20 | onboarding-steps | sonnet | 17/20 (shared steps) | 181,619 | — | 51 | 9.0 min |
+| ~00:30 | onboarding-sql | sonnet | 16, 18 (SQL) | 297,780 | — | 60 | 15.8 min |
