@@ -1,0 +1,16 @@
+{
+  "id": "1791700000003",
+  "user_id": "6f1c2a52-8d0e-4c43-9a57-0b6f6d6f1e01",
+  "name": "Pag-IBIG MP2 ₱ ñ",
+  "accountType": 2,
+  "openingBalanceMinor": 1000000000,
+  "currency": "PHP",
+  "icon": "bank",
+  "color": "#3F7D58",
+  "displayOrder": 1791700000002,
+  "isArchived": false,
+  "createdAt": 1791700000002,
+  "updatedAt": 1791700000002,
+  "deletedAt": null,
+  "syncStatus": 2
+}

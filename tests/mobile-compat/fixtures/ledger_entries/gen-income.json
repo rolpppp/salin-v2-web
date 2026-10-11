@@ -1,0 +1,20 @@
+{
+  "id": "0b0f9f0e-6f3b-4a1c-8f3e-2f2f0b3c9a01",
+  "user_id": "6f1c2a52-8d0e-4c43-9a57-0b6f6d6f1e01",
+  "accountId": "1791700000001",
+  "categoryId": "1791700000101",
+  "recurringInstanceId": null,
+  "debtId": null,
+  "splitId": null,
+  "transferId": null,
+  "amountMinor": 1732900,
+  "direction": 0,
+  "origin": 0,
+  "occurredAt": 1791613600000,
+  "note": null,
+  "metadataJson": null,
+  "createdAt": 1791700000000,
+  "updatedAt": 1791700000000,
+  "deletedAt": null,
+  "syncStatus": 2
+}

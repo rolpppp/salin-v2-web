@@ -1,0 +1,20 @@
+{
+  "id": "9d6c1f0e-3a54-4b7e-8c21-5e0a7b4d2f10_in",
+  "user_id": "6f1c2a52-8d0e-4c43-9a57-0b6f6d6f1e01",
+  "accountId": "1791700000002",
+  "categoryId": null,
+  "recurringInstanceId": null,
+  "debtId": null,
+  "splitId": null,
+  "transferId": "9d6c1f0e-3a54-4b7e-8c21-5e0a7b4d2f10",
+  "amountMinor": 100,
+  "direction": 0,
+  "origin": 3,
+  "occurredAt": 1791700000000,
+  "note": "Transfer",
+  "metadataJson": null,
+  "createdAt": 1791700000002,
+  "updatedAt": 1791700000002,
+  "deletedAt": null,
+  "syncStatus": 2
+}

@@ -1,0 +1,11 @@
+{
+  "id": "9d6c1f0e-3a54-4b7e-8c21-5e0a7b4d2f10",
+  "user_id": "6f1c2a52-8d0e-4c43-9a57-0b6f6d6f1e01",
+  "fromAccountId": "1791700000001",
+  "toAccountId": "1791700000002",
+  "note": "Transfer",
+  "createdAt": 1791700000002,
+  "updatedAt": 1791700000002,
+  "deletedAt": null,
+  "syncStatus": 2
+}

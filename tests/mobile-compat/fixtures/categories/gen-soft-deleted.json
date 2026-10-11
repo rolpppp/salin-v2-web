@@ -1,0 +1,14 @@
+{
+  "id": "1791700000103",
+  "user_id": "6f1c2a52-8d0e-4c43-9a57-0b6f6d6f1e01",
+  "name": "Pag-IBIG MP2 ₱ ñ",
+  "icon": "category",
+  "color": "#2E6EA6",
+  "categoryType": 1,
+  "isSystem": false,
+  "displayOrder": 1791700000002,
+  "createdAt": 1791700000002,
+  "updatedAt": 1791700009000,
+  "deletedAt": 1791700009000,
+  "syncStatus": 2
+}

@@ -10,5 +10,5 @@ export default defineConfig([
       "@typescript-eslint/no-explicit-any": "error",
     },
   },
-  globalIgnores([".next/**", "out/**", "node_modules/**", "next-env.d.ts", "supabase/**", "playwright-report/**", "test-results/**", "coverage/**"]),
+  globalIgnores([".claude/**", "tests/mobile-compat/dart/**", ".next/**", "out/**", "node_modules/**", "next-env.d.ts", "supabase/**", "playwright-report/**", "test-results/**", "coverage/**"]),
 ]);

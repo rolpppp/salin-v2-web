@@ -1,0 +1,20 @@
+{
+  "id": "1791700000202_out",
+  "user_id": "6f1c2a52-8d0e-4c43-9a57-0b6f6d6f1e01",
+  "accountId": "1791700000002",
+  "categoryId": null,
+  "recurringInstanceId": null,
+  "debtId": null,
+  "splitId": null,
+  "transferId": "1791700000202",
+  "amountMinor": 1000000000,
+  "direction": 1,
+  "origin": 3,
+  "occurredAt": 1791700000000,
+  "note": "Pag-IBIG MP2 ₱ ñ",
+  "metadataJson": null,
+  "createdAt": 1791700000001,
+  "updatedAt": 1791700009000,
+  "deletedAt": 1791700009000,
+  "syncStatus": 2
+}
