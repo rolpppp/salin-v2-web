@@ -9,6 +9,12 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   MOBILE_ROW_SCHEMAS,
+  accountArchivedPatch,
+  accountRenamePatch,
+  accountRetypePatch,
+  categoryRenamePatch,
+  accountRowSchema,
+  categoryRowSchema,
   newAccountRow,
   newCategoryRow,
   newIncomeEntryRow,
@@ -40,11 +46,29 @@ fixtures.accounts["gen-non-ascii-max"] = acct(t0 + 2, "1791700000003", NAME, "sa
 fixtures.accounts["gen-name-60"] = acct(t0 + 3, "1791700000004", "ñ".repeat(60), "investment");
 fixtures.accounts["gen-soft-deleted"] = softDelete(acct(t0 + 4, "1791700000005", "Old card", "creditCard"), t0 + 9_000);
 
+// Plans -> Accounts / Categories (ticket 13): another currency, and rows edited by a patch.
+const audBase = acct(t0 + 5, "1791700000006", "AUD savings", "savings", { currency: "AUD" });
+fixtures.accounts["gen-aud-account"] = audBase;
+fixtures.accounts["gen-usd-account"] = acct(t0 + 6, "1791700000007", "USD wallet", "eWallet", { currency: "USD" });
+fixtures.accounts["gen-renamed-retyped"] = accountRowSchema.parse({
+  ...fixtures.accounts["gen-cash-default"],
+  id: "1791700000008", // distinct id: the sync test loads every fixture into one database
+  ...accountRenamePatch("  Wallet ₱ ", t0 + 7_000),
+  ...accountRetypePatch("eWallet", t0 + 7_000),
+});
+fixtures.accounts["gen-archived"] = accountRowSchema.parse({ ...audBase, id: "1791700000009", ...accountArchivedPatch(true, t0 + 8_000) });
+fixtures.accounts["gen-restored"] = accountRowSchema.parse({ ...audBase, id: "1791700000010", ...accountArchivedPatch(false, t0 + 8_500) });
+
 const cat = (nowMs: number, id: string, name: string, type: "income" | "expense", extra = {}) =>
   newCategoryRow({ userId, nowMs, id, name, type, ...extra });
 
 fixtures.categories["gen-income-default"] = cat(t0, "1791700000101", "Salary (AU)", "income");
 fixtures.categories["gen-expense-custom"] = cat(t0 + 1, "1791700000102", "Kape ☕ & pan", "expense", { color: "#A83232", icon: "food" });
+fixtures.categories["gen-renamed"] = categoryRowSchema.parse({
+  ...fixtures.categories["gen-expense-custom"],
+  id: "1791700000104",
+  ...categoryRenamePatch("Kape at pan", t0 + 7_000),
+});
 fixtures.categories["gen-soft-deleted"] = softDelete(cat(t0 + 2, "1791700000103", NAME, "expense"), t0 + 9_000);
 
 const entry = { userId, accountId: "1791700000001", categoryId: "1791700000101", occurredAt: t0 - 86_400_000 };

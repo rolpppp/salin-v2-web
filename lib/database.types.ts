@@ -1619,6 +1619,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      account_in_use_reason: { Args: { p_account: string }; Returns: string }
+      accounts_in_use: {
+        Args: { p_user?: string }
+        Returns: { account_id: string; reason: string }[]
+      }
       account_should_hold: {
         Args: { p_user?: string }
         Returns: {
@@ -1631,10 +1636,16 @@ export type Database = {
         }[]
       }
       active_plan: { Args: { p_user?: string }; Returns: string }
+      add_goal: {
+        Args: { p_bucket?: string; p_name: string; p_share_bp?: number; p_target: number }
+        Returns: string
+      }
       add_income_source: {
         Args: { p_kind: string; p_name?: string }
         Returns: string
       }
+      archive_account: { Args: { p_account: string }; Returns: undefined }
+      archive_goal: { Args: { p_goal: string }; Returns: undefined }
       assert_self: { Args: { p_user: string }; Returns: string }
       backfill_entry_buckets: { Args: { p_user?: string }; Returns: number }
       bucket_left: {
@@ -1647,6 +1658,15 @@ export type Database = {
           left_minor: number
           spent: number
         }[]
+      }
+      category_in_use_reason: { Args: { p_category: string }; Returns: string }
+      categories_in_use: {
+        Args: { p_user?: string }
+        Returns: { category_id: string; reason: string }[]
+      }
+      category_month_spend: {
+        Args: { p_currency?: string; p_from: number; p_to: number }
+        Returns: { bucket_id: string; category_id: string; entries: number; total_minor: number }[]
       }
       confirm_incomes: {
         Args: { entry_ids: string[] }
@@ -1811,12 +1831,23 @@ export type Database = {
         }[]
       }
       entry_local_date: { Args: { p_ms: number }; Returns: string }
+      goal_check_links: {
+        Args: { p_bucket: string; p_share_bp: number; p_user: string }
+        Returns: undefined
+      }
+      move_category: {
+        Args: { p_bucket: string; p_category: string }
+        Returns: number
+      }
       now_ms: { Args: never; Returns: number }
+      remove_category: { Args: { p_category: string }; Returns: undefined }
       remove_income_source: { Args: { p_source: string }; Returns: undefined }
       rename_income_source: {
         Args: { p_name: string; p_source: string }
         Returns: undefined
       }
+      restore_account: { Args: { p_account: string }; Returns: undefined }
+      restore_goal: { Args: { p_goal: string }; Returns: undefined }
       save_income_source_split: {
         Args: { p_lines: Json; p_source: string }
         Returns: undefined
@@ -1883,6 +1914,10 @@ export type Database = {
       }
       untick_transfer: {
         Args: { p_from: string; p_to: string }
+        Returns: undefined
+      }
+      update_goal: {
+        Args: { p_bucket: string; p_goal: string; p_name: string; p_share_bp: number; p_target: number }
         Returns: undefined
       }
     }

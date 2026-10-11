@@ -1,0 +1,16 @@
+{
+  "id": "1791700000010",
+  "user_id": "6f1c2a52-8d0e-4c43-9a57-0b6f6d6f1e01",
+  "name": "AUD savings",
+  "accountType": 2,
+  "openingBalanceMinor": 0,
+  "currency": "AUD",
+  "icon": "default_icon",
+  "color": null,
+  "displayOrder": 1791700000005,
+  "isArchived": false,
+  "createdAt": 1791700000005,
+  "updatedAt": 1791700008500,
+  "deletedAt": null,
+  "syncStatus": 2
+}

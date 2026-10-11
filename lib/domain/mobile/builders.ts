@@ -51,6 +51,11 @@ function assertAmount(amountMinor: number, what = "amount"): number {
   return amountMinor;
 }
 
+function validateCurrency(code: string): string {
+  if (!/^[A-Z]{3}$/.test(code)) throw new MobileRowError("currency must be a 3-letter ISO code like PHP");
+  return code;
+}
+
 function base(nowMs: number) {
   return { createdAt: nowMs, updatedAt: nowMs, deletedAt: null, syncStatus: MOBILE_DEFAULTS.syncStatus } as const;
 }
@@ -60,6 +65,8 @@ export interface NewAccountInput extends Common {
   type: AccountTypeName;
   /** Centavos; mobile rejects negatives, the web follows. */
   openingBalanceMinor?: number;
+  /** ISO code, 3 uppercase letters. Default PHP (the mobile default). */
+  currency?: string;
   icon?: string;
   color?: string | null;
   displayOrder?: number;
@@ -76,7 +83,7 @@ export function newAccountRow(input: NewAccountInput): AccountRow {
     name: validateName(input.name),
     accountType: AccountType[input.type],
     openingBalanceMinor: opening,
-    currency: MOBILE_DEFAULTS.currency,
+    currency: validateCurrency(input.currency ?? MOBILE_DEFAULTS.currency),
     icon: input.icon ?? MOBILE_DEFAULTS.accountIcon,
     color: input.color === undefined ? MOBILE_DEFAULTS.accountColor : input.color,
     displayOrder: input.displayOrder ?? now,
