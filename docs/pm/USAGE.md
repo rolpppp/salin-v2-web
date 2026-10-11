@@ -20,4 +20,7 @@
 | When (Oct 11) | Agent | Model | Ticket(s) | Reported | Cache reads | Tool calls | Duration |
 |---|---|---|---|---|---|---|---|
 | ~21:30 | sql-engine (finish) | sonnet | 7 | 260,191 | — | 56 | 15.3 min |
+| ~22:10 | plans-split-income | sonnet | 8, 9 | 251,002 | — | 52 | 12.8 min |
+| ~22:10 | money-in | sonnet | 10 | 276,786 | — | 56 | 13.3 min |
+| ~22:10 | plans-accounts | sonnet | 13 | 268,441 | — | 66 | 13.8 min |
 

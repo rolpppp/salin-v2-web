@@ -13,12 +13,12 @@ Status: todo · doing · review · done · blocked
 | 5 | Web-created row round-trip with mobile | done | lib/domain/mobile + 41 Dart tests through mobile's real pull path. Real-device test is owner-side |
 | 6 | New tables + RLS + pgTAP | done | e08b8c8, 346 pgTAP. Follow-up: cross-user id refs not FK-guarded; functions must check ownership |
 | 7 | split_by_plan, split_own + TS mirror (G1–G6) | done | 7b4d136. 641 pgTAP, parity 500 cases, db-tick fixtures through Dart pull. `tick_transfer` amount = running total for the pair; a repeat tick with the same total raises P0001 "already sent" (ticket 11 UI must treat it as already-ticked). `database.types.ts` hand-edited: regen when Docker works. P-5 triggers not for live yet |
-| 8 | Plans → Split plan + Rules | doing | Wave 3 agent A, worktree `plans-split-income` (with 9) |
-| 9 | Plans → Income sources | doing | Wave 3 agent A (with 8) |
-| 10 | Money in → queue, Add income, confirm | doing | Wave 3 agent B, worktree `money-in`; Step 2 left as `MoveMoneyStep` slot for 11 |
-| 11 | Transfer checklist (G7, G8) | todo | After 10 (lives in Money in Step 2) |
+| 8 | Plans → Split plan + Rules | done (e2e pending) | 76ac6e8. save_plan_lines (10000 bp), kept-in, Plan B switch target; pgTAP 20 |
+| 9 | Plans → Income sources | done (e2e pending) | 76ac6e8. Rules, own split, presets, lands-in, archive/remove; pgTAP 21 |
+| 10 | Money in → queue, Add income, confirm | done (e2e pending) | cc500a1. confirm_incomes_with_jobs (atomic picks + confirm); Step 2 slot for 11. Follow-ups: Money in tab badge (SPEC §0), Today "+ Add income" → /money-in?add=1, Add income is ledger insert + income_meta upsert with compensating soft delete (not one txn), PostgREST embeds untested |
+| 11 | Transfer checklist (G7, G8) | doing | Wave 3 agent D, worktree `transfers` |
 | 12 | Today shelf + safe to spend + next step (G9) | todo | |
-| 13 | Plans → Accounts, Categories, Goals (G12) | doing | Wave 3 agent C, worktree `plans-accounts` |
+| 13 | Plans → Accounts, Categories, Goals (G12) | done (e2e pending) | 4218c59. archive_account in-use guard in SQL (G12), categories move/remove + backfill, goals; 6 new mobile-compat fixtures; pgTAP 41 |
 | 14 | Review + close the week | todo | |
 | 15 | Motion + reward pass | todo | |
 | 16 | suggest_plan SQL + TS (O1–O5) | todo | |
@@ -38,5 +38,5 @@ Status: todo · doing · review · done · blocked
 - Postgres image 17.6.1.165 is broken on this Mac (empty entrypoint); `supabase/.temp/postgres-version` pinned to 17.6.1.147 (matches live). Start with `supabase start -x edge-runtime,logflare,vector,imgproxy,studio,mailpit,storage-api,realtime,postgres-meta`.
 
 ## Resume here
-Wave 3 running (Oct 11, browser tests deferred by owner until Docker works). Agents: A = 8+9, B = 10, C = 13, each in `.claude/worktrees/<name>` with `SALIN_DB=salin_w3{a,b,c}`, migration ranges 202610110010xx/11xx/12xx, pgTAP ranges 2x/3x/4x. Then 11 on top of 10.
-Open for owner: confirm P-1; fix Docker for e2e (every page is behind auth now).
+Wave 3: 8, 9, 10, 13 merged (e2e written, not run). 11 in progress (worktree `transfers`, `SALIN_DB=salin_w3d`). Checks on main: 867 pgTAP, 473 unit, 63 mobile-compat.
+Open for owner: confirm P-1; Docker for e2e (system disk is 100% full, 1.3 GB free — likely why Docker's engine won't start; Docker data is 9.4 GB). `.env.test.local` must be recreated from `supabase status` when Docker is back.
