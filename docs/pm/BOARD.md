@@ -17,14 +17,14 @@ Status: todo · doing · review · done · blocked
 | 9 | Plans → Income sources | done (e2e pending) | 76ac6e8. Rules, own split, presets, lands-in, archive/remove; pgTAP 21 |
 | 10 | Money in → queue, Add income, confirm | done (e2e pending) | cc500a1. confirm_incomes_with_jobs (atomic picks + confirm); Step 2 slot for 11. Follow-ups: Money in tab badge (SPEC §0), Today "+ Add income" → /money-in?add=1, Add income is ledger insert + income_meta upsert with compensating soft delete (not one txn), PostgREST embeds untested |
 | 11 | Transfer checklist (G7, G8) | done (e2e pending) | fb88208. Ticks via RPC only; stale-amount guard; P0001 = already ticked; undo for partial rows. Follow-ups: completion card conditional lines ("Living back above zero", "Emergency passed 25%") need before/after state; Today buckets-grow animation (ticket 12/15) |
-| 12 | Today shelf + safe to spend + next step (G9) | todo | |
+| 12 | Today shelf + safe to spend + next step (G9) | doing | Wave 4 agent `today`; owns lib/actions/covers.ts |
 | 13 | Plans → Accounts, Categories, Goals (G12) | done (e2e pending) | 4218c59. archive_account in-use guard in SQL (G12), categories move/remove + backfill, goals; 6 new mobile-compat fixtures; pgTAP 41 |
-| 14 | Review + close the week | todo | |
+| 14 | Review + close the week | doing | Wave 4 agent `review`; also tab badges (SPEC §0) |
 | 15 | Motion + reward pass | todo | |
 | 16 | suggest_plan SQL + TS (O1–O5) | todo | |
 | 17 | Onboarding shell + app path steps | todo | |
 | 18 | First pay finish + finish_onboarding (O6) | todo | |
-| 19 | Log spending sheet | todo | |
+| 19 | Log spending sheet | done (e2e pending) | c2d1dc8. Home-currency accounts only (ledger_entries has no currency); unmapped expense categories hidden; no payday → per-day line omitted. Follow-ups: Today (12) should share getBucketLefts/daysUntil; date max assumes page not left open past midnight |
 | 20 | Web path + Just track + Make a plan | todo | |
 
 ## Owner-side checklist (can't be done by agents)

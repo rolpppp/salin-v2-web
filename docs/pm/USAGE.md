@@ -27,3 +27,9 @@
 
 **Wave 3 closed** (Oct 11): 4 agents, ~1.07M reported tokens. Session 2 total (5 agents incl. ticket 7): ~1.21M reported.
 
+
+**Session 3 (Oct 11, resumed): Wave 4.** Docker still wedged (Desktop running, no engine socket); e2e still not run.
+
+| When (Oct 11) | Agent | Model | Ticket(s) | Reported | Cache reads | Tool calls | Duration |
+|---|---|---|---|---|---|---|---|
+| ~23:25 | log-spending | sonnet | 19 | 208,192 | — | 77 | 9.6 min |
