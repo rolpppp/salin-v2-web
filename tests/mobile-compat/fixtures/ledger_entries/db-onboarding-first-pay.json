@@ -1,0 +1,20 @@
+{
+    "id": "db-onb-pay",
+    "note": null,
+    "debtId": null,
+    "origin": 0,
+    "splitId": null,
+    "user_id": "aaaaaaaa-0000-0000-0000-000000000001",
+    "accountId": "db-onb-bpi",
+    "createdAt": 1791735376787,
+    "deletedAt": null,
+    "direction": 0,
+    "updatedAt": 1791735376820,
+    "categoryId": "67016313-8709-4668-8450-cff3058d4fa7",
+    "occurredAt": 1791345600000,
+    "syncStatus": 2,
+    "transferId": null,
+    "amountMinor": 2500000,
+    "metadataJson": null,
+    "recurringInstanceId": null
+}

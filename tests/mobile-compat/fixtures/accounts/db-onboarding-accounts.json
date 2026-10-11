@@ -1,0 +1,50 @@
+[
+    {
+        "id": "db-onb-gcash",
+        "icon": "default_icon",
+        "name": "GCash",
+        "color": null,
+        "user_id": "aaaaaaaa-0000-0000-0000-000000000001",
+        "currency": "PHP",
+        "createdAt": 1791735376794,
+        "deletedAt": null,
+        "updatedAt": 1791735376795,
+        "isArchived": false,
+        "syncStatus": 2,
+        "accountType": 3,
+        "displayOrder": 1791735376795,
+        "openingBalanceMinor": 0
+    },
+    {
+        "id": "db-onb-bpi",
+        "icon": "default_icon",
+        "name": "BPI",
+        "color": null,
+        "user_id": "aaaaaaaa-0000-0000-0000-000000000001",
+        "currency": "PHP",
+        "createdAt": 1791735376794,
+        "deletedAt": null,
+        "updatedAt": 1791735376796,
+        "isArchived": false,
+        "syncStatus": 2,
+        "accountType": 1,
+        "displayOrder": 1791735376796,
+        "openingBalanceMinor": 0
+    },
+    {
+        "id": "db-onb-mp2",
+        "icon": "default_icon",
+        "name": "Pag-IBIG MP2",
+        "color": null,
+        "user_id": "aaaaaaaa-0000-0000-0000-000000000001",
+        "currency": "PHP",
+        "createdAt": 1791735376794,
+        "deletedAt": null,
+        "updatedAt": 1791735376796,
+        "isArchived": false,
+        "syncStatus": 2,
+        "accountType": 6,
+        "displayOrder": 1791735376797,
+        "openingBalanceMinor": 0
+    }
+]

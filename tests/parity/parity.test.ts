@@ -2,7 +2,8 @@
 // Postgres functions in supabase/migrations/*_engine_functions.sql. Results must match exactly.
 // Needs a local database with the migrations applied. NOT part of `npm test`; run `npm run test:parity`.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { bpShare, confirmIncomes, effectivePlanBp, splitByPlan, splitOwn, transferPlan } from "../../lib/money";
+import { PLAN_BUCKETS, autoMapCategory, bpShare, confirmIncomes, effectivePlanBp, monthlyIncome, safetyNetTarget, splitByPlan, splitOwn, suggestPlan, transferPlan } from "../../lib/money";
+import type { PayFrequency, PlanPercents, PlanPreset, Priority, SuggestPlanInput } from "../../lib/money";
 import { rng } from "../../lib/money/testkit";
 import type { ConfirmIncome, PercentLine, SentCheck, TransferAllocation } from "../../lib/money";
 import { DATES, chance, int, pick, randomAmount, randomBps, shuffle } from "./gen";
@@ -415,5 +416,125 @@ describe("parity: confirm_incomes", () => {
     expect(refusedCases).toBeGreaterThanOrEqual(10);
     expect(comparedCases).toBeGreaterThanOrEqual(30);
     expect(switched).toBeGreaterThanOrEqual(5);
+  });
+});
+
+// ------------------------------------------------------------------------------------ suggest_plan (ticket 16)
+
+describe("parity: suggest_plan", () => {
+  const PRESETS: PlanPreset[] = ["suggested", "fifty_thirty_twenty", "simple"];
+  const PRIORITIES: Priority[] = ["safety", "goal", "grow", "control"];
+  const FREQS: PayFrequency[] = ["monthly", "twice", "biweekly", "weekly", "varies"];
+  const KINDS = ["salary", "side_hustle", "scholarship", "allowance"] as const;
+  const EDGE_AMOUNTS = [0, 1, 2, 99, 100, 333, 1000, 33333, 1_000_001, 1_500_000, 1_732_900, 2_500_000, 3_000_000, 23_000_000, 999_999_999, 1_000_000_000];
+  const EDGE_BILLS = [0, 1, 99, 200_000, 600_000, 2_000_000, 12_345_678, 1_000_000_000];
+
+  async function sqlSuggest(input: SuggestPlanInput): Promise<Record<string, unknown>> {
+    const res = await db.query<{ r: Record<string, unknown> }>("select public.suggest_plan($1::jsonb) as r", [JSON.stringify(input)]);
+    return (res.rows[0] as { r: Record<string, unknown> }).r;
+  }
+
+  function expectedOf(input: SuggestPlanInput): Record<string, unknown> {
+    const t = suggestPlan(input);
+    return {
+      monthlyMinor: t.monthlyMinor,
+      billsPct: t.billsPct,
+      billsCapped: t.billsCapped,
+      billsCoveredMinor: t.billsCoveredMinor,
+      billsWarning: t.billsWarning,
+      plan: t.plan,
+      planB: t.planB,
+      targetMinor: safetyNetTarget(t.monthlyMinor, t.plan.living, t.plan.rent),
+    };
+  }
+
+  it("every preset x priority x frequency x kind x currency (240 cases) with edge amounts and bills", async () => {
+    let n = 0;
+    let capped = 0;
+    let trimmed = 0;
+    let withPlanB = 0;
+    for (const preset of PRESETS) {
+      for (const priority of PRIORITIES) {
+        for (const frequency of FREQS) {
+          for (const kind of KINDS.slice(0, 2)) {
+            for (const paidInOtherCurrency of [false, true]) {
+              const r = caseRng(5, n);
+              const amountMinor = pick(r, EDGE_AMOUNTS);
+              let billsMinor = pick(r, EDGE_BILLS);
+              if (chance(r, 0.3)) {
+                // sit exactly on, and just past, the 45% cap
+                const M = monthlyIncome(amountMinor, frequency);
+                billsMinor = Math.min(1_000_000_000, Math.max(0, Math.floor((M * 45) / 100) + int(r, -1, 2)));
+              }
+              const input: SuggestPlanInput = { amountMinor, frequency, billsMinor, priority, kind, paidInOtherCurrency, preset };
+              const expected = expectedOf(input);
+              expect(await sqlSuggest(input), ctx("suggest_plan", n)).toEqual(expected);
+              n++;
+              if (expected.billsCapped) capped++;
+              if ((expected.plan as PlanPercents).fun < 10 && preset === "suggested") trimmed++;
+              if (expected.planB) withPlanB++;
+            }
+          }
+        }
+      }
+    }
+    expect(n).toBe(240);
+    expect(capped).toBeGreaterThanOrEqual(10);
+    expect(trimmed).toBeGreaterThanOrEqual(5);
+    expect(withPlanB).toBeGreaterThanOrEqual(50);
+  });
+
+  it("200 random inputs (all kinds, optional fields left out)", async () => {
+    for (let i = 0; i < 200; i++) {
+      const r = caseRng(6, i);
+      const amountMinor = chance(r, 0.5) ? pick(r, EDGE_AMOUNTS) : int(r, 0, 100_000_000);
+      const billsMinor = chance(r, 0.3) ? 0 : int(r, 0, Math.min(1_000_000_000, Math.max(1, Math.floor(amountMinor * 2))));
+      const input: SuggestPlanInput = {
+        amountMinor,
+        frequency: pick(r, FREQS),
+        billsMinor,
+        priority: pick(r, PRIORITIES),
+        kind: pick(r, KINDS),
+        paidInOtherCurrency: chance(r, 0.3),
+        ...(chance(r, 0.7) ? { preset: pick(r, PRESETS) } : {}),
+      };
+      expect(await sqlSuggest(input), ctx("suggest_plan random", i)).toEqual(expectedOf(input));
+    }
+  });
+
+  it("the plan always totals 100 and Plan B only when Emergency >= 10", async () => {
+    for (let i = 0; i < 60; i++) {
+      const r = caseRng(7, i);
+      const out = await sqlSuggest({
+        amountMinor: int(r, 0, 5_000_000),
+        frequency: pick(r, FREQS),
+        billsMinor: int(r, 0, 4_000_000),
+        priority: pick(r, PRIORITIES),
+        kind: pick(r, KINDS),
+        paidInOtherCurrency: chance(r, 0.5),
+        preset: pick(r, PRESETS),
+      });
+      const plan = out.plan as PlanPercents;
+      expect(PLAN_BUCKETS.reduce((t, k) => t + plan[k], 0), ctx("total", i)).toBe(100);
+      expect(out.planB === null, ctx("planB", i)).toBe(plan.emergency < 10);
+    }
+  });
+
+  it("onb_auto_bucket matches autoMapCategory (BR 12.5) on generated names and plans", async () => {
+    const WORDS = ["Groceries", "Food", "Lunch", "Meals", "Transport", "Commute", "Fare", "Load", "Data", "Laundry", "Utilities", "Electric", "Water", "Medicine", "Pharmacy",
+      "Rent", "Tuition", "Dorm", "Internet", "Wifi", "Movies", "Going out", "Eating out", "Shopping", "Coffee", "Games", "Hobbies", "Treats", "Dining",
+      "School", "Gadgets", "Health", "Gifts", "Travel", "Tax", "BIR", "Fees", "FX", "Exchange", "Zzz", "Misc", "Pets", "Ñandú", "Kape ☕"];
+    let sure = 0;
+    for (let i = 0; i < 250; i++) {
+      const r = caseRng(8, i);
+      const name = [pick(r, WORDS), ...(chance(r, 0.4) ? [pick(r, WORDS)] : [])].map((w) => (chance(r, 0.5) ? w.toUpperCase() : w)).join(" & ");
+      const plan = Object.fromEntries(PLAN_BUCKETS.map((k) => [k, chance(r, 0.6) ? int(r, 1, 30) : 0])) as unknown as PlanPercents;
+      const justTrack = chance(r, 0.1);
+      const expected = autoMapCategory(name, plan, { justTrack }).bucket;
+      const res = await db.query<{ b: string }>("select public.onb_auto_bucket($1, $2::int[], $3) as b", [name, PLAN_BUCKETS.map((k) => plan[k]), justTrack]);
+      expect((res.rows[0] as { b: string }).b, ctx(`auto map "${name}"`, i)).toBe(expected);
+      if (expected !== "living") sure++;
+    }
+    expect(sure).toBeGreaterThanOrEqual(30);
   });
 });

@@ -1636,6 +1636,9 @@ export type Database = {
         }[]
       }
       active_plan: { Args: { p_user?: string }; Returns: string }
+      apply_plan_only: { Args: { p_draft: Json }; Returns: undefined }
+      finish_onboarding: { Args: { p_draft: Json }; Returns: Json }
+      suggest_plan: { Args: { p_inputs: Json }; Returns: Json }
       add_goal: {
         Args: { p_bucket?: string; p_name: string; p_share_bp?: number; p_target: number }
         Returns: string

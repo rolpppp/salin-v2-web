@@ -1,0 +1,58 @@
+[
+    {
+        "id": "e9aff87f-5a95-4e7b-8d5d-386e11083441",
+        "icon": "category",
+        "name": "Groceries",
+        "color": "#2E6EA6",
+        "user_id": "aaaaaaaa-0000-0000-0000-000000000001",
+        "isSystem": false,
+        "createdAt": 1791735376814,
+        "deletedAt": null,
+        "updatedAt": 1791735376815,
+        "syncStatus": 2,
+        "categoryType": 1,
+        "displayOrder": 1791735377815
+    },
+    {
+        "id": "ea25e24e-518e-47df-aa53-62f3693549f5",
+        "icon": "category",
+        "name": "Eating out",
+        "color": "#2E6EA6",
+        "user_id": "aaaaaaaa-0000-0000-0000-000000000001",
+        "isSystem": false,
+        "createdAt": 1791735376814,
+        "deletedAt": null,
+        "updatedAt": 1791735376818,
+        "syncStatus": 2,
+        "categoryType": 1,
+        "displayOrder": 1791735377821
+    },
+    {
+        "id": "fc7b5306-ef74-45fb-a450-d14c1060fa05",
+        "icon": "category",
+        "name": "Rent",
+        "color": "#2E6EA6",
+        "user_id": "aaaaaaaa-0000-0000-0000-000000000001",
+        "isSystem": false,
+        "createdAt": 1791735376814,
+        "deletedAt": null,
+        "updatedAt": 1791735376819,
+        "syncStatus": 2,
+        "categoryType": 1,
+        "displayOrder": 1791735377830
+    },
+    {
+        "id": "67016313-8709-4668-8450-cff3058d4fa7",
+        "icon": "category",
+        "name": "Salary",
+        "color": "#2E6EA6",
+        "user_id": "aaaaaaaa-0000-0000-0000-000000000001",
+        "isSystem": false,
+        "createdAt": 1791735376812,
+        "deletedAt": null,
+        "updatedAt": 1791735376813,
+        "syncStatus": 2,
+        "categoryType": 0,
+        "displayOrder": 1791735376813
+    }
+]
