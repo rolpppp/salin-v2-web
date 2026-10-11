@@ -1,15 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { LedgerOrigin, MoneyDirection, WeekStart } from "@/lib/domain/enums";
-import { weekRange } from "@/lib/time";
-import {
-  computeBalances,
-  computeWeekSpending,
-  type AccountBalance,
-  type AccountRow,
-  type CurrencySpend,
-  type EntryRow,
-} from "./balances";
+import type { PlanKey } from "@/lib/money";
+import { weekRange, zonedMidnight, zonedParts } from "@/lib/time";
+import { getMoneyInData } from "./money-in";
+import { isoDateIn } from "./money-in-model";
+import type { BucketFlow, MonthCover, MonthSpend, TodayAllocation, TodayBucket, TodayGoalRow, TodayInput } from "./today-model";
 
 type Client = SupabaseClient<Database>;
 
@@ -27,12 +23,22 @@ async function pageAll<T>(run: (from: number, to: number) => PromiseLike<{ data:
   }
 }
 
-export type Profile = { firstName: string | null; homeCurrency: string; weekStartsOn: 0 | 1; onboardedAt: number | null };
+export type Profile = {
+  firstName: string | null;
+  homeCurrency: string;
+  weekStartsOn: 0 | 1;
+  onboardedAt: number | null;
+  /** `YYYY-MM-DD`, or null when the user hasn't set one (D-15). */
+  nextPaydayDate: string | null;
+  planMode: string;
+  /** 0 = Sunday .. 6 = Saturday. */
+  reviewDay: number;
+};
 
 export async function getProfile(client: Client, userId: string): Promise<Profile | null> {
   const { data, error } = await client
     .from("user_profiles")
-    .select("firstName, homeCurrency, weekStartsOn, onboardedAt, deletedAt")
+    .select("firstName, homeCurrency, weekStartsOn, onboardedAt, nextPaydayDate, planMode, reviewDay, deletedAt")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -42,82 +48,164 @@ export async function getProfile(client: Client, userId: string): Promise<Profil
     homeCurrency: data.homeCurrency,
     weekStartsOn: data.weekStartsOn === WeekStart.sunday ? 0 : 1,
     onboardedAt: data.onboardedAt,
+    nextPaydayDate: data.nextPaydayDate,
+    planMode: data.planMode,
+    reviewDay: data.reviewDay,
   };
 }
 
-export type SpendLine = { categoryId: string | null; name: string; totalMinor: number };
-export type WeekSpend = { currency: string; totalMinor: number; lines: SpendLine[] };
-
-export type TodayData = {
-  accounts: AccountBalance[];
-  spending: WeekSpend[];
-  /** The user has no rows at all in accounts, categories or ledger_entries (mobile sync is off or never ran). */
-  syncOff: boolean;
-  week: { startMs: number; endMs: number };
-};
-
-export const UNCATEGORISED = "Uncategorised";
-
 /**
- * Everything the read-only Today needs. Reads the mobile-shaped Row types directly (camelCase, ms epoch,
- * integer enums). RLS limits every query to the signed-in user.
- * Balances page through every non-deleted entry because PostgREST caps a response at 1000 rows;
- * an SQL function (`account_balances`) would be cheaper, so move this server-side when `supabase/` allows.
+ * Everything Today needs, as the pure model's input. Balances come from SQL (`bucket_left`, `active_plan`,
+ * `transfer_plan` through Money in's loader); the rest are plain reads of mobile-shaped rows (camelCase, ms epoch,
+ * integer enums). RLS limits every query to the signed-in user. Throws on any error so the page can say so.
  */
-export async function getTodayData(client: Client, opts: { nowMs: number; timeZone: string; weekStartsOn: 0 | 1; homeCurrency: string }): Promise<TodayData> {
-  const week = weekRange(opts.nowMs, opts.timeZone, opts.weekStartsOn);
+export async function getTodayInput(client: Client, opts: { userId: string; nowMs: number; timeZone: string; profile: Profile | null }): Promise<TodayInput> {
+  const { userId, nowMs, timeZone, profile } = opts;
+  const weekStartsOn = profile?.weekStartsOn ?? 1;
+  const week = weekRange(nowMs, timeZone, weekStartsOn);
+  const weekStartIso = isoDateIn(week.startMs, timeZone);
+  const p = zonedParts(nowMs, timeZone);
+  const monthStartMs = zonedMidnight(p.year, p.month, 1, timeZone);
+  const monthEndMs = p.month === 12 ? zonedMidnight(p.year + 1, 1, 1, timeZone) : zonedMidnight(p.year, p.month + 1, 1, timeZone);
+  const onboardedAt = profile?.onboardedAt ?? null;
 
-  const [accountRows, categoryRows, flowRows, spendRows, anyAccount, anyCategory, anyEntry] = await Promise.all([
-    pageAll<AccountRow>((from, to) =>
+  const mi = await getMoneyInData(client, { nowMs, timeZone, homeCurrency: profile?.homeCurrency ?? "PHP" });
+
+  const [leftRes, activeRes, noteRows, goalRows, allocRows, metaRows, spendRows, coverRows, categoryRows, reviewRes, loggedRes, anyAccount, anyCategory, anyEntry] = await Promise.all([
+    client.rpc("bucket_left"),
+    client.rpc("active_plan", { p_user: userId }),
+    pageAll<{ id: string; note: string | null }>((from, to) => client.from("buckets").select("id, note").is("deletedAt", null).order("id").range(from, to)),
+    pageAll<TodayGoalRow>((from, to) =>
       client
-        .from("accounts")
-        .select("id, name, accountType, currency, openingBalanceMinor, displayOrder, isArchived, deletedAt")
+        .from("goals")
+        .select("id, name, targetMinor, currency, linkedBucketId, linkedShareBp, isPlanSwitch")
         .is("deletedAt", null)
+        .eq("isArchived", false)
+        .order("createdAt")
+        .order("id")
+        .range(from, to),
+    ),
+    pageAll<{ ledgerEntryId: string | null; bucketId: string; amountMinor: number; confirmedAt: number; ledger_entries: { occurredAt: number } | null }>((from, to) =>
+      client
+        .from("allocations")
+        .select("ledgerEntryId, bucketId, amountMinor, confirmedAt, ledger_entries!inner(occurredAt, deletedAt)")
+        .is("deletedAt", null)
+        .is("ledger_entries.deletedAt", null)
+        .order("seq")
+        .range(from, to),
+    ),
+    pageAll<{ ledgerEntryId: string; sourceId: string | null }>((from, to) =>
+      client.from("income_meta").select("ledgerEntryId, sourceId").is("deletedAt", null).order("ledgerEntryId").range(from, to),
+    ),
+    pageAll<{ bucketId: string; ledger_entries: { amountMinor: number; occurredAt: number; categoryId: string | null; note: string | null } | null }>((from, to) =>
+      client
+        .from("entry_buckets")
+        .select("bucketId, ledger_entries!inner(amountMinor, occurredAt, categoryId, note, direction, origin, deletedAt)")
+        .is("deletedAt", null)
+        .is("ledger_entries.deletedAt", null)
+        .eq("ledger_entries.direction", MoneyDirection.outflow)
+        .neq("ledger_entries.origin", LedgerOrigin.transfer)
+        .gte("ledger_entries.occurredAt", monthStartMs)
+        .lt("ledger_entries.occurredAt", monthEndMs)
+        .order("id")
+        .range(from, to),
+    ),
+    pageAll<{ fromBucketId: string; toBucketId: string; amountMinor: number; occurredAt: number }>((from, to) =>
+      client
+        .from("bucket_covers")
+        .select("fromBucketId, toBucketId, amountMinor, occurredAt")
+        .is("deletedAt", null)
+        .gte("occurredAt", monthStartMs)
+        .lt("occurredAt", monthEndMs)
         .order("id")
         .range(from, to),
     ),
     pageAll<{ id: string; name: string }>((from, to) => client.from("categories").select("id, name").order("id").range(from, to)),
-    pageAll<EntryRow>((from, to) =>
-      client
-        .from("ledger_entries")
-        .select("accountId, amountMinor, direction, origin, categoryId, occurredAt, deletedAt")
-        .is("deletedAt", null)
-        .order("id")
-        .range(from, to),
-    ),
-    pageAll<EntryRow>((from, to) =>
-      client
-        .from("ledger_entries")
-        .select("accountId, amountMinor, direction, origin, categoryId, occurredAt, deletedAt")
-        .is("deletedAt", null)
-        .eq("direction", MoneyDirection.outflow)
-        .neq("origin", LedgerOrigin.transfer)
-        .gte("occurredAt", week.startMs)
-        .lt("occurredAt", week.endMs)
-        .order("id")
-        .range(from, to),
-    ),
+    client.from("week_reviews").select("weekStart").is("deletedAt", null),
+    onboardedAt !== null
+      ? client
+          .from("ledger_entries")
+          .select("id", { count: "exact", head: true })
+          .is("deletedAt", null)
+          .eq("direction", MoneyDirection.outflow)
+          .neq("origin", LedgerOrigin.transfer)
+          .gt("createdAt", onboardedAt)
+      : Promise.resolve({ count: 0, error: null }),
     client.from("accounts").select("id").limit(1),
     client.from("categories").select("id").limit(1),
     client.from("ledger_entries").select("id").limit(1),
   ]);
+  for (const r of [leftRes, activeRes, reviewRes, loggedRes]) if (r.error) throw new Error(r.error.message);
 
-  const names = new Map(categoryRows.map((c) => [c.id, c.name]));
-  const currencyByAccount = new Map(accountRows.map((a) => [a.id, a.currency]));
-  const spending: CurrencySpend[] = computeWeekSpending(spendRows, currencyByAccount, week, opts.homeCurrency);
+  const notes = new Map(noteRows.map((n) => [n.id, n.note]));
+  const buckets: TodayBucket[] = mi.buckets.map((b) => ({ ...b, note: notes.get(b.id) ?? null }));
+
+  const flows: Record<string, BucketFlow> = {};
+  for (const l of leftRes.data ?? []) flows[l.bucket_id] = { allocated: l.allocated, spent: l.spent, coversIn: l.covers_in, coversOut: l.covers_out, left: l.left_minor };
+
+  const sourceOfEntry = new Map(metaRows.map((m) => [m.ledgerEntryId, m.sourceId]));
+  const allocations: TodayAllocation[] = [];
+  for (const a of allocRows) {
+    if (!a.ledgerEntryId || !a.ledger_entries) continue;
+    allocations.push({
+      entryId: a.ledgerEntryId,
+      bucketId: a.bucketId,
+      amountMinor: a.amountMinor,
+      confirmedAt: a.confirmedAt,
+      occurredAt: a.ledger_entries.occurredAt,
+      sourceId: sourceOfEntry.get(a.ledgerEntryId) ?? null,
+    });
+  }
+
+  const categoryName = new Map(categoryRows.map((c) => [c.id, c.name]));
+  const spendingThisMonth: MonthSpend[] = [];
+  for (const s of spendRows) {
+    const le = s.ledger_entries;
+    if (!le) continue;
+    spendingThisMonth.push({
+      bucketId: s.bucketId,
+      dateIso: isoDateIn(le.occurredAt, timeZone),
+      amountMinor: le.amountMinor,
+      label: (le.categoryId && categoryName.get(le.categoryId)) || le.note?.trim() || "Spending",
+    });
+  }
+  const coversThisMonth: MonthCover[] = coverRows.map((c) => ({
+    fromBucketId: c.fromBucketId,
+    toBucketId: c.toBucketId,
+    dateIso: isoDateIn(c.occurredAt, timeZone),
+    amountMinor: c.amountMinor,
+  }));
+
+  const reviews = reviewRes.data ?? [];
+  const activePlan: PlanKey = activeRes.data === "B" ? "B" : "A";
 
   return {
-    accounts: computeBalances(accountRows, flowRows),
-    spending: spending.map((s) => ({
-      currency: s.currency,
-      totalMinor: s.totalMinor,
-      lines: s.byCategory.map((c) => ({
-        categoryId: c.categoryId,
-        name: (c.categoryId && names.get(c.categoryId)) || UNCATEGORISED,
-        totalMinor: c.totalMinor,
-      })),
-    })),
+    nowMs,
+    timeZone,
+    todayIso: isoDateIn(nowMs, timeZone),
+    profile: {
+      nextPaydayDate: profile?.nextPaydayDate ?? null,
+      planMode: profile?.planMode ?? "plan",
+      onboardedAt,
+      reviewDay: profile?.reviewDay ?? 0,
+      weekStartsOn,
+    },
+    week: { startIso: weekStartIso, endIso: isoDateIn(week.endMs, timeZone) },
+    buckets,
+    accountNames: Object.fromEntries(mi.accounts.map((a) => [a.id, a.name])),
+    flows,
+    activePlan,
+    plan: mi.plan,
+    sources: mi.sources,
+    incomes: mi.incomes,
+    transferPlan: mi.transferPlan,
+    allocations,
+    spendingThisMonth,
+    coversThisMonth,
+    goals: goalRows,
+    weekClosed: reviews.some((r) => r.weekStart === weekStartIso),
+    anyWeekClosed: reviews.length > 0,
+    spendingLoggedAfterOnboarding: (loggedRes.count ?? 0) > 0,
     syncOff: [anyAccount, anyCategory, anyEntry].every((r) => !r.error && (r.data?.length ?? 0) === 0),
-    week,
   };
 }

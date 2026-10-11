@@ -1,31 +1,32 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { LogSpendingLauncher } from "@/components/log-spending/LogSpendingLauncher";
-import styles from "@/components/log-spending/log-spending.module.css";
 import { getLogSpendingData } from "@/lib/data/log-spending";
 import type { LogSpendingData } from "@/lib/data/log-spending-model";
 import { createClient } from "@/lib/supabase/server";
 import { TZ_COOKIE, nowMs, validTimeZone } from "@/lib/time";
 
-/**
- * Server component for the greeting area: loads what the Log spending sheet needs and renders
- * "+ Log spending", the sheet and the Logged flag. Renders nothing when the numbers can't be loaded
- * (Today then shows its own "Couldn't load" state), so a button never opens a sheet with made-up numbers.
- */
-export async function LogSpendingSlot() {
+/** One load per request: Today renders the slot in the greeting and, in the first week, in the next-step card. */
+const loadLogSpending = cache(async (): Promise<LogSpendingData | null> => {
   const supabase = await createClient();
   if (!supabase) return null;
   const raw = (await cookies()).get(TZ_COOKIE)?.value ?? null;
   const timeZone = validTimeZone(raw ? decodeURIComponent(raw) : null);
-  let data: LogSpendingData;
   try {
-    data = await getLogSpendingData(supabase, { nowMs: nowMs(), timeZone });
+    return await getLogSpendingData(supabase, { nowMs: nowMs(), timeZone });
   } catch (err) {
     console.error("[today] log spending could not load", err);
     return null;
   }
-  return (
-    <div className={styles.slot}>
-      <LogSpendingLauncher data={data} />
-    </div>
-  );
+});
+
+/**
+ * "+ Log spending" for Today: a soft button in the greeting row, a primary one in the "Log your first
+ * spending" next-step card. Loads what the sheet needs and renders the launcher (button, sheet, Logged flag).
+ * Renders nothing when the numbers can't be loaded, so a button never opens a sheet with made-up numbers.
+ */
+export async function LogSpendingSlot({ variant = "soft" }: { variant?: "soft" | "primary" }) {
+  const data = await loadLogSpending();
+  if (!data) return null;
+  return <LogSpendingLauncher data={data} variant={variant} />;
 }

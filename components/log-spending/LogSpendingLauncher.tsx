@@ -10,7 +10,7 @@ import { LogSpendingSheet, type LoggedInfo } from "./LogSpendingSheet";
  * "+ Log spending" (SPEC §1, §8): the soft button, the sheet, and the Logged flag.
  * The flag is client state only: it lives as long as this component, so it is gone once the user leaves Today.
  */
-export function LogSpendingLauncher({ data }: { data: LogSpendingData }) {
+export function LogSpendingLauncher({ data, variant = "soft" }: { data: LogSpendingData; variant?: "soft" | "primary" }) {
   const [open, setOpen] = useState(false);
   const [opening, setOpening] = useState(0);
   const [flag, setFlag] = useState<string | null>(null);
@@ -19,8 +19,8 @@ export function LogSpendingLauncher({ data }: { data: LogSpendingData }) {
   return (
     <>
       <Button
-        variant="soft"
-        data-testid="log-spending-button"
+        variant={variant}
+        data-testid={variant === "soft" ? "log-spending-button" : "log-spending-primary"}
         aria-haspopup="dialog"
         onClick={(e) => {
           button.current = e.currentTarget;

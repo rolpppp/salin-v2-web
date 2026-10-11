@@ -62,15 +62,9 @@ export async function nudgeFunToLivingAction(): Promise<ActionResult<{ plans: Ar
   }
 }
 
-/** "Cover from Buffer" on Review: the shared cover action plus the `cover_used` event (only when money moved). */
+/** "Cover from Buffer" on Review: the shared cover action, which also fires `cover_used`. */
 export async function coverFromBufferAction(input: { toBucketId: string }): Promise<ActionResult<{ coveredMinor: number; stillNeedsMinor: number }>> {
-  const result = await coverFromBuffer(input);
-  if (result.ok && result.coveredMinor > 0) {
-    const client = await session();
-    const { data } = client ? await client.from("buckets").select("hue").eq("id", input.toBucketId).maybeSingle() : { data: null };
-    await track("cover_used", { from_bucket: "buffer", to_bucket: data?.hue ?? "other" });
-  }
-  return result;
+  return coverFromBuffer(input);
 }
 
 /** `review_opened`: fired once per visit from the screen, not on every refresh. */
