@@ -86,3 +86,14 @@ Rolf accepted the recommendation for every Open item below at build kickoff. Age
 | D-30 | Bills capped at 45% with a warning showing the gap. |
 
 **Environment rule (Oct 11):** all development and tests run against a local Docker Supabase. The live project `salin-v2` (ref `nopfvizscdxzvissibwn`) is read-only for the schema dump; nothing is written to it without Rolf's explicit OK.
+
+## 5. Architecture decisions by the PM (Oct 11, 2026; owner may overrule)
+
+| ID | Decision | Why |
+|---|---|---|
+| P-1 | Allocation lines never go below 0. A negative remainder is taken from the remainder target down to 0, then from the remaining lines in descending share (ties by bucket order). Only affects amounts under about ₱1. **Pending owner confirmation.** | A bucket receiving −₱0.01 is nonsense; goldens unchanged. |
+| P-2 | Whole-peso display floors (₱34.54 → ₱34; −₱86.97 → −₱87). | Never overstate what's safe to spend. |
+| P-3 | **Transfer cycles.** Confirmed allocations belong to a transfer cycle (`transfer_cycles` table; `allocations.transferCycleId` set at insert). At most one cycle is open. A confirm joins the open cycle, or opens a new one. A cycle closes when every transfer in it is done. `transfer_checks.periodKey` = cycle id. Only the latest cycle can be unticked; closed earlier cycles are history. The Money in checklist and the week step "Transfers made" read the latest cycle. | `transfer_plan` can't be computed over all-time allocations (it would grow forever), and G8's "Send ₱X more" needs new confirms to join the open checklist. |
+| P-4 | If the phone soft-deletes (or hard-deletes) an income that was already split, its allocations rows stay (immutable history) but are **excluded** from left, safe to spend, should-hold, transfers and the D-14 measure. Surfacing/undoing that is Phase 2 (D-5). | Numbers must reflect real money; history isn't rewritten. |
+| P-5 | Triggers on mobile tables (entry_buckets, income recognition) must never raise: wrap the body in an exception handler that emits a warning, so a bug can't break mobile sync upserts. Like D-16, they are **not applied to live** until tested against a real mobile sync. | Mobile sync safety is non-negotiable #1. |
+| P-6 | The onboarding redirect is behind `NEXT_PUBLIC_ONBOARDING_ENABLED` (default off) until ticket 17 ships, so the Phase 0 read-only Today is reachable. | Phase 0 gate needs Today before onboarding exists. |
