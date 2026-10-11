@@ -97,6 +97,8 @@ Still to do:
 
 ## Local environment
 
+- **Database (P-7, Oct 11):** native Homebrew `postgresql@17` on port 5433 with pgTAP 1.3.3 (built from source). `npm run db:reset` and `npm run db:test` replace `supabase db reset` / `supabase test db`; use `SALIN_DB=<name>` for a per-agent database instead of shifted Supabase ports. All 346 pgTAP pass there. Docker is only needed for GoTrue/PostgREST (ticket 3 e2e).
+
 - Postgres image 17.6.1.165 is broken on this Mac (empty entrypoint). `supabase/.temp/postgres-version` is pinned to `17.6.1.147`, which matches live. `.temp` is gitignored, so recreate the pin if needed.
 - Start Supabase with `supabase start -x edge-runtime,logflare,vector,imgproxy,studio,mailpit,storage-api,realtime,postgres-meta`. Add `realtime` back for onboarding's "Waiting for your phone…" step.
 - Docker Desktop must be running.

@@ -12,7 +12,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
-    "test:mobile-compat": "node tests/mobile-compat/run.mjs"
+    "test:mobile-compat": "node tests/mobile-compat/run.mjs",
+    "db:reset": "scripts/db-local.sh reset",
+    "db:test": "scripts/db-local.sh test"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "1.2.0",

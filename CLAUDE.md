@@ -5,11 +5,11 @@ The spec lives in `salin-web-handoff/`. Read `salin-web-handoff/AGENTS.md` befor
 Hard rules (short version):
 - Money is integer centavos everywhere. No floats.
 - Never alter the 12 mobile-synced tables. camelCase columns, integer enums in Dart order.
-- Develop only against local Supabase (`supabase start`). Never run anything that writes to the linked live project (`--linked`, `db push`, remote migrations).
+- Develop only against a local database: native Postgres 17 via `npm run db:reset` / `npm run db:test` (decision P-7), or local Supabase (`supabase start`) when auth/PostgREST is needed. Never run anything that writes to the linked live project (`--linked`, `db push`, remote migrations).
 - RLS + pgTAP for every new table.
 - Pin exact dependency versions (`npm install --save-exact`).
 
-Commands (once scaffolded): `npm run dev`, `npm run lint`, `npm run typecheck`, `npm test` (Vitest), `npm run e2e` (Playwright), `supabase test db` (pgTAP).
+Commands (once scaffolded): `npm run dev`, `npm run lint`, `npm run typecheck`, `npm test` (Vitest), `npm run e2e` (Playwright), `npm run db:reset` + `npm run db:test` (pgTAP on native PG17; `SALIN_DB=<name>` for a separate database).
 
 Resuming a paused build? Read `RESUME.md` first.
 

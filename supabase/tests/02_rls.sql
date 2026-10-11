@@ -83,7 +83,7 @@ begin
   exception
     when sqlstate 'P0777' then return sqlerrm;
     when insufficient_privilege then return 'denied';
-    when foreign_key_violation then return 'fk';
+    when foreign_key_violation or restrict_violation then return 'fk';  -- 23503 on PG17, 23001 on PG18+
   end;
 end $f$;
 

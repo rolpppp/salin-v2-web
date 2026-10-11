@@ -34,6 +34,7 @@ Status: todo · doing · review · done · blocked
 - [ ] D-16 mobile pull fix before the `updatedAt` trigger touches live
 
 ## Local env notes
+- **DB work uses native Postgres 17 (P-7):** Homebrew `postgresql@17` on port 5433 (`brew services start postgresql@17`), pgTAP 1.3.3 built from source into it. `npm run db:reset` / `npm run db:test`; `SALIN_DB=<name>` per parallel agent. Docker only for auth/PostgREST e2e.
 - Postgres image 17.6.1.165 is broken on this Mac (empty entrypoint); `supabase/.temp/postgres-version` pinned to 17.6.1.147 (matches live). Start with `supabase start -x edge-runtime,logflare,vector,imgproxy,studio,mailpit,storage-api,realtime,postgres-meta`.
 
 ## Resume here (session paused Oct 11 on owner request)
