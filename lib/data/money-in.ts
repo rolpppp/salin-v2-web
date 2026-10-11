@@ -10,6 +10,7 @@ import {
   type MiAccount,
   type MiBucket,
   type MiDone,
+  type MiTransferRow,
   type MiIncome,
   type MiSource,
   type MoneyInData,
@@ -227,6 +228,27 @@ export async function getMoneyInData(client: Client, opts: { nowMs: number; time
     });
   }
 
+  // ---- the checklist (SQL: transfer_plan() reads the latest cycle; the TS mirror is only for previews)
+  let transferPlan: MiTransferRow[] = [];
+  if (cycle) {
+    const { data, error } = await client.rpc("transfer_plan");
+    if (error) throw new Error(error.message);
+    transferPlan = (data ?? []).map(
+      (r): MiTransferRow => ({
+        kind: r.kind === "keep" ? "keep" : "transfer",
+        fromAccountId: r.from_account_id,
+        toAccountId: r.to_account_id,
+        amount: r.amount,
+        netted: r.netted,
+        sent: r.sent,
+        done: r.done,
+        status: (["keep", "unsent", "partial", "done", "oversent"].includes(r.status) ? r.status : "unsent") as MiTransferRow["status"],
+        sendMore: r.send_more,
+        bucketIds: r.bucket_ids ?? [],
+      }),
+    );
+  }
+
   return {
     homeCurrency: opts.homeCurrency,
     todayIso: isoDateIn(opts.nowMs, opts.timeZone),
@@ -235,6 +257,7 @@ export async function getMoneyInData(client: Client, opts: { nowMs: number; time
     accounts: accountRows,
     sources,
     incomes,
+    transferPlan,
     done,
     cycle,
     plan,

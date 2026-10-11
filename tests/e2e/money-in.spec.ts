@@ -98,8 +98,8 @@ test("Confirm all writes the golden split (G2, G5), skips the income with no job
   expect((await allocationsByHue(seed.incomeIds.g5, seed.bucketIds)).byHue).toEqual(G5);
   expect((await allocationsByHue(seed.incomeIds.gift, seed.bucketIds)).rows).toHaveLength(0);
 
-  // Step 2 is the ticket 11 placeholder, now enabled
-  await expect(page.getByTestId("move-money-placeholder")).toContainText("Placeholder");
+  // Step 2 is enabled: the checklist of the two confirmed incomes (transfers.spec.ts covers it in depth)
+  await expect(page.getByTestId("move-money-step").getByRole("checkbox")).toHaveCount(5);
   // the page keeps working after a reload: nothing left waiting but the gift, and the done list survives
   await page.reload();
   await expect(page.getByTestId("queue-item")).toHaveCount(1);

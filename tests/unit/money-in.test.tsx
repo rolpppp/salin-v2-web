@@ -2,13 +2,13 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MoneyInView } from "@/components/money-in/MoneyInView";
-import { MoveMoneyStep } from "@/components/money-in/MoveMoneyStep";
 import { LiveRegionProvider } from "@/components/live-region/LiveRegion";
-import { BUCKET, income, moneyInData, sources } from "@/lib/data/money-in-testkit";
+import { BUCKET, G2_ALLOCS, income, moneyInData, planRows, sources } from "@/lib/data/money-in-testkit";
 import type { MoneyInData } from "@/lib/data/money-in-model";
 
 const actions = vi.hoisted(() => ({ addIncomeAction: vi.fn(), confirmIncomesAction: vi.fn() }));
 vi.mock("@/lib/actions/money-in", () => actions);
+vi.mock("@/lib/actions/transfers", () => ({ tickTransferAction: vi.fn(), untickTransferAction: vi.fn() }));
 
 const NOW = Date.UTC(2026, 9, 11, 6, 0, 0);
 
@@ -160,8 +160,8 @@ describe("Money in: confirm", () => {
     const data = moneyInData({ incomes: [income("g2", "others", 2_300_000, 8)] });
     const { update } = view(data);
     await userEvent.click(screen.getByTestId("confirm-all"));
-    update({ ...data, incomes: [], done: [{ entryId: "g2", name: "Others", how: "Split by Plan A", amountMinor: 2_300_000 }], cycle: { id: "c1", closedAt: null } });
-    expect(await screen.findByText(/Placeholder: the transfer checklist/)).toHaveFocus();
+    update({ ...data, incomes: [], transferPlan: planRows(G2_ALLOCS), done: [{ entryId: "g2", name: "Others", how: "Split by Plan A", amountMinor: 2_300_000 }], cycle: { id: "c1", closedAt: null } });
+    await waitFor(() => expect(screen.getAllByRole("checkbox")[0]).toHaveFocus());
     expect(screen.getByRole("heading", { level: 1, name: "Move the money" })).toBeInTheDocument();
   });
 });
@@ -292,19 +292,5 @@ describe("Money in: states", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Every peso has a home" })).toBeInTheDocument();
     expect(screen.getByText("ALL IN")).toBeInTheDocument();
     expect(screen.getByText("OCT 11")).toBeInTheDocument();
-  });
-});
-
-describe("MoveMoneyStep (placeholder for ticket 11)", () => {
-  it("is disabled until something is confirmed", () => {
-    render(<MoveMoneyStep phase="waiting" confirmed={[]} cycle={null} />);
-    expect(screen.getByTestId("move-money-step")).toHaveAttribute("aria-disabled", "true");
-    expect(screen.getByText("Transfers appear here, grouped by account, once you confirm.")).toBeInTheDocument();
-  });
-
-  it("is clearly marked as a placeholder once something is confirmed", () => {
-    render(<MoveMoneyStep phase="move" confirmed={[{ entryId: "a", name: "Work", how: "Split by Plan A", amountMinor: 1 }]} cycle={{ id: "c", closedAt: null }} />);
-    expect(screen.getByTestId("move-money-placeholder")).toHaveTextContent("Placeholder");
-    expect(screen.getByTestId("move-money-step")).not.toHaveAttribute("aria-disabled");
   });
 });

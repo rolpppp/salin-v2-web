@@ -206,7 +206,7 @@ export function MoneyInView({ data, initialAddOpen = false, nowMs }: MoneyInView
             </Card>
           ) : null}
 
-          {phase !== "empty" ? <MoveMoneyStep phase={phase} confirmed={data.done} cycle={data.cycle} /> : null}
+          {phase !== "empty" ? <MoveMoneyStep phase={phase} confirmed={data.done} cycle={data.cycle} transferPlan={data.transferPlan} accounts={data.accounts} buckets={data.buckets} /> : null}
         </div>
 
         {phase !== "empty" ? (

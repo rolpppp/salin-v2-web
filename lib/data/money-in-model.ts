@@ -87,6 +87,23 @@ export interface MiDone {
   amountMinor: number;
 }
 
+/** One row of the latest cycle's checklist, as `transfer_plan()` returns it (SQL is the source of truth). */
+export interface MiTransferRow {
+  kind: "keep" | "transfer";
+  fromAccountId: string;
+  /** Equals `fromAccountId` on a keep row. */
+  toAccountId: string;
+  amount: number;
+  /** Money that stays put because of netting. */
+  netted: number;
+  /** Running total sent for this pair in the cycle. */
+  sent: number;
+  done: boolean;
+  status: "keep" | "unsent" | "partial" | "done" | "oversent";
+  sendMore: number;
+  bucketIds: string[];
+}
+
 export interface PlanContext {
   planA: PercentLine[];
   planB: PercentLine[];
@@ -108,6 +125,8 @@ export interface MoneyInData {
   sources: MiSource[];
   /** Waiting incomes, oldest first. */
   incomes: MiIncome[];
+  /** The latest transfer cycle's checklist (`transfer_plan()`); empty before the first confirm. */
+  transferPlan: MiTransferRow[];
   /** Incomes confirmed in the latest transfer cycle, oldest first. */
   done: MiDone[];
   cycle: { id: string; closedAt: number | null } | null;
