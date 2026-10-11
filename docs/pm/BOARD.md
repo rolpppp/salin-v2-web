@@ -6,13 +6,13 @@ Status: todo · doing · review · done · blocked
 
 | # | Ticket | Status | Notes |
 |---|---|---|---|
-| 1 | Scaffold app, CI, tokens, base components, shell | todo | |
-| 2 | Baseline schema dump + types + enum map test | blocked | needs `supabase link` (owner) |
+| 1 | Scaffold app, CI, tokens, base components, shell | done | c85c328. Follow-up: Plans sub-nav hides "Goals" at 390px |
+| 2 | Baseline schema dump + types + enum map test | done | e08b8c8 (baseline = live dump), f1b69a2 (enum test) |
 | 3 | Auth + read-only Today | todo | |
 | 4 | Analytics events (web) | todo | mobile PR is owner-side |
 | 5 | Web-created row round-trip with mobile | todo | fixture test vs Dart model; real device test is owner-side |
-| 6 | New tables + RLS + pgTAP | todo | |
-| 7 | split_by_plan, split_own + TS mirror (G1–G6) | todo | |
+| 6 | New tables + RLS + pgTAP | done | e08b8c8, 346 pgTAP. Follow-up: cross-user id refs not FK-guarded; functions must check ownership |
+| 7 | split_by_plan, split_own + TS mirror (G1–G6) | doing | TS half done (f1b69a2, 240 tests, all goldens). SQL half next |
 | 8 | Plans → Split plan + Rules | todo | |
 | 9 | Plans → Income sources | todo | |
 | 10 | Money in → queue, Add income, confirm | todo | |
@@ -28,7 +28,10 @@ Status: todo · doing · review · done · blocked
 | 20 | Web path + Just track + Make a plan | todo | |
 
 ## Owner-side checklist (can't be done by agents)
-- [ ] `supabase link --project-ref nopfvizscdxzvissibwn` (DB password) so the baseline schema can be dumped read-only
+- [x] `supabase link --project-ref nopfvizscdxzvissibwn` (DB password) so the baseline schema can be dumped read-only
 - [ ] Vercel project + env vars
 - [ ] Mobile analytics PR + real-device sync round-trip
 - [ ] D-16 mobile pull fix before the `updatedAt` trigger touches live
+
+## Local env notes
+- Postgres image 17.6.1.165 is broken on this Mac (empty entrypoint); `supabase/.temp/postgres-version` pinned to 17.6.1.147 (matches live). Start with `supabase start -x edge-runtime,logflare,vector,imgproxy,studio,mailpit,storage-api,realtime,postgres-meta`.
