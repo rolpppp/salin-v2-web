@@ -17,9 +17,9 @@ Status: todo · doing · review · done · blocked
 | 9 | Plans → Income sources | done (e2e pending) | 76ac6e8. Rules, own split, presets, lands-in, archive/remove; pgTAP 21 |
 | 10 | Money in → queue, Add income, confirm | done (e2e pending) | cc500a1. confirm_incomes_with_jobs (atomic picks + confirm); Step 2 slot for 11. Follow-ups: Money in tab badge (SPEC §0), Today "+ Add income" → /money-in?add=1, Add income is ledger insert + income_meta upsert with compensating soft delete (not one txn), PostgREST embeds untested |
 | 11 | Transfer checklist (G7, G8) | done (e2e pending) | fb88208. Ticks via RPC only; stale-amount guard; P0001 = already ticked; undo for partial rows. Follow-ups: completion card conditional lines ("Living back above zero", "Emergency passed 25%") need before/after state; Today buckets-grow animation (ticket 12/15) |
-| 12 | Today shelf + safe to spend + next step (G9) | doing | Wave 4 agent `today`; owns lib/actions/covers.ts |
+| 12 | Today shelf + safe to spend + next step (G9) | done (e2e pending) | 3c872eb. G9/G10 in Vitest on the view model; e2e specs unrun. Choices: 'Last payday split' never drives the next-step card; last Work payday = latest salary-kind source; Put away/Tax leaders = this month's allocations by income date; shelf floor ₱14,000 then ₱2,000 steps; past nextPaydayDate treated as unset; Getting started needs onboardedAt (ticket 17). Follow-ups: cover from another bucket when Buffer is short; goal_milestone_passed not fired yet (needs a non-render trigger, ticket 15); lib/data/balances.ts now unused; Logged flag sits in the greeting actions row (polish in 15) |
 | 13 | Plans → Accounts, Categories, Goals (G12) | done (e2e pending) | 4218c59. archive_account in-use guard in SQL (G12), categories move/remove + backfill, goals; 6 new mobile-compat fixtures; pgTAP 41 |
-| 14 | Review + close the week | doing | Wave 4 agent `review`; also tab badges (SPEC §0) |
+| 14 | Review + close the week | done (e2e pending) | 0a0b90b. Slip: bucket lines = all-time left; Spent = this week; Came in = this week's income + 'carried from earlier weeks' line (identity holds; pgTAP-tested with a Tax spend and a cover). close_week computes checks server-side, idempotent; nudge_plan_percent changes both plans (D-18). Tab badges via tab_badges RPC (cached per request). Review badge only on reviewDay itself. pgTAP 67 |
 | 15 | Motion + reward pass | todo | |
 | 16 | suggest_plan SQL + TS (O1–O5) | todo | |
 | 17 | Onboarding shell + app path steps | todo | |
@@ -38,7 +38,7 @@ Status: todo · doing · review · done · blocked
 - Postgres image 17.6.1.165 is broken on this Mac (empty entrypoint); `supabase/.temp/postgres-version` pinned to 17.6.1.147 (matches live). Start with `supabase start -x edge-runtime,logflare,vector,imgproxy,studio,mailpit,storage-api,realtime,postgres-meta`.
 
 ## Resume here
-**Wave 3 closed (Oct 11).** 8, 9, 10, 11, 13 merged; all e2e specs written but NOT run. Checks on main: 867 pgTAP, parity 500 cases, 511 unit, 63 mobile-compat, lint/typecheck/build.
-Next: Wave 4 (12 Today shelf/safe to spend/next step, 14 Review + close the week, 19 Log spending) — waiting for owner OK.
+**Wave 4 closed (Oct 11).** 12, 14, 19 merged; e2e specs written but NOT run. Checks on main: 950 pgTAP, parity 500 cases, 665 unit, 67 mobile-compat, lint/typecheck/build.
+Next: Wave 5 (16 suggest_plan, 17 onboarding shell + app path, 18 first pay + finish_onboarding, 20 web path; then 15 motion + a11y) — waiting for owner OK.
 Before Phase 1 gate: get Docker working, recreate `.env.test.local` from `supabase status`, run the whole e2e suite, regenerate `lib/database.types.ts`.
-Open for owner: confirm P-1; system disk 100% full (1.3 GB free), likely why Docker's engine won't start.
+Open for owner: confirm P-1; Docker Desktop reports running but the engine socket never appears (system disk now 4.4 GB free, still not enough or the VM is wedged). Needs a manual Docker restart / Troubleshoot → Restart, or more free space.

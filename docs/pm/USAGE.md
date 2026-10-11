@@ -33,3 +33,8 @@
 | When (Oct 11) | Agent | Model | Ticket(s) | Reported | Cache reads | Tool calls | Duration |
 |---|---|---|---|---|---|---|---|
 | ~23:25 | log-spending | sonnet | 19 | 208,192 | — | 77 | 9.6 min |
+| ~23:30 | review | sonnet | 14 | 281,434 | — | 74 | 15.3 min |
+| ~23:30 | today | sonnet | 12 | 323,002 | — | 74 | 15.8 min |
+
+**Wave 4 closed** (Oct 11): 3 agents in parallel, ~813K reported tokens, ~16 min wall clock. PM resolved three merge conflicts (Today page, LogSpendingSlot, covers.ts) and removed a double `cover_used` event.
+

@@ -30,15 +30,15 @@ Paused Oct 11, 2026 at the owner's request, partway through Wave 2. Start a new 
 
 ## State on `main`
 
-Paused after Wave 3 (Oct 11). Tickets 1, 2, 3, 4 (web), 5, 6, 7, 8, 9, 10, 11, 13 are merged. See `docs/pm/BOARD.md` for commits and follow-ups.
+Paused after Wave 4 (Oct 11). Tickets 1, 2, 3, 4 (web), 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 19 are merged. See `docs/pm/BOARD.md` for commits and follow-ups.
 
-Checks on main: `npm run lint`, `npm run typecheck`, `npm test` (511), `npm run build`, `npm run db:reset && npm run db:test` (867 pgTAP), `npm run test:parity` (500 cases), `npm run test:mobile-compat` (63; set `SALIN_MOBILE_PATH=/Volumes/RolfStuffs/Developer/salin-v2` when run from a worktree).
+Checks on main: `npm run lint`, `npm run typecheck`, `npm test` (665), `npm run build`, `npm run db:reset && npm run db:test` (950 pgTAP), `npm run test:parity` (500 cases), `npm run test:mobile-compat` (67; set `SALIN_MOBILE_PATH=/Volumes/RolfStuffs/Developer/salin-v2` when run from a worktree).
 
 ## Not verified yet (needs Docker)
 
-- **No e2e has run since ticket 3.** Every page is behind sign-in, so `npm run e2e` needs `supabase start` (GoTrue). Specs exist for Today, auth, Plans (all sections), Money in and transfers (G7, G8, G12).
+- **No e2e has run since ticket 3.** Every page is behind sign-in, so `npm run e2e` needs `supabase start` (GoTrue). Specs exist for Today (G9, G10, cover, drawer), auth, Plans (all sections), Money in, transfers (G7, G8, G12), Review and Log spending. Expect selector tuning on first run.
 - To run them:
-  1. Free disk space. The system volume is 100% full, which is the likely cause of Docker's engine failing to start.
+  1. Get Docker's engine up. Oct 11 late: system disk had 4.4 GB free, Desktop said "running" but `~/.docker/run/docker.sock` never appeared. Try Docker Desktop → Troubleshoot → Restart, or free more space.
   2. Start Docker and `supabase start -x edge-runtime,logflare,vector,imgproxy,studio,mailpit,storage-api,postgres-meta`. Pin `supabase/.temp/postgres-version` to `17.6.1.147`.
   3. Recreate `.env.test.local` from `supabase status` (see `.env.example`).
   4. `npm run e2e`.
@@ -48,11 +48,7 @@ Checks on main: `npm run lint`, `npm run typecheck`, `npm test` (511), `npm run 
 
 ## Next waves (after the above)
 
-- **Wave 3:** done.
-- **Wave 4:**
-  - Today shelf, safe to spend, next step and goals (12).
-  - Review + close the week (14).
-  - Log spending sheet (19).
+- **Waves 3 and 4:** done.
 - **Wave 5:**
   - `suggest_plan` SQL (16), onboarding shell and app path (17), first pay + `finish_onboarding` (18), web path, Just track and Make a plan (20).
   - Motion and reward pass (15), a11y and reduced-motion pass.
@@ -79,9 +75,9 @@ Checks on main: `npm run lint`, `npm run typecheck`, `npm test` (511), `npm run 
 
 | Item | Amount |
 |---|---|
-| Finished agents (4), reported | ~537K tokens |
+| Finished agents, reported | ~2.56M tokens (Wave 1 ~537K, Waves 2–3 ~1.21M, Wave 4 ~813K) |
 | Stopped agents (2), from transcripts | ~275K fresh input, ~5.4M cache reads |
 | Cache reads, all 6 agents | ~13M |
-| Time | ~1.5 h, 6 Sonnet agents |
+| Agents | 15 Sonnet agents |
 
 Opus PM usage is not reported per turn. Per-agent detail is in `docs/pm/USAGE.md`.
