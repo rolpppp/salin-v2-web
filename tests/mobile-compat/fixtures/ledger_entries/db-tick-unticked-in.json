@@ -1,0 +1,20 @@
+{
+  "id": "a22fdf4b-5435-4bb5-b160-b0bfcaaa8253_in",
+  "user_id": "aaaaaaaa-0000-0000-0000-000000000001",
+  "accountId": "acc-mp2",
+  "categoryId": null,
+  "recurringInstanceId": null,
+  "debtId": null,
+  "splitId": null,
+  "transferId": "a22fdf4b-5435-4bb5-b160-b0bfcaaa8253",
+  "amountMinor": 690000,
+  "direction": 0,
+  "origin": 3,
+  "occurredAt": 1791725602854,
+  "note": "Transfer",
+  "metadataJson": null,
+  "createdAt": 1791725602854,
+  "updatedAt": 1791725602860,
+  "deletedAt": 1791725602859,
+  "syncStatus": 2
+}

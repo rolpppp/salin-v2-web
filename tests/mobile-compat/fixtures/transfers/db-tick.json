@@ -1,0 +1,11 @@
+{
+  "id": "417c5271-553c-4924-b1ec-85665bab2be8",
+  "user_id": "aaaaaaaa-0000-0000-0000-000000000001",
+  "fromAccountId": "acc-mari",
+  "toAccountId": "acc-mp2",
+  "note": "Transfer",
+  "createdAt": 1791725595583,
+  "updatedAt": 1791725595585,
+  "deletedAt": null,
+  "syncStatus": 2
+}

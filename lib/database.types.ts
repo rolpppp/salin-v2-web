@@ -209,6 +209,8 @@ export type Database = {
           percentBp: number | null
           planKey: string | null
           ruleTrace: Json
+          seq: number
+          transferCycleId: string | null
           updatedAt: number
           user_id: string
         }
@@ -224,6 +226,8 @@ export type Database = {
           percentBp?: number | null
           planKey?: string | null
           ruleTrace?: Json
+          seq?: never
+          transferCycleId?: string | null
           updatedAt?: number
           user_id?: string
         }
@@ -239,6 +243,8 @@ export type Database = {
           percentBp?: number | null
           planKey?: string | null
           ruleTrace?: Json
+          seq?: never
+          transferCycleId?: string | null
           updatedAt?: number
           user_id?: string
         }
@@ -262,6 +268,13 @@ export type Database = {
             columns: ["ledgerEntryId"]
             isOneToOne: false
             referencedRelation: "ledger_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "allocations_transferCycleId_fkey"
+            columns: ["transferCycleId"]
+            isOneToOne: false
+            referencedRelation: "transfer_cycles"
             referencedColumns: ["id"]
           },
         ]
@@ -1367,6 +1380,7 @@ export type Database = {
           sentMinor: number
           toAccountId: string
           transferId: string | null
+          transferIds: string[]
           updatedAt: number
           user_id: string
         }
@@ -1379,6 +1393,7 @@ export type Database = {
           sentMinor: number
           toAccountId: string
           transferId?: string | null
+          transferIds?: string[]
           updatedAt?: number
           user_id?: string
         }
@@ -1391,6 +1406,7 @@ export type Database = {
           sentMinor?: number
           toAccountId?: string
           transferId?: string | null
+          transferIds?: string[]
           updatedAt?: number
           user_id?: string
         }
@@ -1417,6 +1433,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      transfer_cycles: {
+        Row: {
+          closedAt: number | null
+          createdAt: number
+          deletedAt: number | null
+          id: string
+          openedAt: number
+          seq: number
+          updatedAt: number
+          user_id: string
+        }
+        Insert: {
+          closedAt?: number | null
+          createdAt?: number
+          deletedAt?: number | null
+          id?: string
+          openedAt?: number
+          seq?: never
+          updatedAt?: number
+          user_id?: string
+        }
+        Update: {
+          closedAt?: number | null
+          createdAt?: number
+          deletedAt?: number | null
+          id?: string
+          openedAt?: number
+          seq?: never
+          updatedAt?: number
+          user_id?: string
+        }
+        Relationships: []
       }
       transfers: {
         Row: {
@@ -1570,7 +1619,182 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      account_should_hold: {
+        Args: { p_user?: string }
+        Returns: {
+          account_id: string
+          allocated_here: number
+          bucket_kept_here: boolean
+          buckets_net: number
+          currency: string
+          should_hold: number
+        }[]
+      }
+      active_plan: { Args: { p_user?: string }; Returns: string }
+      assert_self: { Args: { p_user: string }; Returns: string }
+      backfill_entry_buckets: { Args: { p_user?: string }; Returns: number }
+      bucket_left: {
+        Args: { p_user?: string }
+        Returns: {
+          allocated: number
+          bucket_id: string
+          covers_in: number
+          covers_out: number
+          left_minor: number
+          spent: number
+        }[]
+      }
+      confirm_incomes: {
+        Args: { entry_ids: string[] }
+        Returns: {
+          amountMinor: number
+          bucketId: string
+          confirmedAt: number
+          createdAt: number
+          deletedAt: number | null
+          destAccountId: string | null
+          id: string
+          ledgerEntryId: string | null
+          percentBp: number | null
+          planKey: string | null
+          ruleTrace: Json
+          seq: number
+          transferCycleId: string | null
+          updatedAt: number
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "allocations"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      cover_bucket: {
+        Args: { p_amount: number; p_from: string; p_to: string }
+        Returns: string
+      }
+      engine_account_should_hold: {
+        Args: { p_user: string }
+        Returns: {
+          account_id: string
+          allocated_here: number
+          bucket_kept_here: boolean
+          buckets_net: number
+          currency: string
+          should_hold: number
+        }[]
+      }
+      engine_apply_remainder: {
+        Args: {
+          p_bps: number[]
+          p_rem: number
+          p_shares: number[]
+          p_target: number
+        }
+        Returns: number[]
+      }
+      engine_bp_share: {
+        Args: { p_amount: number; p_bp: number }
+        Returns: number
+      }
+      engine_bucket_left: {
+        Args: { p_user: string }
+        Returns: {
+          allocated: number
+          bucket_id: string
+          covers_in: number
+          covers_out: number
+          left_minor: number
+          spent: number
+        }[]
+      }
+      engine_emergency_bucket: { Args: { p_user: string }; Returns: string }
+      engine_latest_cycle: { Args: { p_user: string }; Returns: string }
+      engine_plan_measure: {
+        Args: { p_bucket: string; p_user: string }
+        Returns: number
+      }
+      engine_rent_bucket: { Args: { p_user: string }; Returns: string }
+      engine_split_own: {
+        Args: { p_amount: number; p_source_id: string; p_user: string }
+        Returns: {
+          amount: number
+          bucket_id: string
+          percent_bp: number
+        }[]
+      }
+      engine_split_plan: {
+        Args: {
+          p_amount: number
+          p_on_date: string
+          p_plan_key: string
+          p_user: string
+        }
+        Returns: {
+          amount: number
+          bucket_id: string
+          percent_bp: number
+        }[]
+      }
+      engine_transfer_plan: {
+        Args: { p_cycle: string; p_user: string }
+        Returns: {
+          amount: number
+          bucket_ids: string[]
+          cycle_id: string
+          done: boolean
+          from_account_id: string
+          kind: string
+          netted: number
+          send_more: number
+          sent: number
+          status: string
+          to_account_id: string
+        }[]
+      }
+      entry_local_date: { Args: { p_ms: number }; Returns: string }
       now_ms: { Args: never; Returns: number }
+      split_by_plan: {
+        Args: { p_amount: number; p_on_date: string; p_plan_key: string }
+        Returns: {
+          amount: number
+          bucket_id: string
+          percent_bp: number
+        }[]
+      }
+      split_own: {
+        Args: { p_amount: number; p_source_id: string }
+        Returns: {
+          amount: number
+          bucket_id: string
+          percent_bp: number
+        }[]
+      }
+      tick_transfer: {
+        Args: { p_amount: number; p_from: string; p_to: string }
+        Returns: string
+      }
+      transfer_plan: {
+        Args: { p_user?: string }
+        Returns: {
+          amount: number
+          bucket_ids: string[]
+          cycle_id: string
+          done: boolean
+          from_account_id: string
+          kind: string
+          netted: number
+          send_more: number
+          sent: number
+          status: string
+          to_account_id: string
+        }[]
+      }
+      untick_transfer: {
+        Args: { p_from: string; p_to: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

@@ -54,8 +54,9 @@ create function pg_temp.row_sql(t text, uid uuid) returns text language sql as $
         values ('%3$s6-0000-0000-0000-000000000001',%2$L,'%3$s5-0000-0000-0000-000000000001','%3$s1-0000-0000-0000-000000000001',5000)$q$
     when 'income_meta' then $q$insert into public.income_meta (id,user_id,"ledgerEntryId","sourceId",job)
         values ('%3$s7-0000-0000-0000-000000000001',%2$L,'led-%1$s-1','%3$s5-0000-0000-0000-000000000001','plan')$q$
-    when 'allocations' then $q$insert into public.allocations (id,user_id,"ledgerEntryId","bucketId","amountMinor","destAccountId","planKey","percentBp")
-        values ('%3$s8-0000-0000-0000-000000000001',%2$L,'led-%1$s-1','%3$s1-0000-0000-0000-000000000001',100,'acc-%1$s-1','A',10000)$q$
+    when 'transfer_cycles' then $q$insert into public.transfer_cycles (id,user_id) values ('%3$s0-0000-0000-0000-000000000001',%2$L)$q$
+    when 'allocations' then $q$insert into public.allocations (id,user_id,"ledgerEntryId","bucketId","amountMinor","destAccountId","planKey","percentBp","transferCycleId")
+        values ('%3$s8-0000-0000-0000-000000000001',%2$L,'led-%1$s-1','%3$s1-0000-0000-0000-000000000001',100,'acc-%1$s-1','A',10000,'%3$s0-0000-0000-0000-000000000001')$q$
     when 'transfer_checks' then $q$insert into public.transfer_checks (id,user_id,"fromAccountId","toAccountId","sentMinor","transferId","periodKey")
         values ('%3$s9-0000-0000-0000-000000000001',%2$L,'acc-%1$s-1','acc-%1$s-2',100,'tr-%1$s-1','2026-W41')$q$
     when 'category_buckets' then $q$insert into public.category_buckets (id,user_id,"categoryId","bucketId")
@@ -100,12 +101,12 @@ insert into tbls values
  (20,'user_profiles','1','denied'),
  (21,'buckets','2','fk'),(22,'allocation_plans','1','1'),(23,'allocation_plan_lines','1','1'),(24,'allocation_rules','1','1'),
  (25,'income_sources','1','fk'),(26,'income_source_split_lines','1','1'),(27,'income_meta','1','1'),
- (28,'allocations','denied','denied'),(29,'transfer_checks','1','1'),(30,'category_buckets','1','1'),
+ (28,'transfer_cycles','1','denied'),(29,'allocations','denied','denied'),(30,'transfer_checks','1','1'),(30,'category_buckets','1','1'),
  (31,'entry_buckets','1','1'),(32,'bucket_covers','1','1'),(33,'goals','1','1'),
  (34,'week_reviews','1','denied'),(35,'events','denied','denied');
 grant all on tbls to authenticated;
 
-select plan(30 * 8);
+select plan(31 * 8);
 
 -- A inserts own rows through RLS (also proves the insert policy admits the owner)
 set local role authenticated;
