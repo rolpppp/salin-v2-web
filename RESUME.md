@@ -30,34 +30,25 @@ Paused Oct 11, 2026 at the owner's request, partway through Wave 2. Start a new 
 
 ## State on `main`
 
-| Ticket | Status | Commit |
-|---|---|---|
-| 1 Scaffold, tokens, components, shell, CI | done | `c85c328` |
-| 2 Baseline schema = live dump; enum map test | done | `e08b8c8`, `f1b69a2` |
-| 5 Mobile row layer + Dart compat test | done | `56caca6` |
-| 6 Web tables + RLS + pgTAP | done | `e08b8c8` |
-| lib/money engine, all goldens G1–G12, O1–O6 | done | `f1b69a2` |
-| P-7 native PG17 for DB work | done | `85b6fdf` |
-| 7 SQL engine + pgTAP goldens + parity | done | `7b4d136` |
+Paused after Wave 3 (Oct 11). Tickets 1, 2, 3, 4 (web), 5, 6, 7, 8, 9, 10, 11, 13 are merged. See `docs/pm/BOARD.md` for commits and follow-ups.
 
-Checks on main: `npm run lint`, `npm run typecheck`, `npm test` (268), `npm run e2e` (76), `npm run db:reset && npm run db:test` (641), `npm run test:parity` (500 cases), `SALIN_MOBILE_PATH=/Volumes/RolfStuffs/Developer/salin-v2 npm run test:mobile-compat` (51; the env var is needed when run from a worktree).
+Checks on main: `npm run lint`, `npm run typecheck`, `npm test` (511), `npm run build`, `npm run db:reset && npm run db:test` (867 pgTAP), `npm run test:parity` (500 cases), `npm run test:mobile-compat` (63; set `SALIN_MOBILE_PATH=/Volumes/RolfStuffs/Developer/salin-v2` when run from a worktree).
 
-## Unfinished work
+## Not verified yet (needs Docker)
 
-### Tickets 3 + 4 (web half): auth + read-only Today — blocked on Docker
-
-- Branch `worktree-agent-a8b446ac93ca02865`, rebased on main (`5dddb3f`), worktree at `.claude/worktrees/agent-a8b446ac93ca02865`.
-- What's there: sign-in, sign-up, `/auth/callback`, route protection, onboarding redirect behind `NEXT_PUBLIC_ONBOARDING_ENABLED` (P-6), `lib/data` (Today queries), `lib/analytics`, `lib/time`, Today components, e2e specs. Typecheck and 268 unit tests pass.
-- Still to do: fix 1 lint error (`Date.now()` in `app/(app)/today/page.tsx:31`, react-hooks/purity); finish `tests/e2e/helpers/` using `lib/domain/mobile` builders; run e2e. That needs `supabase start` (GoTrue), so Docker Desktop must work. In the worktree set `project_id = "salin-web-wt"` and ports +1000 in `supabase/config.toml` locally (don't commit), and pin `supabase/.temp/postgres-version` to `17.6.1.147`.
-- Then: PM review, merge, `supabase stop`.
-- Also once Docker works: regenerate `lib/database.types.ts` (ticket 7 hand-edited it).
+- **No e2e has run since ticket 3.** Every page is behind sign-in, so `npm run e2e` needs `supabase start` (GoTrue). Specs exist for Today, auth, Plans (all sections), Money in and transfers (G7, G8, G12).
+- To run them:
+  1. Free disk space. The system volume is 100% full, which is the likely cause of Docker's engine failing to start.
+  2. Start Docker and `supabase start -x edge-runtime,logflare,vector,imgproxy,studio,mailpit,storage-api,postgres-meta`. Pin `supabase/.temp/postgres-version` to `17.6.1.147`.
+  3. Recreate `.env.test.local` from `supabase status` (see `.env.example`).
+  4. `npm run e2e`.
+- `tests/e2e/helpers/` should switch to `lib/domain/mobile` builders (ticket 3 follow-up).
+- Regenerate `lib/database.types.ts` with `supabase gen types` (hand-edited since ticket 7).
+- PostgREST embeds in `lib/data/money-in.ts` are untested against a real server.
 
 ## Next waves (after the above)
 
-- **Wave 3:**
-  - Plans → Split plan + Rules (8), Income sources (9), Accounts/Categories/Goals (13).
-  - Money in queue, Add income and confirm UI (10).
-  - Transfer checklist UI (11).
+- **Wave 3:** done.
 - **Wave 4:**
   - Today shelf, safe to spend, next step and goals (12).
   - Review + close the week (14).

@@ -23,4 +23,7 @@
 | ~22:10 | plans-split-income | sonnet | 8, 9 | 251,002 | — | 52 | 12.8 min |
 | ~22:10 | money-in | sonnet | 10 | 276,786 | — | 56 | 13.3 min |
 | ~22:10 | plans-accounts | sonnet | 13 | 268,441 | — | 66 | 13.8 min |
+| ~22:40 | transfers | sonnet | 11 | 158,006 | — | 34 | 6.7 min |
+
+**Wave 3 closed** (Oct 11): 4 agents, ~1.07M reported tokens. Session 2 total (5 agents incl. ticket 7): ~1.21M reported.
 

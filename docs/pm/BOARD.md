@@ -16,7 +16,7 @@ Status: todo · doing · review · done · blocked
 | 8 | Plans → Split plan + Rules | done (e2e pending) | 76ac6e8. save_plan_lines (10000 bp), kept-in, Plan B switch target; pgTAP 20 |
 | 9 | Plans → Income sources | done (e2e pending) | 76ac6e8. Rules, own split, presets, lands-in, archive/remove; pgTAP 21 |
 | 10 | Money in → queue, Add income, confirm | done (e2e pending) | cc500a1. confirm_incomes_with_jobs (atomic picks + confirm); Step 2 slot for 11. Follow-ups: Money in tab badge (SPEC §0), Today "+ Add income" → /money-in?add=1, Add income is ledger insert + income_meta upsert with compensating soft delete (not one txn), PostgREST embeds untested |
-| 11 | Transfer checklist (G7, G8) | doing | Wave 3 agent D, worktree `transfers` |
+| 11 | Transfer checklist (G7, G8) | done (e2e pending) | fb88208. Ticks via RPC only; stale-amount guard; P0001 = already ticked; undo for partial rows. Follow-ups: completion card conditional lines ("Living back above zero", "Emergency passed 25%") need before/after state; Today buckets-grow animation (ticket 12/15) |
 | 12 | Today shelf + safe to spend + next step (G9) | todo | |
 | 13 | Plans → Accounts, Categories, Goals (G12) | done (e2e pending) | 4218c59. archive_account in-use guard in SQL (G12), categories move/remove + backfill, goals; 6 new mobile-compat fixtures; pgTAP 41 |
 | 14 | Review + close the week | todo | |
@@ -38,5 +38,7 @@ Status: todo · doing · review · done · blocked
 - Postgres image 17.6.1.165 is broken on this Mac (empty entrypoint); `supabase/.temp/postgres-version` pinned to 17.6.1.147 (matches live). Start with `supabase start -x edge-runtime,logflare,vector,imgproxy,studio,mailpit,storage-api,realtime,postgres-meta`.
 
 ## Resume here
-Wave 3: 8, 9, 10, 13 merged (e2e written, not run). 11 in progress (worktree `transfers`, `SALIN_DB=salin_w3d`). Checks on main: 867 pgTAP, 473 unit, 63 mobile-compat.
-Open for owner: confirm P-1; Docker for e2e (system disk is 100% full, 1.3 GB free — likely why Docker's engine won't start; Docker data is 9.4 GB). `.env.test.local` must be recreated from `supabase status` when Docker is back.
+**Wave 3 closed (Oct 11).** 8, 9, 10, 11, 13 merged; all e2e specs written but NOT run. Checks on main: 867 pgTAP, parity 500 cases, 511 unit, 63 mobile-compat, lint/typecheck/build.
+Next: Wave 4 (12 Today shelf/safe to spend/next step, 14 Review + close the week, 19 Log spending) — waiting for owner OK.
+Before Phase 1 gate: get Docker working, recreate `.env.test.local` from `supabase status`, run the whole e2e suite, regenerate `lib/database.types.ts`.
+Open for owner: confirm P-1; system disk 100% full (1.3 GB free), likely why Docker's engine won't start.
