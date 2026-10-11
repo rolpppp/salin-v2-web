@@ -30,9 +30,9 @@ Paused Oct 11, 2026 at the owner's request, partway through Wave 2. Start a new 
 
 ## State on `main`
 
-Paused after Wave 4 (Oct 11). Tickets 1, 2, 3, 4 (web), 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 19 are merged. See `docs/pm/BOARD.md` for commits and follow-ups.
+Paused mid-Wave 5 (Oct 12). Tickets 1–14, 16, 17, 19 and the SQL half of 18 are merged (4 is web half only). Left in scope: **18 UI, 20, 15**. See `docs/pm/BOARD.md` for commits and follow-ups.
 
-Checks on main: `npm run lint`, `npm run typecheck`, `npm test` (665), `npm run build`, `npm run db:reset && npm run db:test` (950 pgTAP), `npm run test:parity` (500 cases), `npm run test:mobile-compat` (67; set `SALIN_MOBILE_PATH=/Volumes/RolfStuffs/Developer/salin-v2` when run from a worktree).
+Checks on main: `npm run lint`, `npm run typecheck`, `npm test` (801), `npm run build`, `npm run db:reset && npm run db:test` (1104 pgTAP), `npm run test:parity` (8 suites; run it with the same `SALIN_DB` you just reset), `npm run test:mobile-compat` (83; set `SALIN_MOBILE_PATH=/Volumes/RolfStuffs/Developer/salin-v2` when run from a worktree).
 
 ## Not verified yet (needs Docker)
 
@@ -48,10 +48,13 @@ Checks on main: `npm run lint`, `npm run typecheck`, `npm test` (665), `npm run 
 
 ## Next waves (after the above)
 
-- **Waves 3 and 4:** done.
-- **Wave 5:**
-  - `suggest_plan` SQL (16), onboarding shell and app path (17), first pay + `finish_onboarding` (18), web path, Just track and Make a plan (20).
-  - Motion and reward pass (15), a11y and reduced-motion pass.
+- **Waves 3, 4 and 5a:** done.
+- **Wave 5b (relaunch; it was stopped before any work):** three parallel agents in worktrees.
+  - **18 UI: First pay finish (SPEC §7.5).** Owns `components/onboarding/steps/FirstPay.tsx` (+ `components/onboarding/first-pay/`, `lib/onboarding/first-pay.ts`). Web amount/date form with a stable `newUuidV4()` entryId; split preview = engine split; move-the-money with staged `firstPay.ticked`; Finish via `finishOnboarding()` after flushing autosave; Done card (`data-burst="onboarding"`, **Open Today** → `/today?grow=onboarding`); Not yet + reminder; `onboarding_completed`. Test: O1 + O6 draft → O1 split and 4 transfers.
+  - **20: web path + Just track + Make a plan.** Replace web `income`/`accounts` placeholders (registry swap); skipped drafts skip plan/homes/cats and Back from First pay undoes the skip; Today `make_plan` action writes a `planOnly` draft and goes to `/welcome/prio`; `starting_track` checklist from `planMode`.
+  - **15: motion + reward + reduced motion + a11y.** Grow on `/today?grow=confirm` (change Money in's "See your buckets grow" link) and `?grow=onboarding`; bursts; count-ups with the final value in the DOM; `goal_milestone_passed`; motion tokens; fix the Plans sub-nav at 390px. Don't touch onboarding files or Today's next-step logic.
+- **Then:** Docker → run the whole e2e suite, regenerate `lib/database.types.ts`, Phase 1 gate.
+- **Contracts:** `lib/onboarding/draft.ts` and `step.ts` (P-8); the shell extends them with `lib/onboarding/shell-types.ts`.
 - **Known follow-ups:**
   - At 390px the Plans sub-nav hides "Goals".
   - Cross-user id references aren't guarded by FKs, so the SQL functions must check ownership.
@@ -75,9 +78,9 @@ Checks on main: `npm run lint`, `npm run typecheck`, `npm test` (665), `npm run 
 
 | Item | Amount |
 |---|---|
-| Finished agents, reported | ~2.56M tokens (Wave 1 ~537K, Waves 2–3 ~1.21M, Wave 4 ~813K) |
+| Finished agents, reported | ~3.38M tokens (Wave 1 ~537K, Waves 2–3 ~1.21M, Wave 4 ~813K, Wave 5a ~817K) |
 | Stopped agents (2), from transcripts | ~275K fresh input, ~5.4M cache reads |
 | Cache reads, all 6 agents | ~13M |
-| Agents | 15 Sonnet agents |
+| Agents | 18 Sonnet agents finished (+3 stopped at launch) |
 
 Opus PM usage is not reported per turn. Per-agent detail is in `docs/pm/USAGE.md`.

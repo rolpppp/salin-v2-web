@@ -49,3 +49,5 @@
 
 **Wave 5a done** (Oct 12): 3 agents, ~817K reported. PM merge fixes: CSS module clash, duplicate RPC types, shell test walking the real steps.
 
+**Wave 5b** (Oct 12): 3 agents (first-pay, web-path, motion) launched and stopped within a minute at the owner's request; negligible usage, no changes.
+
