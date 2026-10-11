@@ -8,11 +8,11 @@ Status: todo · doing · review · done · blocked
 |---|---|---|---|
 | 1 | Scaffold app, CI, tokens, base components, shell | done | c85c328. Follow-up: Plans sub-nav hides "Goals" at 390px |
 | 2 | Baseline schema dump + types + enum map test | done | e08b8c8 (baseline = live dump), f1b69a2 (enum test) |
-| 3 | Auth + read-only Today | todo | |
-| 4 | Analytics events (web) | todo | mobile PR is owner-side |
-| 5 | Web-created row round-trip with mobile | todo | fixture test vs Dart model; real device test is owner-side |
+| 3 | Auth + read-only Today | paused | WIP on branch `worktree-agent-a8b446ac93ca02865` (ec1f7c7), untested; stopped while writing e2e helpers |
+| 4 | Analytics events (web) | paused | part of the ticket 3 WIP branch (lib/analytics) |
+| 5 | Web-created row round-trip with mobile | done | lib/domain/mobile + 41 Dart tests through mobile's real pull path. Real-device test is owner-side |
 | 6 | New tables + RLS + pgTAP | done | e08b8c8, 346 pgTAP. Follow-up: cross-user id refs not FK-guarded; functions must check ownership |
-| 7 | split_by_plan, split_own + TS mirror (G1–G6) | doing | TS half done (f1b69a2, 240 tests, all goldens). SQL half next |
+| 7 | split_by_plan, split_own + TS mirror (G1–G6) | paused | TS done (f1b69a2). SQL WIP on branch `wip/sql-engine` (c94508d): migrations 0300–0500, untested; parity test not started |
 | 8 | Plans → Split plan + Rules | todo | |
 | 9 | Plans → Income sources | todo | |
 | 10 | Money in → queue, Add income, confirm | todo | |
@@ -35,3 +35,9 @@ Status: todo · doing · review · done · blocked
 
 ## Local env notes
 - Postgres image 17.6.1.165 is broken on this Mac (empty entrypoint); `supabase/.temp/postgres-version` pinned to 17.6.1.147 (matches live). Start with `supabase start -x edge-runtime,logflare,vector,imgproxy,studio,mailpit,storage-api,realtime,postgres-meta`.
+
+## Resume here (session paused Oct 11 on owner request)
+1. Ticket 7: check out `wip/sql-engine`, run `supabase db reset && supabase test db`, finish pgTAP goldens + `tests/parity`, then also export tick fixtures for `tests/mobile-compat`. PM notes sent to the agent: uuid transfer ids, note 'Transfer', set updatedAt explicitly.
+2. Ticket 3: worktree at `.claude/worktrees/agent-a8b446ac93ca02865` (branch above). It uses its own Supabase on ports +1000 (config.toml change reverted before commit; re-apply locally to run). Finish e2e, verify all checks, merge into main.
+3. Then Wave 3 (Plans, Money in UI, transfer checklist UI).
+Open for owner: confirm P-1 (no negative allocation lines).
