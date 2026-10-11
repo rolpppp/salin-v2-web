@@ -21,9 +21,9 @@ Status: todo · doing · review · done · blocked
 | 13 | Plans → Accounts, Categories, Goals (G12) | done (e2e pending) | 4218c59. archive_account in-use guard in SQL (G12), categories move/remove + backfill, goals; 6 new mobile-compat fixtures; pgTAP 41 |
 | 14 | Review + close the week | done (e2e pending) | 0a0b90b. Slip: bucket lines = all-time left; Spent = this week; Came in = this week's income + 'carried from earlier weeks' line (identity holds; pgTAP-tested with a Tax spend and a cover). close_week computes checks server-side, idempotent; nudge_plan_percent changes both plans (D-18). Tab badges via tab_badges RPC (cached per request). Review badge only on reviewDay itself. pgTAP 67 |
 | 15 | Motion + reward pass | todo | |
-| 16 | suggest_plan SQL + TS (O1–O5) | todo | |
-| 17 | Onboarding shell + app path steps | todo | |
-| 18 | First pay finish + finish_onboarding (O6) | todo | |
+| 16 | suggest_plan SQL + TS (O1–O5) | doing | Wave 5a agent `onboarding-sql` (with 18's SQL: finish_onboarding, apply_plan_only, O6) |
+| 17 | Onboarding shell + app path steps | doing | Wave 5a agents `onboarding-shell` (shell, routes, autosave, app path) + `onboarding-steps` (Priorities, Your plan, Where it lives). Contract: lib/onboarding/draft.ts + step.ts (P-8) |
+| 18 | First pay finish + finish_onboarding (O6) | doing | SQL in Wave 5a; §7.5 UI in Wave 5b |
 | 19 | Log spending sheet | done (e2e pending) | c2d1dc8. Home-currency accounts only (ledger_entries has no currency); unmapped expense categories hidden; no payday → per-day line omitted. Follow-ups: Today (12) should share getBucketLefts/daysUntil; date max assumes page not left open past midnight |
 | 20 | Web path + Just track + Make a plan | todo | |
 
