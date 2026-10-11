@@ -11,4 +11,6 @@ Hard rules (short version):
 
 Commands (once scaffolded): `npm run dev`, `npm run lint`, `npm run typecheck`, `npm test` (Vitest), `npm run e2e` (Playwright), `supabase test db` (pgTAP).
 
+Resuming a paused build? Read `RESUME.md` first.
+
 Project tracking: `docs/pm/BOARD.md` (tickets, owners, status) and `docs/pm/USAGE.md` (agent token ledger).
