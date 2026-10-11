@@ -67,6 +67,16 @@
   background: var(--warm-fill);
   display: inline-block;
 }
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.count {
+  font: 650 12px/1 var(--sans);
+  color: var(--warm);
+  font-variant-numeric: tabular-nums;
+}
 .dotDue {
   background: var(--good-fill);
 }

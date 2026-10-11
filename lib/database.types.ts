@@ -1724,6 +1724,70 @@ export type Database = {
         Args: { p_amount: number; p_from: string; p_to: string }
         Returns: string
       }
+      engine_waiting_income: {
+        Args: { p_user: string }
+        Returns: {
+          amount: number
+          entry_id: string
+          occurred_at: number
+          source_id: string
+        }[]
+      }
+      week_slip_figures: {
+        Args: { p_from: number }
+        Returns: {
+          came_in_week: number
+          carried_in: number
+          has_history: boolean
+          sources: Json
+          spent_week: number
+          to_assign: number
+        }[]
+      }
+      week_bucket_flows: {
+        Args: { p_from: number; p_to: number }
+        Returns: {
+          allocated_minor: number
+          bucket_id: string
+          change_minor: number
+          covers_in_minor: number
+          covers_out_minor: number
+          spent_minor: number
+        }[]
+      }
+      week_category_spend: {
+        Args: { p_from: number; p_to: number }
+        Returns: {
+          amount_minor: number
+          bucket_id: string
+          category_id: string
+          category_name: string
+        }[]
+      }
+      tab_badges: {
+        Args: { p_today: string }
+        Returns: {
+          review_due: boolean
+          waiting_count: number
+        }[]
+      }
+      close_week: {
+        Args: { p_observation?: string; p_week_start: string }
+        Returns: {
+          check_results: Json
+          closed_at_ms: number
+          safe_to_spend_minor: number
+          was_already_closed: boolean
+        }[]
+      }
+      nudge_plan_percent: {
+        Args: { p_bp: number; p_from_bucket: string; p_to_bucket: string }
+        Returns: {
+          from_bp: number
+          plan_key: string
+          to_bp: number
+        }[]
+      }
       engine_account_should_hold: {
         Args: { p_user: string }
         Returns: {

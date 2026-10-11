@@ -18,8 +18,8 @@ const todayLabel = () =>
 export type TabBadge = { tone: "needs" | "due"; label: string; count?: number };
 
 /**
- * Sticky top bar. `badges` maps a tab href to a status dot (Money in: needs attention,
- * Review: due). Nothing passes badges yet because there is no data.
+ * Sticky top bar. `badges` maps a tab href to a status dot (Money in: coral dot + count while income
+ * waits, Review: a dot on the review day while the week is open). The layout loads them (SPEC §0).
  */
 export function AppHeader({ badges = {}, email }: { badges?: Partial<Record<string, TabBadge>>; email?: string | null }) {
   const pathname = usePathname();
@@ -38,7 +38,14 @@ export function AppHeader({ badges = {}, email }: { badges?: Partial<Record<stri
               <Link key={item.href} href={item.href} className={styles.tab} aria-current={active ? "page" : undefined}>
                 {item.label}
                 {badge ? (
-                  <span className={cn(styles.dot, badge.tone === "due" && styles.dotDue)} role="img" aria-label={badge.label} />
+                  <span className={styles.badge} data-testid={`badge-${item.href.slice(1)}`}>
+                    <span className={cn(styles.dot, badge.tone === "due" && styles.dotDue)} role="img" aria-label={badge.label} />
+                    {badge.count !== undefined ? (
+                      <span className={styles.count} aria-hidden="true">
+                        {badge.count}
+                      </span>
+                    ) : null}
+                  </span>
                 ) : null}
               </Link>
             );
