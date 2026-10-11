@@ -1,14 +1,7 @@
-import type { Metadata } from "next";
-import { EmptyState } from "@/components/empty-state/EmptyState";
-import { PageHeader } from "@/components/page-header/PageHeader";
-
-export const metadata: Metadata = { title: "Set up Salin" };
-
+/**
+ * `/welcome` and `/welcome/[step]`. The shell in `../layout.tsx` reads the step from the URL and renders it, so this
+ * page has nothing of its own: changing steps swaps only this empty segment and never re-runs the layout's data loads.
+ */
 export default function WelcomePage() {
-  return (
-    <>
-      <PageHeader title="Set up Salin" />
-      <EmptyState title="Setup is on its way">Onboarding arrives in a later release. For now, there is nothing to set up.</EmptyState>
-    </>
-  );
+  return null;
 }

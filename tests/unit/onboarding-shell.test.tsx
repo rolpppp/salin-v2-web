@@ -1,0 +1,402 @@
+import { act, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { useSyncExternalStore } from "react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { LiveRegionProvider } from "@/components/live-region/LiveRegion";
+import { emptyDraft, type OnboardingDraft } from "@/lib/onboarding/draft";
+import { appDraft, ctx, facts as phoneFacts } from "@/lib/onboarding/testkit";
+
+// A tiny router: the pathname is an external store, push/replace update it, so the shell re-renders like it would in Next.
+const nav = vi.hoisted(() => {
+  let path = "/welcome";
+  const subs = new Set<() => void>();
+  const api = {
+    push: vi.fn(),
+    replace: vi.fn(),
+    get: () => path,
+    set(p: string) {
+      path = p;
+      subs.forEach((f) => f());
+    },
+    subscribe(f: () => void) {
+      subs.add(f);
+      return () => void subs.delete(f);
+    },
+  };
+  return api;
+});
+vi.mock("next/navigation", () => ({
+  usePathname: () => useSyncExternalStore(nav.subscribe, nav.get, nav.get),
+  useRouter: () => ({
+    push: (p: string) => {
+      nav.push(p);
+      nav.set(p);
+    },
+    replace: (p: string) => {
+      nav.replace(p);
+      nav.set(p);
+    },
+  }),
+}));
+
+const actions = vi.hoisted(() => ({
+  saveDraft: vi.fn(),
+  finishOnboarding: vi.fn(),
+  loadPhoneData: vi.fn(),
+  trackOnboarding: vi.fn(),
+}));
+vi.mock("@/lib/actions/onboarding", () => actions);
+vi.mock("@/lib/supabase/browser", () => ({ createClient: () => null }));
+
+import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
+
+const USER = "6f1c2a52-8d0e-4c43-9a57-0b6f6d6f1e01";
+
+function mount(over: { path?: string; draft?: OnboardingDraft; autoDetected?: boolean; facts?: ReturnType<typeof phoneFacts> | null; ctxOver?: Parameters<typeof ctx>[0] } = {}) {
+  nav.set(over.path ?? "/welcome");
+  return render(
+    <LiveRegionProvider>
+      <OnboardingFlow
+        initialDraft={over.draft ?? emptyDraft()}
+        initialCtx={ctx(over.ctxOver)}
+        initialFacts={over.facts === undefined ? null : over.facts}
+        autoDetected={over.autoDetected ?? false}
+        userId={USER}
+      />
+    </LiveRegionProvider>,
+  );
+}
+
+const lastSaved = (): OnboardingDraft => actions.saveDraft.mock.calls.at(-1)![0] as OnboardingDraft;
+const h1 = () => screen.getByRole("heading", { level: 1 });
+
+beforeEach(() => {
+  nav.push.mockClear();
+  nav.replace.mockClear();
+  for (const f of Object.values(actions)) f.mockReset();
+  actions.saveDraft.mockResolvedValue({ ok: true });
+  actions.trackOnboarding.mockResolvedValue(undefined);
+  actions.loadPhoneData.mockResolvedValue({ ok: true, value: { facts: null, ctx: { lastMonthSpendMinor: null, phoneBills: null } } });
+});
+afterEach(() => vi.useRealTimers());
+
+describe("Welcome (SPEC 7.1)", () => {
+  it("asks the question, with the example shelf hidden from assistive tech", () => {
+    mount();
+    expect(screen.getByRole("heading", { level: 1, name: "Let's give every peso a job." })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Have you used the Salin app on your phone?" })).toBeInTheDocument();
+    const example = screen.getByText("Example payday").closest("[aria-hidden='true']");
+    expect(example).not.toBeNull();
+    expect(within(example as HTMLElement).getByText("₱25,000")).toBeInTheDocument();
+  });
+
+  it("'I'm new to Salin' starts the web path at Income and records the start", async () => {
+    mount();
+    await userEvent.click(screen.getByRole("button", { name: /I'm new to Salin/ }));
+    expect(nav.push).toHaveBeenCalledWith("/welcome/income");
+    expect(await screen.findByText("Step 1 of 6 · Income")).toBeInTheDocument();
+    expect(actions.trackOnboarding).toHaveBeenCalledWith({ event: "onboarding_started", props: { path: "web", auto_detected: false } });
+    await waitFor(() => expect(lastSaved()).toMatchObject({ path: "web", step: "income" }));
+  });
+
+  it("'I use the Salin app' starts the app path at Your app", async () => {
+    mount();
+    await userEvent.click(screen.getByRole("button", { name: /I use the Salin app/ }));
+    expect(nav.push).toHaveBeenCalledWith("/welcome/app");
+    expect(await screen.findByText("Step 1 of 7 · Your app")).toBeInTheDocument();
+  });
+
+  it("synced rows skip the question (D-29): /welcome goes straight to Found your Salin data", async () => {
+    mount({ autoDetected: true, facts: phoneFacts() });
+    await waitFor(() => expect(nav.replace).toHaveBeenCalledWith("/welcome/app"));
+    expect(await screen.findByRole("heading", { level: 1, name: "Found your Salin data" })).toBeInTheDocument();
+    expect(actions.trackOnboarding).toHaveBeenCalledWith({ event: "onboarding_started", props: { path: "app", auto_detected: true } });
+    // No question was asked, so there is nothing to go Back to.
+    expect(screen.queryByRole("button", { name: "Back" })).not.toBeInTheDocument();
+  });
+
+  it("a first load resumes at draft.step", async () => {
+    mount({ draft: { ...emptyDraft(), path: "web", step: "accounts" } });
+    await waitFor(() => expect(nav.replace).toHaveBeenCalledWith("/welcome/accounts"));
+    expect(await screen.findByText("Step 2 of 6 · Accounts")).toBeInTheDocument();
+  });
+});
+
+describe("shell (SPEC 7.2)", () => {
+  const web = () => mount({ path: "/welcome/income", draft: { ...emptyDraft(), path: "web", step: "income" } });
+
+  it("rail: Signed in pre-ticked, one pill per step, current marked, done checked", async () => {
+    mount({ path: "/welcome/accounts", draft: { ...emptyDraft(), path: "web", step: "accounts" } });
+    const rail = screen.getByRole("list", { name: "Setup steps" });
+    const pills = within(rail).getAllByRole("listitem");
+    expect(pills.map((p) => p.textContent)).toEqual(["Signed in", "Income, done", "2Accounts", "3Priorities", "4Your plan", "5Where it lives", "6First pay"]);
+    expect(within(rail).getByText("Accounts").closest("li")).toHaveAttribute("aria-current", "step");
+  });
+
+  it("kicker, question h1 and reason; the question gets focus on every step change", async () => {
+    web();
+    expect(screen.getByText("Step 1 of 6 · Income")).toBeInTheDocument();
+    await waitFor(() => expect(h1()).toHaveFocus());
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByText("Step 2 of 6 · Accounts")).toBeInTheDocument();
+    await waitFor(() => expect(h1()).toHaveTextContent("Where does your money sit?"));
+    expect(h1()).toHaveFocus();
+  });
+
+  it("Enter submits (the primary is a submit button)", async () => {
+    web();
+    screen.getByRole("button", { name: "Continue" }).focus();
+    await userEvent.keyboard("{Enter}");
+    expect(await screen.findByText("Step 2 of 6 · Accounts")).toBeInTheDocument();
+  });
+
+  it("Back keeps answers, and Back from the first step returns to the question", async () => {
+    web();
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    await screen.findByText("Step 2 of 6 · Accounts");
+    await userEvent.click(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByText("Step 1 of 6 · Income")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Let's give every peso a job." })).toBeInTheDocument();
+    await waitFor(() => expect(lastSaved()).toMatchObject({ path: null, step: "welcome" }));
+  });
+
+  it("the plan slip sits beside the step: a line per answer, 'Fills in as you answer'", () => {
+    web();
+    const slip = screen.getByRole("group", { name: "Plan slip" });
+    expect(within(slip).getByText("Comes in")).toBeInTheDocument();
+    expect(within(slip).getAllByText("· · ·").length).toBeGreaterThan(5);
+    expect(within(slip).getByText(/Fills in as you answer. Nothing is saved until you finish./)).toBeInTheDocument();
+    expect(within(slip).queryByText("PLAN SET")).not.toBeInTheDocument();
+  });
+
+  it("a deep link past an unfinished step goes back to it", async () => {
+    mount({ path: "/welcome/first", draft: appDraft({ step: "first" }) });
+    await waitFor(() => expect(nav.replace).toHaveBeenCalledWith("/welcome/app"));
+  });
+
+  it("a step that isn't on this path is sent to where the person was", async () => {
+    mount({ path: "/welcome/cats", draft: { ...emptyDraft(), path: "web", step: "accounts" } });
+    await waitFor(() => expect(nav.replace).toHaveBeenCalledWith("/welcome/accounts"));
+  });
+
+  it("autosave failure shows an inline note and never blocks moving on", async () => {
+    actions.saveDraft.mockResolvedValue({ ok: false, error: "x" });
+    web();
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByText(/Couldn't save/)).toBeInTheDocument();
+    expect(await screen.findByText("Step 2 of 6 · Accounts")).toBeInTheDocument();
+  });
+
+  it("saves nothing visible on success", async () => {
+    web();
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    await waitFor(() => expect(actions.saveDraft).toHaveBeenCalled());
+    expect(screen.queryByText(/Couldn't save/)).not.toBeInTheDocument();
+  });
+
+  it("records each completed step with its path and seconds", async () => {
+    web();
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(actions.trackOnboarding).toHaveBeenCalledWith({ event: "onboarding_step_completed", props: { path: "web", step: "income", seconds_on_step: expect.any(Number) } });
+  });
+});
+
+describe("app path to First pay", () => {
+  const start = () => mount({ path: "/welcome/app", draft: emptyDraft(), autoDetected: true, facts: phoneFacts() });
+
+  it("Found your Salin data: counts, every account ticked, the landing account locked", async () => {
+    start();
+    expect(await screen.findByRole("heading", { level: 1, name: "Found your Salin data" })).toBeInTheDocument();
+    const stats = screen.getByRole("group", { name: "What we found on your phone" });
+    expect(within(stats).getByText("3")).toBeInTheDocument();
+    expect(within(stats).getByText("accounts")).toBeInTheDocument();
+    expect(within(stats).getByText("categories")).toBeInTheDocument();
+    expect(within(stats).getByText("7")).toBeInTheDocument();
+    const boxes = screen.getAllByRole("checkbox");
+    expect(boxes).toHaveLength(3);
+    for (const b of boxes) expect(b).toBeChecked();
+    const bdo = screen.getByRole("checkbox", { name: /BDO Savings/ });
+    expect(bdo).toBeDisabled();
+    expect(screen.getByText(/your pay lands here/)).toBeInTheDocument();
+    await userEvent.click(bdo);
+    expect(bdo).toBeChecked();
+    expect(screen.getByText(/Nothing on your phone changes until you confirm/)).toBeInTheDocument();
+  });
+
+  it("an account can be left out and the slip counts the ones left in", async () => {
+    start();
+    await userEvent.click(await screen.findByRole("checkbox", { name: /GCash/ }));
+    expect(screen.getByRole("checkbox", { name: /GCash/ })).not.toBeChecked();
+    const slip = screen.getByRole("group", { name: "Plan slip" });
+    expect(within(slip).getByText("Accounts").parentElement).toHaveTextContent("2");
+  });
+
+  async function toIncome() {
+    start();
+    await userEvent.click(await screen.findByRole("button", { name: "Continue" }));
+    await screen.findByRole("heading", { level: 1, name: "Here's the money we found coming in" });
+  }
+
+  it("Income: detected sources with recent amounts, cadence, one main pay, rules prefilled from kind", async () => {
+    await toIncome();
+    expect(screen.getByText("Step 2 of 7 · Income")).toBeInTheDocument();
+    expect(screen.getByText(/₱25,000.00 Oct 7 · ₱25,000.00 Sep 7 · ₱25,000.00 Aug 7/)).toBeInTheDocument();
+    expect(screen.getByText("Monthly · your main pay")).toBeInTheDocument();
+    const radios = screen.getAllByRole("radio", { name: /Salary|DOST Stipend/ });
+    expect(radios.map((r) => (r as HTMLInputElement).checked)).toEqual([true, false]);
+    expect(screen.getByLabelText("Rule for Salary")).toBeDisabled();
+    expect(screen.getByLabelText("Rule for DOST Stipend")).toHaveValue("whole");
+    expect(screen.getByText("DOST Stipend is kept whole in Scholarship, so it's never split.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Next main payday")).toHaveValue("2026-11-07");
+    // The slip printed the main pay.
+    const slip = screen.getByRole("group", { name: "Plan slip" });
+    expect(within(slip).getByText("₱25,000.00")).toBeInTheDocument();
+    expect(within(slip).getByText("BDO Savings")).toBeInTheDocument();
+  });
+
+  it("exactly one main pay: choosing another un-chooses the first; its rule select locks, the old one frees up", async () => {
+    await toIncome();
+    await userEvent.click(screen.getByRole("radio", { name: /DOST Stipend/ }));
+    const radios = screen.getAllByRole("radio", { name: /Salary|DOST Stipend/ });
+    expect(radios.map((r) => (r as HTMLInputElement).checked)).toEqual([false, true]);
+    expect(screen.getByLabelText("Rule for DOST Stipend")).toBeDisabled();
+    expect(screen.getByLabelText("Rule for Salary")).not.toBeDisabled();
+  });
+
+  it("radio groups use arrow keys", async () => {
+    await toIncome();
+    screen.getByRole("radio", { name: /Salary/ }).focus();
+    await userEvent.keyboard("{ArrowDown}");
+    expect(screen.getByRole("radio", { name: /DOST Stipend/ })).toBeChecked();
+  });
+
+  it("an empty payday is explained, announced in the alert, and focus goes to the field", async () => {
+    await toIncome();
+    await userEvent.click(screen.getByRole("radio", { name: /DOST Stipend/ })); // seen once: no payday guess
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent("Add the date of your next main payday.");
+    expect(screen.getByLabelText("Next main payday")).toHaveFocus();
+    expect(screen.getByLabelText("Next main payday")).toHaveAttribute("aria-invalid", "true");
+    // Typing a valid date clears the error.
+    await userEvent.type(screen.getByLabelText("Next main payday"), "2026-10-30");
+    expect(alert).toBeEmptyDOMElement();
+  });
+
+  it("a payday in the past is refused", async () => {
+    await toIncome();
+    const input = screen.getByLabelText("Next main payday");
+    await userEvent.clear(input);
+    await userEvent.type(input, "2026-10-01");
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("Pick a payday that's today or later.");
+  });
+
+  it("Back keeps the answers given on a later step", async () => {
+    await toIncome();
+    await userEvent.click(screen.getByRole("radio", { name: /DOST Stipend/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Back" }));
+    await screen.findByRole("heading", { level: 1, name: "Found your Salin data" });
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    await screen.findByRole("heading", { level: 1, name: "Here's the money we found coming in" });
+    expect(screen.getByRole("radio", { name: /DOST Stipend/ })).toBeChecked();
+  });
+
+  /** The shell's primary submit (its label depends on the step: "Continue", "See my plan", …). */
+  const primary = () => {
+    const el = document.getElementById("ob-primary");
+    if (!el) throw new Error("no primary button");
+    return el;
+  };
+
+  async function toFirstPay() {
+    await toIncome();
+    await userEvent.click(primary());
+    await screen.findByRole("heading", { level: 1, name: "What should your money do first?" });
+    await userEvent.click(screen.getByRole("radio", { name: /Build a safety net/ }));
+    // The suggested plan totals 100, homes and categories come pre-filled, so the primary walks through.
+    for (const q of [/^Here's a plan for your/, /^Where should each bucket live\?/, /^(We sorted your|Your spending categories)/]) {
+      await userEvent.click(primary());
+      await screen.findByRole("heading", { level: 1, name: q });
+    }
+    await userEvent.click(primary());
+    await screen.findByRole("heading", { level: 1, name: "Your Oct 7 pay is waiting for a job" });
+  }
+
+  it("First pay: the waiting pay, its account and amount, other income waiting, Give it a job / Do it later", async () => {
+    await toFirstPay();
+    expect(screen.getByText("Step 7 of 7 · First pay")).toBeInTheDocument();
+    expect(screen.getByText("Salary")).toBeInTheDocument();
+    expect(screen.getByText("Oct 7 · landed in BDO Savings")).toBeInTheDocument();
+    expect(screen.getByText("₱25,000.00", { selector: "b" })).toBeInTheDocument();
+    expect(screen.getByText(/₱7,000.00 from 1 more income is in Money in too: DOST Stipend \(kept whole in Scholarship\)\./)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Do it later" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Give it a job" })).toBeInTheDocument();
+  });
+
+  it("Give it a job records the choice and stops at the placeholder for ticket 18", async () => {
+    await toFirstPay();
+    await userEvent.click(screen.getByRole("button", { name: "Give it a job" }));
+    expect(await screen.findByText(/Split, move, done come next/)).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Plan slip" })).toHaveTextContent("PLAN SET");
+    await waitFor(() => expect(lastSaved().firstPay).toMatchObject({ choice: "yes", entryId: "sal-oct", amountMinor: 2_500_000, date: "2026-10-07" }));
+    expect(actions.finishOnboarding).not.toHaveBeenCalled();
+    // Back undoes the choice and returns to the question.
+    await userEvent.click(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Your Oct 7 pay is waiting for a job" })).toBeInTheDocument();
+  });
+
+  it("Do it later saves the choice, finishes, and opens Today", async () => {
+    actions.finishOnboarding.mockResolvedValue({ ok: true, value: { summary: null } });
+    await toFirstPay();
+    await userEvent.click(screen.getByRole("button", { name: "Do it later" }));
+    await waitFor(() => expect(nav.push).toHaveBeenCalledWith("/today"));
+    // The stored draft the SQL reads has the choice, and it was saved before finishing was called.
+    expect(lastSaved().firstPay.choice).toBe("later");
+    expect(actions.saveDraft.mock.invocationCallOrder.at(-1)!).toBeLessThan(actions.finishOnboarding.mock.invocationCallOrder[0]!);
+  });
+
+  it("if Finish fails the message shows above the buttons and the person stays on the step", async () => {
+    actions.finishOnboarding.mockResolvedValue({ ok: false, error: "Pick one main pay." });
+    await toFirstPay();
+    await userEvent.click(screen.getByRole("button", { name: "Do it later" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Pick one main pay.");
+    expect(nav.push).not.toHaveBeenCalledWith("/today");
+    expect(screen.getByRole("button", { name: "Give it a job" })).toBeInTheDocument();
+  });
+});
+
+describe("Waiting for your phone (SPEC 7.4 step 1)", () => {
+  it("shows the three steps and a live status, with Continue disabled and an exit to the web path", async () => {
+    mount({ path: "/welcome/app", draft: appDraft(), facts: null });
+    expect(await screen.findByRole("heading", { level: 1, name: "Turn on sync in the Salin app" })).toBeInTheDocument();
+    expect(screen.getByText("Settings › Sync")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Waiting for your phone…");
+    expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled();
+    expect(actions.trackOnboarding).toHaveBeenCalledWith({ event: "sync_prompt_shown", props: { seconds_waited: 0 } });
+  });
+
+  it("polls every 10 s; when rows arrive it announces, tracks sync_connected and shows the counts", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    mount({ path: "/welcome/app", draft: appDraft(), facts: null });
+    await screen.findByText("Waiting for your phone…");
+    actions.loadPhoneData.mockResolvedValue({ ok: true, value: { facts: phoneFacts(), ctx: { lastMonthSpendMinor: {}, phoneBills: null } } });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000);
+    });
+    expect(await screen.findByRole("heading", { level: 1, name: "Found your Salin data" })).toBeInTheDocument();
+    expect(screen.getAllByRole("checkbox")).toHaveLength(3);
+    expect(actions.trackOnboarding).toHaveBeenCalledWith({ event: "sync_connected", props: { seconds_waited: expect.any(Number) } });
+    expect(screen.getByRole("button", { name: "Continue" })).toBeEnabled();
+    expect(screen.queryByRole("button", { name: "Continue without the app" })).not.toBeInTheDocument();
+  });
+
+  it("Continue without the app starts the web path from scratch", async () => {
+    mount({ path: "/welcome/app", draft: appDraft({ firstName: "Old" }), facts: null });
+    await userEvent.click(await screen.findByRole("button", { name: "Continue without the app" }));
+    expect(nav.push).toHaveBeenCalledWith("/welcome/income");
+    expect(await screen.findByText("Step 1 of 6 · Income")).toBeInTheDocument();
+    await waitFor(() => expect(lastSaved()).toMatchObject({ path: "web", step: "income", firstName: null, sources: [], accounts: [] }));
+  });
+});
