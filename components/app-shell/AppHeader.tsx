@@ -21,7 +21,7 @@ export type TabBadge = { tone: "needs" | "due"; label: string; count?: number };
  * Sticky top bar. `badges` maps a tab href to a status dot (Money in: needs attention,
  * Review: due). Nothing passes badges yet because there is no data.
  */
-export function AppHeader({ badges = {} }: { badges?: Partial<Record<string, TabBadge>> }) {
+export function AppHeader({ badges = {}, email }: { badges?: Partial<Record<string, TabBadge>>; email?: string | null }) {
   const pathname = usePathname();
   // Empty on the server and during hydration, today's date afterwards (avoids a mismatch).
   const today = useSyncExternalStore(subscribeNever, todayLabel, serverLabel);
@@ -49,7 +49,7 @@ export function AppHeader({ badges = {} }: { badges?: Partial<Record<string, Tab
             {today}
           </span>
           <ThemeToggle />
-          <AvatarMenu />
+          <AvatarMenu email={email} />
         </div>
       </div>
     </header>

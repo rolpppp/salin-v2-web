@@ -1,0 +1,55 @@
+.wrap {
+  max-width: 420px;
+  margin: 4vh auto 0;
+}
+.card {
+  display: grid;
+  gap: 18px;
+}
+.head {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+.logo {
+  width: 40px;
+  height: auto;
+}
+.h1 {
+  font: 700 25px/1.2 var(--sans);
+  letter-spacing: -0.02em;
+}
+.lede {
+  color: var(--ink-2);
+}
+.form {
+  display: grid;
+  gap: 14px;
+}
+.formError {
+  background: var(--warm-soft);
+  color: var(--warm);
+  border-radius: var(--r-control);
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.formError:empty {
+  display: none;
+}
+.notice {
+  background: var(--good-soft);
+  color: var(--good);
+  border-radius: var(--r-control);
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.alt {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+.alt a {
+  color: var(--accent-strong);
+  font-weight: 600;
+}

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const ROUTES: Array<{ path: string; heading: string }> = [
-  { path: "/today", heading: "Today" },
+const ROUTES: Array<{ path: string; heading: string | RegExp }> = [
+  { path: "/today", heading: /^(Hello|Good (morning|afternoon|evening))/ },
   { path: "/money-in", heading: "Money in" },
   { path: "/review", heading: "Review" },
   { path: "/plans/split", heading: "Plans" },
@@ -11,7 +11,6 @@ const ROUTES: Array<{ path: string; heading: string }> = [
   { path: "/plans/goals", heading: "Plans" },
   { path: "/welcome", heading: "Set up Salin" },
   { path: "/welcome/accounts", heading: "Set up Salin" },
-  { path: "/sign-in", heading: "Sign in" },
 ];
 
 function trackConsole(page: Page) {
@@ -40,6 +39,17 @@ for (const route of ROUTES) {
     expect(errors).toEqual([]);
   });
 }
+
+test("/sign-in renders for signed-out visitors", async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ baseURL, storageState: { cookies: [], origins: [] } });
+  const page = await context.newPage();
+  const errors = trackConsole(page);
+  await page.goto("/sign-in");
+  await expect(page.getByRole("heading", { level: 1, name: "Sign in" })).toBeVisible();
+  await noHorizontalOverflow(page);
+  expect(errors).toEqual([]);
+  await context.close();
+});
 
 test("/ redirects to /today and /plans to /plans/split", async ({ page }) => {
   await page.goto("/");

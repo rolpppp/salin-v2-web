@@ -13,3 +13,6 @@ supabase/.branches/
 next-env.d.ts
 .vercel
 .claude/worktrees/
+
+# Playwright e2e state (signed-in storage states, test credentials)
+tests/e2e/.auth/
