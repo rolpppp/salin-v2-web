@@ -84,6 +84,14 @@ fixtures.ledger_entries["gen-spending-soft-deleted"] = softDelete(
   t0 + 9_000,
 );
 
+// Log spending on the web (ticket 19): outflow, origin manual, an expense category, a typed note, a backdated day (noon Manila).
+fixtures.ledger_entries["gen-spending-web-log"] = newSpendingEntryRow({
+  ...entry, nowMs: t0, id: "0b0f9f0e-6f3b-4a1c-8f3e-2f2f0b3c9a05", categoryId: "1791700000102", amountMinor: 18_000, note: "Lunch with team", occurredAt: Date.UTC(2026, 9, 10, 4, 0, 0),
+});
+fixtures.ledger_entries["gen-spending-web-log-max"] = newSpendingEntryRow({
+  ...entry, nowMs: t0, id: "0b0f9f0e-6f3b-4a1c-8f3e-2f2f0b3c9a06", categoryId: "1791700000102", amountMinor: 1_000_000_000, occurredAt: t0,
+});
+
 const tr = newTransferRows({
   userId, nowMs: t0, id: "1791700000201", fromAccountId: "1791700000001", toAccountId: "1791700000002", amountMinor: 554_528, occurredAt: t0,
 });

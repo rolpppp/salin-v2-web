@@ -15,6 +15,10 @@ export type DrawerProps = {
   /** Bucket hue (CSS colour or var()) to draw the 12px dot before the title. */
   hue?: string;
   children: ReactNode;
+  /** Element to focus when the sheet opens (default: Radix's first focusable). */
+  initialFocus?: () => HTMLElement | null | undefined;
+  /** Element to focus when it closes (default: whatever had focus when it opened). */
+  returnFocus?: () => HTMLElement | null | undefined;
 };
 
 /**
@@ -22,7 +26,7 @@ export type DrawerProps = {
  * scrim click and aria-modal. On close, focus returns to whatever was focused when it
  * opened (a bucket button, "Log spending"), so it works with or without a Trigger.
  */
-export function Drawer({ open, onOpenChange, title, description, hue, children }: DrawerProps) {
+export function Drawer({ open, onOpenChange, title, description, hue, children, initialFocus, returnFocus }: DrawerProps) {
   const returnTo = useRef<HTMLElement | null>(null);
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -30,11 +34,16 @@ export function Drawer({ open, onOpenChange, title, description, hue, children }
         <Dialog.Overlay className={styles.scrim} />
         <Dialog.Content
           className={styles.drawer}
-          onOpenAutoFocus={() => {
+          onOpenAutoFocus={(e) => {
             returnTo.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+            const first = initialFocus?.();
+            if (first) {
+              e.preventDefault();
+              first.focus();
+            }
           }}
           onCloseAutoFocus={(e) => {
-            const el = returnTo.current;
+            const el = returnFocus?.() ?? returnTo.current;
             if (el && el.isConnected) {
               e.preventDefault();
               el.focus();

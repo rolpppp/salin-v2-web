@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { Card, CardTitle } from "@/components/card/Card";
 import { EmptyState } from "@/components/empty-state/EmptyState";
 import { Greeting } from "@/components/today/Greeting";
+import { LogSpendingSlot } from "@/components/today/LogSpendingSlot";
 import { TimezoneSync } from "@/components/today/TimezoneSync";
 import styles from "@/components/today/today.module.css";
 import { requireUser, displayFirstName } from "@/lib/auth/session";
@@ -42,6 +43,7 @@ export default async function TodayPage() {
     <>
       <TimezoneSync serverZone={tzCookie ? timeZone : null} />
       <Greeting firstName={firstName} />
+      <LogSpendingSlot />
       {!data ? (
         <EmptyState title="Couldn't load your numbers">Check your connection and reload the page. Nothing was changed.</EmptyState>
       ) : (
