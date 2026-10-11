@@ -1674,6 +1674,32 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      confirm_incomes_with_jobs: {
+        Args: { entry_ids: string[]; p_jobs?: Json }
+        Returns: {
+          amountMinor: number
+          bucketId: string
+          confirmedAt: number
+          createdAt: number
+          deletedAt: number | null
+          destAccountId: string | null
+          id: string
+          ledgerEntryId: string | null
+          percentBp: number | null
+          planKey: string | null
+          ruleTrace: Json
+          seq: number
+          transferCycleId: string | null
+          updatedAt: number
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "allocations"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       cover_bucket: {
         Args: { p_amount: number; p_from: string; p_to: string }
         Returns: string

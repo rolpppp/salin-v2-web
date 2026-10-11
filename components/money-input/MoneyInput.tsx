@@ -22,6 +22,8 @@ export type MoneyInputProps = {
   onValueChange?: (raw: string, parsed: MoneyParseResult | null) => void;
   /** Parser from lib/money (wired in a later ticket). Run on blur to validate. */
   parse?: (raw: string) => MoneyParseResult;
+  /** Currency symbol shown before the amount. Defaults to "₱"; Add income passes "A$" for the AUD field. */
+  prefix?: string;
   /** "lg" is the 16px/650 variant used by Add income. */
   size?: "md" | "lg";
   required?: boolean;
@@ -40,6 +42,7 @@ export function MoneyInput({
   defaultValue = "",
   onValueChange,
   parse,
+  prefix = "₱",
   size = "md",
   required,
   disabled,
@@ -57,7 +60,7 @@ export function MoneyInput({
       {(control) => (
         <div className={cn(styles.group, size === "lg" && styles.lg)} data-invalid={shownError ? true : undefined}>
           <span className={styles.prefix} aria-hidden="true">
-            ₱
+            {prefix}
           </span>
           <input
             {...control}
