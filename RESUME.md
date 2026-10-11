@@ -1,6 +1,6 @@
 # Resume: Salin Web build
 
-Paused Oct 11, 2026 at the owner's request, partway through Wave 2. Start a new session by reading this file, then `docs/pm/BOARD.md`.
+Last paused Oct 12, 2026 at the owner's request, partway through Wave 5. Start a new session by reading this file, then `docs/pm/BOARD.md`.
 
 ## How we work
 
