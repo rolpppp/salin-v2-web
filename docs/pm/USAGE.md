@@ -45,3 +45,7 @@
 |---|---|---|---|---|---|---|---|
 | ~00:20 | onboarding-steps | sonnet | 17/20 (shared steps) | 181,619 | — | 51 | 9.0 min |
 | ~00:30 | onboarding-sql | sonnet | 16, 18 (SQL) | 297,780 | — | 60 | 15.8 min |
+| ~00:40 | onboarding-shell | sonnet | 17 | 337,646 | — | 85 | 21.0 min |
+
+**Wave 5a done** (Oct 12): 3 agents, ~817K reported. PM merge fixes: CSS module clash, duplicate RPC types, shell test walking the real steps.
+
