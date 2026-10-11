@@ -14,3 +14,10 @@
 | 14:35 | mobile-compat | sonnet | 5 | 108,818 | — | 32 | 5.4 min (incl. uuid fix) |
 
 **Wave 1 closed** (Oct 11, ~14:00): 3 agents, ~33 min wall clock in parallel.
+
+**Session 2 (Oct 11, resumed):** Docker wedged, so local DB moved to native PG17 (P-7).
+
+| When (Oct 11) | Agent | Model | Ticket(s) | Reported | Cache reads | Tool calls | Duration |
+|---|---|---|---|---|---|---|---|
+| ~21:30 | sql-engine (finish) | sonnet | 7 | 260,191 | — | 56 | 15.3 min |
+

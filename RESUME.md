@@ -34,48 +34,23 @@ Paused Oct 11, 2026 at the owner's request, partway through Wave 2. Start a new 
 |---|---|---|
 | 1 Scaffold, tokens, components, shell, CI | done | `c85c328` |
 | 2 Baseline schema = live dump; enum map test | done | `e08b8c8`, `f1b69a2` |
-| 5 Mobile row layer + Dart compat test (41 tests) | done | `56caca6` |
-| 6 Web tables + RLS + pgTAP (346 tests) | done | `e08b8c8` |
-| lib/money engine, all goldens G1–G12, O1–O6 (240 tests) | done | `f1b69a2` |
+| 5 Mobile row layer + Dart compat test | done | `56caca6` |
+| 6 Web tables + RLS + pgTAP | done | `e08b8c8` |
+| lib/money engine, all goldens G1–G12, O1–O6 | done | `f1b69a2` |
+| P-7 native PG17 for DB work | done | `85b6fdf` |
+| 7 SQL engine + pgTAP goldens + parity | done | `7b4d136` |
 
-Checks on main: `npm run lint`, `npm run typecheck`, `npm test` (268), `npm run e2e` (76), `supabase test db` (346), `npm run test:mobile-compat` (41).
+Checks on main: `npm run lint`, `npm run typecheck`, `npm test` (268), `npm run e2e` (76), `npm run db:reset && npm run db:test` (641), `npm run test:parity` (500 cases), `SALIN_MOBILE_PATH=/Volumes/RolfStuffs/Developer/salin-v2 npm run test:mobile-compat` (51; the env var is needed when run from a worktree).
 
-## Unfinished work (on branches, untested)
+## Unfinished work
 
-### Ticket 7: SQL engine, branch `wip/sql-engine` (commit `c94508d`)
+### Tickets 3 + 4 (web half): auth + read-only Today — blocked on Docker
 
-What's there:
-- Migrations `..0300_transfer_cycles.sql`, `..0400_engine_functions.sql` and `..0500_mobile_table_triggers.sql`.
-- pgTAP edits to `02_rls.sql` and `03_allocations_immutable.sql`.
-
-Still to do:
-1. Run `supabase db reset && supabase test db`, and fix until it passes.
-2. pgTAP goldens at SQL level: G1–G10, G12, idempotency, P-1, P-4, tick/untick shape, cycles, cross-user, and the triggers (including "a trigger error doesn't block the mobile insert").
-3. `tests/parity/` + `npm run test:parity`: about 500 seeded random cases run through `lib/money` and through SQL, which must match exactly. Also `transfer_plan` parity.
-4. Export a ticked transfer and its legs to `tests/mobile-compat/fixtures/{transfers,ledger_entries}/db-tick*.json`, then run `npm run test:mobile-compat`.
-5. Regenerate `lib/database.types.ts`.
-
-Notes the PM sent to the agent, which the code must follow:
-- Transfer ids are `gen_random_uuid()::text`; legs are `<id>_out` / `<id>_in`.
-- `note` is 'Transfer' when empty.
-- Both legs: origin 3, `categoryId` null, `syncStatus` 2.
-- Insert the transfer before its legs.
-- Set `updatedAt` = server now (ms) explicitly on every insert and soft delete.
-- Soft delete only.
-
-The full original brief is the "SQL engine, triggers, parity" prompt. If you need it, re-derive it from DATA_MODEL §3–4, BUSINESS_RULES §2–5, and DECISIONS P-1, P-3, P-4 and P-5.
-
-### Tickets 3 + 4 (web half): auth + read-only Today
-
-- Branch `worktree-agent-a8b446ac93ca02865` (commit `ec1f7c7`), worktree at `.claude/worktrees/agent-a8b446ac93ca02865`.
-- What's there: sign-in, sign-up, `/auth/callback`, route protection, onboarding redirect behind `NEXT_PUBLIC_ONBOARDING_ENABLED` (P-6), `lib/data` (Today queries), `lib/analytics` (typed `track()` into `events`), `lib/time`, the Today components, and e2e specs.
-- It stopped while writing `tests/e2e/helpers/`.
-
-Still to do:
-1. To run it, re-apply locally (don't commit): in the worktree's `supabase/config.toml`, set `project_id = "salin-web-wt"` and shift every port by +1000. Also create `supabase/.temp/postgres-version` containing `17.6.1.147`.
-2. Finish the e2e helpers. They seed users with the local service-role key, plus mobile-shaped rows. Get lint, typecheck, test, build and e2e green.
-3. Switch the e2e seeding to `lib/domain/mobile` builders, which are now on main. Rebase onto main first.
-4. PM review, then merge into main. Revert the config.toml port change first, and run `supabase stop`.
+- Branch `worktree-agent-a8b446ac93ca02865`, rebased on main (`5dddb3f`), worktree at `.claude/worktrees/agent-a8b446ac93ca02865`.
+- What's there: sign-in, sign-up, `/auth/callback`, route protection, onboarding redirect behind `NEXT_PUBLIC_ONBOARDING_ENABLED` (P-6), `lib/data` (Today queries), `lib/analytics`, `lib/time`, Today components, e2e specs. Typecheck and 268 unit tests pass.
+- Still to do: fix 1 lint error (`Date.now()` in `app/(app)/today/page.tsx:31`, react-hooks/purity); finish `tests/e2e/helpers/` using `lib/domain/mobile` builders; run e2e. That needs `supabase start` (GoTrue), so Docker Desktop must work. In the worktree set `project_id = "salin-web-wt"` and ports +1000 in `supabase/config.toml` locally (don't commit), and pin `supabase/.temp/postgres-version` to `17.6.1.147`.
+- Then: PM review, merge, `supabase stop`.
+- Also once Docker works: regenerate `lib/database.types.ts` (ticket 7 hand-edited it).
 
 ## Next waves (after the above)
 
