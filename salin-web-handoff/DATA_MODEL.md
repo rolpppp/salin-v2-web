@@ -6,6 +6,12 @@ One Supabase Postgres database serves mobile and web. **Add tables; never change
 
 ## 1. Existing tables (mobile-owned)
 
+> **Verified against the live dump (Oct 11, 2026)** — `supabase/migrations/20261011000000_baseline.sql`, notes in `supabase/BASELINE_NOTES.md`. Corrections to this document:
+> - Live RLS on the synced tables is one `FOR ALL USING (auth.uid() = user_id)` policy per table, so **DELETE is allowed by RLS**. The web still never hard-deletes (app rule, not enforced by the DB). We don't change mobile's policies.
+> - Mobile tables have **real foreign keys** to each other (e.g. `ledger_entries.accountId → accounts ON DELETE CASCADE`, `transferId → transfers ON DELETE SET NULL`). Insert parents first (transfer before its legs). Web→mobile FKs are allowed but must be `CASCADE` or `SET NULL`, never blocking a mobile delete or upsert (a pgTAP test enforces this).
+> - `media` also exists remotely; `backups` has PK `(user_id, name)`.
+> - Live has a `rls_auto_enable()` event-trigger function (it turns RLS on for new tables).
+
 ### 1.1 How mobile syncs
 
 - Local-first (Drift/SQLite). Sync is **opt-in** (`settings.syncEnabled`); users with sync off have nothing in Supabase.
