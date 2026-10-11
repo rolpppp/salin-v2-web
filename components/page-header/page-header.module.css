@@ -1,0 +1,27 @@
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.h1 {
+  font: 700 30px/1.15 var(--sans);
+  letter-spacing: -0.015em;
+}
+.lede {
+  color: var(--ink-2);
+  margin-top: 6px;
+  max-width: 62ch;
+}
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+@media (max-width: 720px) {
+  .h1 {
+    font-size: 25px;
+  }
+}

@@ -1,0 +1,60 @@
+.field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.label {
+  font: 650 13.5px/1.2 var(--sans);
+  color: var(--ink);
+}
+.hint {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.error {
+  font-size: 13.5px;
+  color: var(--warm);
+  font-weight: 500;
+}
+.error:empty {
+  display: none;
+}
+.control {
+  font: 500 14.5px/1.2 var(--sans);
+  color: var(--ink);
+  background: var(--surface);
+  border: 0;
+  box-shadow: inset 0 0 0 1.5px var(--line-2);
+  border-radius: var(--r-field);
+  padding: 9px 11px;
+  width: 100%;
+  min-width: 0;
+  transition: box-shadow var(--dur-state) ease;
+}
+.control::placeholder {
+  color: var(--ink-3);
+}
+.control:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.control[aria-invalid="true"] {
+  box-shadow: inset 0 0 0 2px var(--warm);
+}
+.control:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.select {
+  appearance: none;
+  padding-right: 32px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--ink-2) 50%), linear-gradient(135deg, var(--ink-2) 50%, transparent 50%);
+  background-position:
+    calc(100% - 17px) 55%,
+    calc(100% - 12px) 55%;
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+}

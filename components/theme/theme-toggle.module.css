@@ -1,0 +1,43 @@
+.btn {
+  appearance: none;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--r-control);
+  border: 0;
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex: none;
+  transition: transform var(--dur-press) var(--ease-out);
+}
+.btn:active {
+  transform: scale(0.97);
+}
+.sun {
+  display: none;
+}
+.moon {
+  display: block;
+}
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme="light"])) .sun {
+    display: block;
+  }
+  :global(:root:not([data-theme="light"])) .moon {
+    display: none;
+  }
+}
+:global(:root[data-theme="dark"]) .sun {
+  display: block;
+}
+:global(:root[data-theme="dark"]) .moon {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn:active {
+    transform: none;
+  }
+}

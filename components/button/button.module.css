@@ -1,0 +1,108 @@
+.btn {
+  appearance: none;
+  border: 0;
+  border-radius: var(--r-control);
+  cursor: pointer;
+  font: 600 14.5px/1 var(--sans);
+  padding: 13px 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+  text-decoration: none;
+  transition:
+    transform var(--dur-press) var(--ease-out),
+    background-color var(--dur-state) ease,
+    box-shadow var(--dur-state) ease,
+    color var(--dur-state) ease;
+}
+.btn:active {
+  transform: scale(0.97);
+}
+.btn svg {
+  width: 16px;
+  height: 16px;
+}
+.primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: var(--shadow-glow);
+}
+.soft {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.quiet {
+  background: transparent;
+  color: var(--accent-strong);
+  padding: 10px 12px;
+}
+.warm {
+  background: var(--warm-soft);
+  color: var(--warm);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+.loading {
+  cursor: progress;
+}
+.loading .label {
+  visibility: hidden;
+}
+.dots {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+.dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 1s ease-in-out infinite;
+}
+.dots i:nth-child(2) {
+  animation-delay: 120ms;
+}
+.dots i:nth-child(3) {
+  animation-delay: 240ms;
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .primary:hover:not(:disabled) {
+    background: var(--accent-hover);
+  }
+  .soft:hover:not(:disabled) {
+    background: var(--surface-3);
+  }
+  .quiet:hover:not(:disabled) {
+    background: var(--accent-soft);
+  }
+  .warm:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--warm-soft) 80%, var(--warm-fill));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn:active {
+    transform: none;
+  }
+  .dots i {
+    animation: none;
+    opacity: 0.7;
+  }
+}

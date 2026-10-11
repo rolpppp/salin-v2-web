@@ -1,0 +1,21 @@
+.empty {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+.title {
+  font: 700 23px/1.25 var(--sans);
+  letter-spacing: -0.02em;
+}
+.body {
+  color: var(--ink-2);
+  max-width: 54ch;
+}
+.action {
+  margin-top: 10px;
+}
+@media (max-width: 720px) {
+  .title {
+    font-size: 20px;
+  }
+}

@@ -1,0 +1,32 @@
+.bar {
+  --fill: var(--accent);
+  --track: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  height: 8px;
+  border-radius: 4px;
+  background: var(--track);
+  overflow: hidden;
+}
+.bar i {
+  display: block;
+  height: 100%;
+  background: var(--fill);
+  border-radius: inherit;
+  transform-origin: left;
+  transition: transform 600ms var(--ease-out);
+}
+.goal {
+  --track: var(--surface-2);
+  height: 12px;
+  border-radius: var(--r-bar);
+}
+.goal i {
+  transition-duration: 1000ms;
+}
+.good {
+  --fill: var(--good-fill);
+}
+@media (prefers-reduced-motion: reduce) {
+  .bar i {
+    transition: opacity 200ms ease;
+  }
+}

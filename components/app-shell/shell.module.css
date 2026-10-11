@@ -1,0 +1,16 @@
+.page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding-inline: var(--sp-gutter);
+  padding-block: 20px 64px;
+  min-width: 0;
+}
+.page:focus {
+  outline: none;
+}
+@media (max-width: 720px) {
+  .page {
+    padding-inline: var(--sp-gutter-mobile);
+    padding-block: 12px 48px;
+  }
+}

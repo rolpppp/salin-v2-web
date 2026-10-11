@@ -1,0 +1,40 @@
+.group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  border-radius: var(--r-field);
+  box-shadow: inset 0 0 0 1.5px var(--line-2);
+  padding: 0 11px;
+  transition: box-shadow var(--dur-state) ease;
+}
+.group:focus-within {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.group[data-invalid] {
+  box-shadow: inset 0 0 0 2px var(--warm);
+}
+.prefix {
+  color: var(--ink-2);
+  font: 600 14.5px/1 var(--sans);
+}
+.input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: 600 14.5px/1.2 var(--sans);
+  font-variant-numeric: tabular-nums;
+  padding: 9px 0;
+  outline: none;
+}
+.input::placeholder {
+  color: var(--ink-3);
+  font-weight: 500;
+}
+.lg .prefix,
+.lg .input {
+  font-size: 16px;
+  font-weight: 650;
+}

@@ -1,0 +1,26 @@
+.card {
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-1);
+  padding: var(--sp-card);
+  min-width: 0;
+}
+.next {
+  background: var(--accent-soft);
+  box-shadow: none;
+}
+.peak {
+  background: var(--good-soft);
+  box-shadow: none;
+}
+.title {
+  font: 650 17px/1.3 var(--sans);
+  letter-spacing: -0.015em;
+}
+@media (max-width: 720px) {
+  .card {
+    padding: var(--sp-card-mobile);
+    border-radius: var(--r-card-mobile);
+  }
+}
