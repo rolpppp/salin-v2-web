@@ -1631,6 +1631,10 @@ export type Database = {
         }[]
       }
       active_plan: { Args: { p_user?: string }; Returns: string }
+      add_income_source: {
+        Args: { p_kind: string; p_name?: string }
+        Returns: string
+      }
       assert_self: { Args: { p_user: string }; Returns: string }
       backfill_entry_buckets: { Args: { p_user?: string }; Returns: number }
       bucket_left: {
@@ -1694,6 +1698,10 @@ export type Database = {
         }
         Returns: number[]
       }
+      engine_assert_source_bucket: {
+        Args: { p_bucket: string; p_user: string }
+        Returns: undefined
+      }
       engine_bp_share: {
         Args: { p_amount: number; p_bp: number }
         Returns: number
@@ -1711,6 +1719,29 @@ export type Database = {
       }
       engine_emergency_bucket: { Args: { p_user: string }; Returns: string }
       engine_latest_cycle: { Args: { p_user: string }; Returns: string }
+      engine_own_source: {
+        Args: { p_source: string; p_user: string }
+        Returns: {
+          categoryId: string | null
+          createdAt: number
+          deletedAt: number | null
+          id: string
+          isArchived: boolean
+          kind: string
+          landsInAccountId: string | null
+          name: string
+          rule: string
+          updatedAt: number
+          user_id: string
+          wholeBucketId: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "income_sources"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       engine_plan_measure: {
         Args: { p_bucket: string; p_user: string }
         Returns: number
@@ -1755,6 +1786,39 @@ export type Database = {
       }
       entry_local_date: { Args: { p_ms: number }; Returns: string }
       now_ms: { Args: never; Returns: number }
+      remove_income_source: { Args: { p_source: string }; Returns: undefined }
+      rename_income_source: {
+        Args: { p_name: string; p_source: string }
+        Returns: undefined
+      }
+      save_income_source_split: {
+        Args: { p_lines: Json; p_source: string }
+        Returns: undefined
+      }
+      save_plan_lines: {
+        Args: { p_lines: Json; p_plan_key: string }
+        Returns: undefined
+      }
+      set_bucket_kept_in: {
+        Args: { p_account: string; p_bucket: string }
+        Returns: undefined
+      }
+      set_income_source_archived: {
+        Args: { p_archived: boolean; p_source: string }
+        Returns: undefined
+      }
+      set_income_source_lands_in: {
+        Args: { p_account: string; p_source: string }
+        Returns: undefined
+      }
+      set_income_source_rule: {
+        Args: { p_rule: string; p_source: string; p_whole_bucket?: string }
+        Returns: undefined
+      }
+      set_plan_switch_target: {
+        Args: { p_target_minor: number }
+        Returns: undefined
+      }
       split_by_plan: {
         Args: { p_amount: number; p_on_date: string; p_plan_key: string }
         Returns: {
