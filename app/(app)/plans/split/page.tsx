@@ -1,5 +1,4 @@
 import { EmptyState } from "@/components/empty-state/EmptyState";
-import { RulesCard } from "@/components/plans/split/RulesCard";
 import { SplitPlanEditor } from "@/components/plans/split/SplitPlanEditor";
 import { requireUser } from "@/lib/auth/session";
 import { getSplitPlanData, type SplitPlanData } from "@/lib/data/plans";
@@ -22,5 +21,5 @@ export default async function SplitPlanPage() {
   if (data.plans.length === 0 || data.buckets.length === 0) {
     return <EmptyState title="No split plan yet">Set what share of each payday goes to each bucket. Your plan shows here once it is set up.</EmptyState>;
   }
-  return <SplitPlanEditor data={data} rules={<RulesCard switchRule={data.switchRule} redirectRule={data.redirectRule} />} />;
+  return <SplitPlanEditor data={data} />;
 }

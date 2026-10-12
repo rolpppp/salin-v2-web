@@ -1,4 +1,5 @@
 /** Small pure helpers shared by the Split plan and Income screens. */
+import { hueVar } from "@/lib/data/hues";
 
 /** Whole-percent text from an input -> a number 0..100, or null when it isn't one. Empty counts as 0 only if allowed. */
 export function parsePercent(raw: string, emptyIsZero = false): number | null {
@@ -13,10 +14,9 @@ export function parsePercent(raw: string, emptyIsZero = false): number | null {
 export const bpToPercent = (bp: number): number => Math.round(bp / 100);
 export const percentToBp = (pct: number): number => pct * 100;
 
-const HUES = new Set(["living", "fun", "emergency", "invest", "sinking", "tax", "buffer", "rent", "dost"]);
-/** CSS colour for a bucket hue (the --b-* tokens); neutral for anything unknown. */
+/** CSS colour for a bucket hue (the --b-* tokens, incl. custom c1..c8); neutral for anything unknown. */
 export function hueColor(hue: string | null | undefined): string {
-  return hue && HUES.has(hue) ? `var(--b-${hue})` : "var(--ink-3)";
+  return hueVar(hue, "var(--ink-3)");
 }
 
 /** Centavos -> the text for an amount field: `5000000` -> `50,000`, `5000050` -> `50,000.50`. Integer maths only. */

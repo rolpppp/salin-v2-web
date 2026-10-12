@@ -6,6 +6,7 @@ import { track } from "@/lib/analytics";
 import { getCurrentUser } from "@/lib/auth/session";
 import { failure, SAVE_FAILED, SIGNED_OUT, type ActionResult } from "./result";
 import { coverFromBuffer } from "./covers";
+import { planLabel } from "@/lib/data/plan-labels";
 import { createClient } from "@/lib/supabase/server";
 
 async function session() {
@@ -41,8 +42,11 @@ export async function closeWeekAction(input: { weekStart: string; observation?: 
   }
 }
 
-/** "Move 1% from Fun to Living" (D-18): both plans, future paydays only. Bucket ids are found server-side from their hues. */
-export async function nudgeFunToLivingAction(): Promise<ActionResult<{ plans: Array<{ planKey: string; fromBp: number; toBp: number }>; fromName: string; toName: string }>> {
+/**
+ * "Move 1% from Fun to Living" (D-18, P-9): every live plan where Fun has at least 1%, future paydays only. Bucket ids
+ * are found server-side from their hues. `plans` is the display NAMES of the plans that changed (may be empty).
+ */
+export async function nudgeFunToLivingAction(): Promise<ActionResult<{ plans: string[]; fromName: string; toName: string }>> {
   const client = await session();
   if (!client) return { ok: false, error: SIGNED_OUT };
   try {
@@ -56,7 +60,13 @@ export async function nudgeFunToLivingAction(): Promise<ActionResult<{ plans: Ar
     await track("plan_edited", { field: "percent" });
     revalidatePath("/review");
     revalidatePath("/plans/split");
-    return { ok: true, plans: (data ?? []).map((r) => ({ planKey: r.plan_key, fromBp: r.from_bp, toBp: r.to_bp })), fromName: fun.name, toName: living.name };
+    const keys = (data ?? []).map((r) => r.plan_key);
+    let names: Record<string, string> = {};
+    if (keys.length > 0) {
+      const { data: rows } = await client.from("allocation_plans").select("key, name").is("deletedAt", null).in("key", keys);
+      names = Object.fromEntries((rows ?? []).map((r) => [r.key, r.name ?? ""]));
+    }
+    return { ok: true, plans: keys.map((k) => planLabel(names, k)), fromName: fun.name, toName: living.name };
   } catch {
     return { ok: false, error: SAVE_FAILED };
   }

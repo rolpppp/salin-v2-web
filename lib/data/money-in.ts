@@ -251,7 +251,7 @@ export async function getMoneyInData(client: Client, opts: { nowMs: number; time
       return {
         entryId,
         name: asString(trace.sourceName) ?? "Income",
-        how: doneHow(trace, names),
+        how: doneHow(trace, names, plan),
         amountMinor: lines.reduce((t, l) => t + l.amountMinor, 0),
       };
     });

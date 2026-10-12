@@ -26,6 +26,7 @@ export type IncomeSourcesData = {
   /** Buckets a source may point at: not archived, never Rent. */
   buckets: SourceBucket[];
   accounts: SourceAccount[];
+  /** The name of the plan that splits the next payday ("Plan A", "Saving for Japan"). */
   activePlan: string;
 };
 
@@ -34,7 +35,7 @@ const RULES = new Set<string>(["plan", "own", "whole", "ask"]);
 
 /** Everything the Income screen shows. RLS limits every query to the signed-in user. Throws on any error. */
 export async function getIncomeSourcesData(client: Client, userId: string): Promise<IncomeSourcesData> {
-  const [srcRes, bucketRes, accountRes, rentRes, activeRes, lineRes] = await Promise.all([
+  const [srcRes, bucketRes, accountRes, rentRes, activeRes, lineRes, planRes] = await Promise.all([
     client
       .from("income_sources")
       .select("id, name, kind, rule, wholeBucketId, landsInAccountId, isArchived, createdAt")
@@ -47,10 +48,12 @@ export async function getIncomeSourcesData(client: Client, userId: string): Prom
     client.rpc("active_plan", { p_user: userId }),
     // Every split line (RLS limits them to this user's sources), so they ride in the first wave.
     client.from("income_source_split_lines").select("sourceId, bucketId, percentBp").is("deletedAt", null),
+    client.from("allocation_plans").select("key, name").is("deletedAt", null),
   ]);
   for (const r of [srcRes, bucketRes, accountRes, rentRes]) if (r.error) throw new Error(r.error.message);
   // active_plan raises when the user has no Emergency bucket yet; the screen still works without it.
-  const activePlan = activeRes.error ? "A" : (activeRes.data ?? "A");
+  const activeKey = activeRes.error ? "A" : (activeRes.data ?? "A");
+  const activePlan = planRes.error ? `Plan ${activeKey}` : ((planRes.data ?? []).find((p) => p.key === activeKey)?.name?.trim() || `Plan ${activeKey}`);
 
   const rentId = rentRes.data ?? null;
   const buckets: SourceBucket[] = (bucketRes.data ?? [])

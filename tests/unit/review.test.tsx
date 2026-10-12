@@ -117,19 +117,16 @@ describe("Review screen", () => {
     await waitFor(() => expect(screen.getByRole("heading", { name: "One thing to look at" })).toHaveFocus());
   });
 
-  it("Move 1% from Fun to Living says both plans changed", async () => {
+  it("Move 1% from Fun to Living names the plans that changed", async () => {
     actions.nudgeFunToLivingAction.mockResolvedValue({
       ok: true,
-      plans: [
-        { planKey: "A", fromBp: 1900, toBp: 800 },
-        { planKey: "B", fromBp: 1900, toBp: 900 },
-      ],
+      plans: ["Plan A", "Saving for Japan"],
       fromName: "Fun money",
       toName: "Living",
     });
     view(week());
     await userEvent.click(screen.getByRole("button", { name: "Move 1% from Fun to Living" }));
-    await waitFor(() => expect(screen.getByTestId("live-region")).toHaveTextContent(/in both plans.*Plan A: Living 8%.*Plan B: Living 9%/));
+    await waitFor(() => expect(screen.getByTestId("live-region")).toHaveTextContent("Moved 1% from Fun money to Living in Plan A and Saving for Japan. It starts with your next payday."));
   });
 
   it("a refused nudge shows the reason at the control", async () => {

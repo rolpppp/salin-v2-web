@@ -104,9 +104,7 @@ test("Move 1% from Fun to Living changes BOTH plans, keeps them at 100%, and say
   const before = await pcts();
 
   await page.getByRole("button", { name: "Move 1% from Fun to Living" }).click();
-  await expect(page.getByTestId("live-region")).toContainText("in both plans");
-  await expect(page.getByTestId("live-region")).toContainText("Plan A");
-  await expect(page.getByTestId("live-region")).toContainText("Plan B");
+  await expect(page.getByTestId("live-region")).toContainText("Moved 1% from Fun money to Living in Plan A and Plan B. It starts with your next payday.");
 
   const after = await pcts();
   for (const k of ["A", "B"]) {

@@ -250,6 +250,15 @@ describe("emergencyProgress", () => {
     expect(emergencyProgress({ buckets: b, emergency: { bucketId: "e", savedMinor: -5, targetMinor: 5_000_000 } }).percent).toBe(0);
     expect(emergencyProgress({ buckets: b, emergency: { bucketId: "e", savedMinor: 1, targetMinor: null } })).toMatchObject({ percent: null, targetMinor: null });
   });
+  it("names the plan the switch moves to, and says nothing about a switch while a plan is chosen manually", () => {
+    const named = emergencyProgress({ buckets: b, emergency: { bucketId: "e", savedMinor: 1_250_000, targetMinor: 5_000_000, switchToName: "Saving for Japan" } });
+    expect(named.text).toBe("25% of the ₱50,000 that switches you to Saving for Japan.");
+    expect(named.barLabel).toBe("Emergency fund toward the Saving for Japan switch");
+    const manual = emergencyProgress({ buckets: b, emergency: { bucketId: "e", savedMinor: 1_250_000, targetMinor: 5_000_000, switchToName: null } });
+    expect(manual.barLabel).toBeNull();
+    expect(manual.text).toBe("25% of your ₱50,000 Emergency fund target.");
+    expect(manual.text).not.toMatch(/switch|Plan/);
+  });
   it("no Emergency bucket: change 0", () => {
     expect(emergencyProgress({ buckets: [], emergency: { bucketId: null, savedMinor: 0, targetMinor: 5_000_000 } }).changeMinor).toBe(0);
   });
@@ -317,20 +326,12 @@ describe("closedSummary", () => {
 });
 
 describe("live region sentences", () => {
-  it("the nudge says both plans changed", () => {
-    const m = nudgeMessage(
-      [
-        { planKey: "A", fromBp: 1400, toBp: 800 },
-        { planKey: "B", fromBp: 900, toBp: 900 },
-      ],
-      "Fun money",
-      "Living",
-      100,
-    );
-    expect(m).toContain("in both plans");
-    expect(m).toContain("Plan A: Living 8%, Fun money 14%");
-    expect(m).toContain("Plan B: Living 9%, Fun money 9%");
-    expect(m).toContain("next payday");
+  it("the nudge names every plan that changed", () => {
+    const m = nudgeMessage(["Plan A", "Saving for Japan", "Plan B"], "Fun money", "Living", 100);
+    expect(m).toBe("Moved 1% from Fun money to Living in Plan A, Saving for Japan and Plan B. It starts with your next payday.");
+  });
+  it("the nudge says so when no plan had anything to move", () => {
+    expect(nudgeMessage([], "Fun money", "Living", 100)).toContain("nothing moved");
   });
   it("cover: full, partial (names the rest), and nothing", () => {
     expect(coverMessage({ coveredMinor: 8_697, stillNeedsMinor: 0 }, "Living")).toContain("back to zero");

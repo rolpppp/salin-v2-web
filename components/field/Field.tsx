@@ -1,7 +1,7 @@
 "use client";
 
 import { useId } from "react";
-import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from "react";
+import type { InputHTMLAttributes, ReactNode, Ref, SelectHTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
 import styles from "./field.module.css";
 
@@ -53,7 +53,7 @@ export function Field({ label, hint, error, required, className, children }: Fie
   );
 }
 
-export function Input({ className, ...rest }: InputHTMLAttributes<HTMLInputElement>) {
+export function Input({ className, ...rest }: InputHTMLAttributes<HTMLInputElement> & { ref?: Ref<HTMLInputElement> }) {
   return <input {...rest} className={cn(styles.control, className)} />;
 }
 

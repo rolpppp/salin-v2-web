@@ -49,6 +49,23 @@
   --b-buffer: #a39a8b;
   --b-rent: #c2b08f;
   --b-dost: #a497b8;
+  /* custom-bucket palette (c1..c8); a swatch is always shown with its name, never colour alone */
+  --b-c1: #c8553d;
+  --b-c2: #a67c00;
+  --b-c3: #5a8f29;
+  --b-c4: #1f8a70;
+  --b-c5: #2f7fc1;
+  --b-c6: #6b5fc7;
+  --b-c7: #b04a9c;
+  --b-c8: #7a6a58;
+  --hue-c1: var(--b-c1);
+  --hue-c2: var(--b-c2);
+  --hue-c3: var(--b-c3);
+  --hue-c4: var(--b-c4);
+  --hue-c5: var(--b-c5);
+  --hue-c6: var(--b-c6);
+  --hue-c7: var(--b-c7);
+  --hue-c8: var(--b-c8);
   --mix: 30%;
 
   /* type */
@@ -135,6 +152,23 @@
     --shadow-2: 0 2px 6px rgba(0, 0, 0, 0.3), 0 14px 32px rgba(0, 0, 0, 0.35);
     --shadow-glow: 0 1px 2px rgba(79, 209, 197, 0.2), 0 6px 16px rgba(79, 209, 197, 0.16);
     --paper-drop: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.35));
+    /* custom-bucket palette, lifted for dark cards */
+    --b-c1: #f0907a;
+    --b-c2: #e0b84a;
+    --b-c3: #8fcf5f;
+    --b-c4: #4cc9a8;
+    --b-c5: #6bb4ef;
+    --b-c6: #a79df0;
+    --b-c7: #e98ad4;
+    --b-c8: #b8a58f;
+    --hue-c1: var(--b-c1);
+    --hue-c2: var(--b-c2);
+    --hue-c3: var(--b-c3);
+    --hue-c4: var(--b-c4);
+    --hue-c5: var(--b-c5);
+    --hue-c6: var(--b-c6);
+    --hue-c7: var(--b-c7);
+    --hue-c8: var(--b-c8);
     --mix: 42%;
     color-scheme: dark;
   }
@@ -171,6 +205,23 @@
   --shadow-2: 0 2px 6px rgba(0, 0, 0, 0.3), 0 14px 32px rgba(0, 0, 0, 0.35);
   --shadow-glow: 0 1px 2px rgba(79, 209, 197, 0.2), 0 6px 16px rgba(79, 209, 197, 0.16);
   --paper-drop: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.35));
+  /* custom-bucket palette, lifted for dark cards */
+  --b-c1: #f0907a;
+  --b-c2: #e0b84a;
+  --b-c3: #8fcf5f;
+  --b-c4: #4cc9a8;
+  --b-c5: #6bb4ef;
+  --b-c6: #a79df0;
+  --b-c7: #e98ad4;
+  --b-c8: #b8a58f;
+  --hue-c1: var(--b-c1);
+  --hue-c2: var(--b-c2);
+  --hue-c3: var(--b-c3);
+  --hue-c4: var(--b-c4);
+  --hue-c5: var(--b-c5);
+  --hue-c6: var(--b-c6);
+  --hue-c7: var(--b-c7);
+  --hue-c8: var(--b-c8);
   --mix: 42%;
   color-scheme: dark;
 }

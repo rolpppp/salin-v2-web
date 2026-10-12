@@ -451,6 +451,22 @@ describe("goals (BR §7)", () => {
     expect(v.goals.cards[0]).toMatchObject({ reached: true, progressBp: 10_000, percent: 100, toGoMinor: 0, tail: "Target reached. Plan B is active." });
   });
 
+  it("names the plan the switch moves to, using the plan's own name", () => {
+    const plan = { ...g9().plan, planNames: { A: "Plan A", B: "Saving for Japan" } };
+    const before = buildTodayView(g9({ plan }));
+    expect(before.goals.cards[0]?.tail).toMatch(/^About \d+ more paydays like Oct 7, then Saving for Japan starts\.$/);
+    const after = buildTodayView(g9({ plan, activePlan: "B", flows: flowsOf({ emergency: 5_000_000 }) }));
+    expect(after.goals.cards[0]?.tail).toBe("Target reached. Saving for Japan is active.");
+  });
+
+  it("says nothing about a switch while one plan is chosen manually", () => {
+    const plan = { ...g9().plan, activePlan: { mode: "manual" as const, planKey: "A" }, planNames: { A: "Plan A", B: "Plan B" } };
+    const v = buildTodayView(g9({ plan }));
+    expect(v.goals.cards[0]?.tail).toMatch(/^About \d+ more paydays like Oct 7\.$/);
+    const reached = buildTodayView(g9({ plan, activePlan: "B", flows: flowsOf({ emergency: 5_000_000 }) }));
+    expect(reached.goals.cards[0]?.tail).toBe("Target reached.");
+  });
+
   it("an unreachable 25/50/75 tick stays unlit; hit ticks light", () => {
     const v = buildTodayView(g9({ flows: flowsOf({ emergency: 2_600_000 }) }));
     expect(v.goals.cards[0]?.hitTicks).toEqual([25, 50]);

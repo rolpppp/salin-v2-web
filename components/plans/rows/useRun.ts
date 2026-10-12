@@ -37,5 +37,5 @@ export function useRun() {
 
 /** Class-safe hue token for the bucket dot (`--b-living` ...). Unknown hues fall back to a neutral ink. */
 export function hueStyle(hue: string | null | undefined): Record<string, string> | undefined {
-  return hue && /^[a-z]{2,20}$/.test(hue) ? { "--c": `var(--b-${hue}, var(--ink-3))` } : undefined;
+  return hue && /^[a-z][a-z0-9]{1,19}$/.test(hue) ? { "--c": `var(--b-${hue}, var(--ink-3))` } : undefined;
 }

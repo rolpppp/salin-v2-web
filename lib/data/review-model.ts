@@ -16,6 +16,7 @@
  * computes the three income/spending figures with the same filters as `bucket_left`, so the halves can't drift.
  * If the books ever disagree anyway, `weekSlip().difference` is non-zero and the screen says so out loud.
  */
+import { joinPlanNames } from "./plan-labels";
 import { addDays, dayNumber, floorDiv, formatPeso, formatPesoWhole, weekSlip, type IsoDate, type SlipBucket, type SlipRole, type WeekSlip } from "@/lib/money";
 
 // ---------------------------------------------------------------- data shapes (what the server hands the screen)
@@ -83,7 +84,13 @@ export interface ReviewData {
   pendingTransfers: number;
   /** The active plan's Living share, in basis points; null when unknown. */
   livingPlanBp: number | null;
-  emergency: { bucketId: string | null; savedMinor: number; targetMinor: number | null };
+  emergency: {
+    bucketId: string | null;
+    savedMinor: number;
+    targetMinor: number | null;
+    /** Name of the plan the automatic switch moves to; null while one plan is chosen manually (no switch to talk about). */
+    switchToName?: string | null;
+  };
   closed: ClosedWeek | null;
 }
 
@@ -290,15 +297,35 @@ export interface EmergencyProgress {
   /** floor(saved / target), clamped to 0..100; null without a target. */
   percent: number | null;
   text: string;
+  /** Label for the progress bar, or null when there is no automatic switch to show progress toward. */
+  barLabel: string | null;
 }
 
 export function emergencyProgress(d: Pick<ReviewData, "buckets" | "emergency">): EmergencyProgress {
   const b = d.emergency.bucketId ? d.buckets.find((x) => x.id === d.emergency.bucketId) : undefined;
   const changeMinor = b?.changeWeekMinor ?? 0;
   const { savedMinor, targetMinor } = d.emergency;
-  if (targetMinor === null || targetMinor <= 0) return { changeMinor, savedMinor, targetMinor: null, percent: null, text: "No Plan B switch amount is set yet. Set one in Plans." };
+  // Plan-switch progress only in automatic mode (`switchToName` is null while a plan is chosen manually).
+  const toName = d.emergency.switchToName === undefined ? "Plan B" : d.emergency.switchToName;
+  if (targetMinor === null || targetMinor <= 0) {
+    return {
+      changeMinor,
+      savedMinor,
+      targetMinor: null,
+      percent: null,
+      text: toName ? `No ${toName} switch amount is set yet. Set one in Plans.` : "No Emergency fund target is set yet. Set one in Plans.",
+      barLabel: null,
+    };
+  }
   const percent = Math.min(100, Math.max(0, floorDiv(savedMinor * 100, targetMinor)));
-  return { changeMinor, savedMinor, targetMinor, percent, text: `${percent}% of the ${formatPesoWhole(targetMinor)} that switches you to Plan B.` };
+  return {
+    changeMinor,
+    savedMinor,
+    targetMinor,
+    percent,
+    text: toName ? `${percent}% of the ${formatPesoWhole(targetMinor)} that switches you to ${toName}.` : `${percent}% of your ${formatPesoWhole(targetMinor)} Emergency fund target.`,
+    barLabel: toName ? `Emergency fund toward the ${toName} switch` : null,
+  };
 }
 
 // ---------------------------------------------------------------- the three checks
@@ -423,10 +450,11 @@ export function closedSummary(d: Pick<ReviewData, "weekStart" | "reviewDay"> & {
 
 const pct = (bp: number): string => (bp % 100 === 0 ? `${bp / 100}%` : `${(bp / 100).toFixed(2).replace(/0$/, "")}%`);
 
-/** What the live region says after "Move 1% from Fun to Living": it names BOTH plans (D-18). */
-export function nudgeMessage(rows: ReadonlyArray<{ planKey: string; fromBp: number; toBp: number }>, fromName: string, toName: string, movedBp: number): string {
-  const per = rows.map((r) => `Plan ${r.planKey}: ${toName} ${pct(r.toBp)}, ${fromName} ${pct(r.fromBp)}`).join(". ");
-  return `Moved ${pct(movedBp)} from ${fromName} to ${toName} in both plans. ${per}. It starts with your next payday.`;
+/** What the live region says after "Move 1% from Fun to Living": it names every plan that changed (D-18, P-9). */
+export function nudgeMessage(planNames: readonly string[], fromName: string, toName: string, movedBp: number): string {
+  const moved = pct(movedBp);
+  if (planNames.length === 0) return `No plan had ${fromName} at ${moved} or more, so nothing moved.`;
+  return `Moved ${moved} from ${fromName} to ${toName} in ${joinPlanNames(planNames)}. It starts with your next payday.`;
 }
 
 /** After "Cover from Buffer": what moved, and what's still needed if Buffer couldn't cover it all (D-19). */

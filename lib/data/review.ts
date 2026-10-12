@@ -52,8 +52,9 @@ export async function getReviewData(client: Client, opts: { userId: string; nowM
     client.from("goals").select("targetMinor").eq("isPlanSwitch", true).is("deletedAt", null).order("createdAt").limit(1),
     client.rpc("active_plan"),
     // Living's plan lines, read whole and picked below instead of a plan lookup followed by a line lookup.
-    client.from("allocation_plans").select("id, key").is("deletedAt", null),
+    client.from("allocation_plans").select("id, key, name").is("deletedAt", null),
     client.from("allocation_plan_lines").select("planId, bucketId, percentBp").is("deletedAt", null),
+    client.from("allocation_rules").select("kind, params").is("deletedAt", null).in("kind", ["switch_on_goal", "active_plan"]),
   ]);
   staticP.catch(() => undefined); // if the profile read throws first, don't leave this one unhandled
   const profileRes = await profileP;
@@ -67,7 +68,7 @@ export async function getReviewData(client: Client, opts: { userId: string; nowM
   const weekStart = iso(week.startMs, tz);
   const weekEnd = iso(week.endMs - 1, tz);
 
-  const [[bucketRows, leftRows, transferRows, badgeRows, allocAny, goalRows, planKeyRes, planRowsRes, planLineRowsRes], [flowRows, lastFlowRows, figuresRows, catRows, reviewRes]] = await Promise.all([
+  const [[bucketRows, leftRows, transferRows, badgeRows, allocAny, goalRows, planKeyRes, planRowsRes, planLineRowsRes, ruleRowsRes], [flowRows, lastFlowRows, figuresRows, catRows, reviewRes]] = await Promise.all([
     staticP,
     Promise.all([
       client.rpc("week_bucket_flows", { p_from: week.startMs, p_to: week.endMs }),
@@ -120,6 +121,16 @@ export async function getReviewData(client: Client, opts: { userId: string; nowM
   }
 
   const emergency = buckets.find((b) => b.hue === "emergency") ?? null;
+  // Plan-switch wording applies only while the automatic switch is on; it names the plan the switch moves to.
+  const rules = ruleRowsRes.error ? [] : (ruleRowsRes.data ?? []);
+  const ruleParams = (kind: string): Record<string, unknown> => {
+    const v = rules.find((r) => r.kind === kind)?.params;
+    return v !== null && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+  };
+  const manual = ruleParams("active_plan").mode === "manual";
+  const toKey = typeof ruleParams("switch_on_goal").toPlan === "string" ? (ruleParams("switch_on_goal").toPlan as string) : "B";
+  const toRow = (planRowsRes.error ? [] : (planRowsRes.data ?? [])).find((pl) => pl.key === toKey);
+  const switchToName = manual ? null : (toRow?.name?.trim() || `Plan ${toKey}`);
   const closedRow = reviewRes.data;
   const closed: ClosedWeek | null = closedRow
     ? { checks: asChecks(closedRow.checks), safeToSpendMinor: closedRow.safeToSpendMinor, observation: closedRow.observation, closedDateIso: iso(closedRow.closedAt, tz) }
@@ -146,6 +157,7 @@ export async function getReviewData(client: Client, opts: { userId: string; nowM
     livingPlanBp,
     emergency: {
       bucketId: emergency?.id ?? null,
+      switchToName,
       savedMinor: emergency ? (lefts.get(emergency.id) ?? 0) : 0,
       targetMinor: goal?.targetMinor ?? null,
     },

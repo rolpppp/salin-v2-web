@@ -29,43 +29,42 @@ async function noHorizontalOverflow(page: Page) {
 }
 
 test.describe("Split plan", () => {
-  test("shows the plan, totals and rules, with no overflow or console errors", async ({ page }) => {
+  test("shows the plan bar, one plan's rows, the totals and the rules, with no overflow or console errors", async ({ page }) => {
     const errors = watchConsole(page);
     await signedInWithPlans(page, "/plans/split");
-    await expect(page.getByTestId("active-plan")).toHaveText("Plan A is active");
-    await expect(page.getByLabel("Living Plan A percent")).toHaveValue("50");
-    await expect(page.getByLabel("Fun Plan B percent")).toHaveValue("20");
-    await expect(page.getByTestId("total-A")).toContainText("100%");
+    await expect(page.getByTestId("active-plan")).toHaveText("Splitting your paydays");
+    await expect(page.getByLabel("Living percent")).toHaveValue("50");
+    await expect(page.getByTestId("plan-total")).toContainText("100%");
+    await page.getByRole("button", { name: /Plan B/ }).click();
+    await expect(page.getByLabel("Fun percent")).toHaveValue("20");
     await expect(page.getByLabel("Scholarship is kept in")).toBeVisible();
-    await expect(page.getByLabel("Plan B switch amount")).toHaveValue("50,000");
+    await expect(page.getByLabel("Switch amount in pesos")).toHaveValue("50,000");
     await expect(page.getByTestId("redirect-rule")).toContainText("until January 1, 2027");
     await noHorizontalOverflow(page);
     expect(errors).toEqual([]);
   });
 
-  test("a plan that does not add up to 100 is refused and the last saved plan stays active", async ({ page }) => {
+  test("a plan that does not add up to 100 can't be saved and the last saved plan stays active", async ({ page }) => {
     const { user, seed } = await signedInWithPlans(page, "/plans/split");
-    const living = page.getByLabel("Living Plan A percent");
-    await living.fill("45");
-    await living.blur();
-    await expect(page.getByTestId("plan-messages")).toContainText("Plan A adds up to 95%. Add 5% to another bucket.");
-    await expect(page.getByTestId("plan-messages")).toContainText("Not saved yet");
+    await page.getByLabel("Living percent").fill("45");
+    await expect(page.getByTestId("plan-total")).toContainText("Adds up to 95%. Give 5% to a bucket.");
+    await expect(page.getByRole("button", { name: "Save plan" })).toBeDisabled();
+    await expect(page.getByTestId("save-note")).toContainText("last saved version is still used");
     await page.reload();
-    await expect(page.getByLabel("Living Plan A percent")).toHaveValue("50");
+    await expect(page.getByLabel("Living percent")).toHaveValue("50");
     expect((await planPercents(user.id, "A"))[seed.bucket.living]).toBe(5000);
   });
 
   test("a valid edit saves, survives a reload, is tracked, and leaves confirmed paydays untouched", async ({ page }) => {
     const { user, seed } = await signedInWithPlans(page, "/plans/split");
     const before = await allocationsFor(user.id);
-    await page.getByLabel("Living Plan A percent").fill("45");
-    await page.getByLabel("Living Plan A percent").blur();
-    await page.getByLabel("Emergency fund Plan A percent").fill("35");
-    await page.getByLabel("Emergency fund Plan A percent").blur();
+    await page.getByLabel("Living percent").fill("45");
+    await page.getByLabel("Emergency fund percent").fill("35");
+    await page.getByRole("button", { name: "Save plan" }).click();
     await expect(page.getByTestId("live-region")).toContainText("Plan A saved");
     await page.reload();
-    await expect(page.getByLabel("Living Plan A percent")).toHaveValue("45");
-    await expect(page.getByLabel("Emergency fund Plan A percent")).toHaveValue("35");
+    await expect(page.getByLabel("Living percent")).toHaveValue("45");
+    await expect(page.getByLabel("Emergency fund percent")).toHaveValue("35");
     const a = await planPercents(user.id, "A");
     expect(Object.values(a).reduce((s, v) => s + v, 0)).toBe(10000);
     expect(a[seed.bucket.living]).toBe(4500);
@@ -83,14 +82,14 @@ test.describe("Split plan", () => {
     expect(await allocationsFor(user.id)).toEqual(before);
   });
 
-  test("the Plan B switch amount saves in centavos and moves the Emergency goal with it", async ({ page }) => {
+  test("the switch amount saves in centavos and moves the Emergency goal with it", async ({ page }) => {
     const { user } = await signedInWithPlans(page, "/plans/split");
-    const amount = page.getByLabel("Plan B switch amount");
+    const amount = page.getByLabel("Switch amount in pesos");
     await amount.fill("75,000.50");
     await amount.blur();
-    await expect(page.getByTestId("live-region")).toContainText("Plan B switch is now ₱75,000.50");
+    await expect(page.getByTestId("live-region")).toContainText("The switch amount is now ₱75,000.50");
     await page.reload();
-    await expect(page.getByLabel("Plan B switch amount")).toHaveValue("75,000.50");
+    await expect(page.getByLabel("Switch amount in pesos")).toHaveValue("75,000.50");
     const { data } = await adminClient().from("goals").select("targetMinor").eq("user_id", user.id).eq("isPlanSwitch", true).single();
     expect(data?.targetMinor).toBe(7_500_050);
     await amount.fill("0");
@@ -98,14 +97,13 @@ test.describe("Split plan", () => {
     await expect(page.getByText("Enter an amount above ₱0 and up to ₱10,000,000.")).toBeVisible();
   });
 
-  test("works by keyboard: tab to a percent, type, Enter saves", async ({ page }) => {
+  test("works by keyboard: typed percents, then Save with Enter", async ({ page }) => {
     const { user, seed } = await signedInWithPlans(page, "/plans/split");
-    const fun = page.getByLabel("Fun Plan B percent");
-    await fun.focus();
-    await page.keyboard.press("ControlOrMeta+A");
-    await page.keyboard.type("10");
-    await page.getByLabel("Emergency fund Plan B percent").fill("30");
-    await page.getByLabel("Emergency fund Plan B percent").press("Enter");
+    await page.getByRole("button", { name: /Plan B/ }).click();
+    await page.getByLabel("Fun percent").fill("10");
+    await page.getByLabel("Emergency fund percent").fill("30");
+    await page.getByRole("button", { name: "Save plan" }).focus();
+    await page.keyboard.press("Enter");
     await expect(page.getByTestId("live-region")).toContainText("Plan B saved");
     expect((await planPercents(user.id, "B"))[seed.bucket.fun]).toBe(1000);
   });

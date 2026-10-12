@@ -41,7 +41,7 @@ function data(sources: SourceView[]): IncomeSourcesData {
       { id: "acc-1", name: "MariBank" },
       { id: "acc-2", name: "GCash" },
     ],
-    activePlan: "A",
+    activePlan: "Plan A",
   };
 }
 

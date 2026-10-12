@@ -25,6 +25,7 @@ import {
   type SplitLine,
 } from "@/lib/money";
 import { zonedParts } from "@/lib/time";
+import { hueVar } from "./hues";
 
 // ---------------------------------------------------------------- data shapes (what the server hands the screen)
 
@@ -205,12 +206,8 @@ export function kindChipText(source: Pick<MiSource, "name" | "kind">): string | 
   return label;
 }
 
-const HUES = new Set(["living", "fun", "emergency", "invest", "sinking", "tax", "buffer", "rent", "dost"]);
-
-/** CSS colour for a bucket's hue. Unknown hues fall back to the neutral buffer colour. */
-export function hueVar(hue: string | null | undefined): string {
-  return `var(--b-${hue && HUES.has(hue) ? hue : "buffer"})`;
-}
+/** CSS colour for a bucket's hue (built-in or custom c1..c8). Unknown hues fall back to the neutral buffer colour. */
+export { hueVar };
 
 /** Whole-percent text for basis points: 1000 -> "10%", 1250 -> "12.5%". */
 export function pctText(bp: number): string {
@@ -574,12 +571,12 @@ export function buildSlip(
 
 // ---------------------------------------------------------------- done list
 
-/** "How" for a confirmed income, from the snapshot stored with its allocations (BR §2.6). */
-export function doneHow(trace: unknown, bucketNames: readonly string[]): string {
+/** "How" for a confirmed income, from the snapshot stored with its allocations (BR §2.6). Plan names are looked up now (P-9). */
+export function doneHow(trace: unknown, bucketNames: readonly string[], plan?: Pick<PlanContext, "planNames">): string {
   const t = (trace && typeof trace === "object" ? trace : {}) as Record<string, unknown>;
   switch (t.job) {
     case "plan":
-      return `Split by Plan ${typeof t.planKey === "string" ? t.planKey : "A"}`;
+      return `Split by ${planLabel(plan ?? { planNames: {} }, typeof t.planKey === "string" ? t.planKey : "A")}`;
     case "own":
       return "Own split";
     case "whole":

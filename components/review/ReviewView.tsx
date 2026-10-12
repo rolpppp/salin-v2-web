@@ -21,14 +21,14 @@ import {
   spendSummary,
   type ReviewData,
 } from "@/lib/data/review-model";
+import { hueVar } from "@/lib/data/hues";
 import { formatPeso } from "@/lib/money";
 import styles from "./review.module.css";
 import { WeekSlipCard } from "./WeekSlipCard";
 
 const OBS_HEADING = "review-obs-h";
 const CLOSED_HEADING = "review-closed-h";
-const HUES = new Set(["living", "fun", "emergency", "invest", "sinking", "tax", "buffer", "rent", "dost"]);
-const hueColor = (hue: string | null) => (hue && HUES.has(hue) ? `var(--b-${hue})` : "var(--accent)");
+const hueColor = (hue: string | null) => hueVar(hue, "var(--accent)");
 
 type Busy = "cover" | "nudge" | "close" | null;
 
@@ -174,7 +174,7 @@ export function ReviewView({ data }: { data: ReviewData }) {
                 ) : null}
               </div>
             ) : null}
-            {obs.canNudge ? <p className={styles.muted}>Moving 1% changes both Plan A and Plan B, from your next payday. Paydays you already confirmed stay as they were.</p> : null}
+            {obs.canNudge ? <p className={styles.muted}>Moving 1% changes every plan that gives Fun money at least 1%, from your next payday. Paydays you already confirmed stay as they were.</p> : null}
             {error?.where === "obs" ? (
               <p className={styles.error} role="alert">
                 {error.message}
@@ -191,8 +191,8 @@ export function ReviewView({ data }: { data: ReviewData }) {
                 {signed(progress.changeMinor)}
               </b>
             </div>
-            {progress.targetMinor !== null ? (
-              <ProgressBar label="Emergency fund toward the Plan B switch" value={progress.savedMinor} max={progress.targetMinor} valueText={`${progress.percent}%`} tone="good" size="goal" />
+            {progress.targetMinor !== null && progress.barLabel ? (
+              <ProgressBar label={progress.barLabel} value={progress.savedMinor} max={progress.targetMinor} valueText={`${progress.percent}%`} tone="good" size="goal" />
             ) : null}
             <p className={styles.muted} data-testid="emergency-note">
               {progress.text}

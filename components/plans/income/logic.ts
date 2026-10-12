@@ -57,10 +57,10 @@ export function ownProblem(check: OwnCheck, badName?: string): string | null {
 }
 
 /** One line saying what the rule does (SPEC 4.2). */
-export function ruleDescription(args: { rule: IncomeRule; activePlan: string; wholeBucketName?: string | null; ownTotal: number }): string {
+export function ruleDescription(args: { rule: IncomeRule; activePlanName: string; wholeBucketName?: string | null; ownTotal: number }): string {
   switch (args.rule) {
     case "plan":
-      return `Uses Plan ${args.activePlan} percentages.`;
+      return `Uses ${args.activePlanName} percentages.`;
     case "ask":
       return "You pick a job when the money arrives.";
     case "whole":

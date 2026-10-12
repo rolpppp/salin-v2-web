@@ -90,10 +90,10 @@ describe("own split (BR 2.1.4)", () => {
     expect(ownDraftFromBp({ tax: 1000 }, ids)).toEqual({ tax: "10", sink: "0", fun: "0", rent: "0" });
   });
   it("describes each rule in one line", () => {
-    expect(ruleDescription({ rule: "plan", activePlan: "B", ownTotal: 0 })).toBe("Uses Plan B percentages.");
-    expect(ruleDescription({ rule: "ask", activePlan: "A", ownTotal: 0 })).toBe("You pick a job when the money arrives.");
-    expect(ruleDescription({ rule: "whole", activePlan: "A", wholeBucketName: "Living", ownTotal: 0 })).toBe("All of it stays in Living. Nothing is split.");
-    expect(ruleDescription({ rule: "own", activePlan: "A", ownTotal: 90 })).toMatch(/adds up to 90%.*needs a job/);
+    expect(ruleDescription({ rule: "plan", activePlanName: "Saving for Japan", ownTotal: 0 })).toBe("Uses Saving for Japan percentages.");
+    expect(ruleDescription({ rule: "ask", activePlanName: "Plan A", ownTotal: 0 })).toBe("You pick a job when the money arrives.");
+    expect(ruleDescription({ rule: "whole", activePlanName: "Plan A", wholeBucketName: "Living", ownTotal: 0 })).toBe("All of it stays in Living. Nothing is split.");
+    expect(ruleDescription({ rule: "own", activePlanName: "Plan A", ownTotal: 90 })).toMatch(/adds up to 90%.*needs a job/);
   });
   it("picks a sensible bucket when someone chooses Keep it whole", () => {
     const b = [

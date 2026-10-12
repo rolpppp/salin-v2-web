@@ -15,7 +15,7 @@ export type EventMap = {
   cover_used: { from_bucket: string; to_bucket: string };
   review_opened: { week_start: string };
   week_closed: { open_items_count: number };
-  plan_edited: { field: "percent" | "kept_in" | "rule" | "target" };
+  plan_edited: { field: "percent" | "kept_in" | "rule" | "target" | "plan" | "active_plan" | "bucket" };
   goal_milestone_passed: { goal_kind: string; milestone: 25 | 50 | 75 | 100 };
   onboarding_started: { path: Path; auto_detected: boolean };
   onboarding_step_completed: { path: Path; step: string; seconds_on_step: number };

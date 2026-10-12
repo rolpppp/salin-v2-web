@@ -258,7 +258,7 @@ function SourceRow({ source, local, data, actions, patch, onRemoved }: RowProps)
       </div>
 
       <div className={styles.says}>
-        <p>{ruleDescription({ rule, activePlan: data.activePlan, wholeBucketName: wholeName, ownTotal: check.total })}</p>
+        <p>{ruleDescription({ rule, activePlanName: data.activePlan, wholeBucketName: wholeName, ownTotal: check.total })}</p>
         <div className={styles.actions} style={{ marginTop: 8 }}>
           {source.hasIncome ? (
             <Button variant="quiet" aria-label={`Archive ${savedName}`} onClick={() => void archive()}>

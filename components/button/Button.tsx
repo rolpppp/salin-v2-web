@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from "react";
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode, Ref } from "react";
 import { cn } from "@/lib/cn";
 import styles from "./button.module.css";
 
@@ -14,7 +14,7 @@ type Shared = {
   children: ReactNode;
 };
 
-export type ButtonProps = Shared & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children">;
+export type ButtonProps = Shared & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> & { ref?: Ref<HTMLButtonElement> };
 
 function classes(variant: ButtonVariant, loading: boolean | undefined, extra?: string) {
   return cn(styles.btn, styles[variant], loading && styles.loading, extra);
