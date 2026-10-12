@@ -44,12 +44,13 @@ supabase migration repair --status applied 20261011000000 --linked
 supabase db push --linked --dry-run
 supabase db push --linked
 ```
-The dry run must list exactly the 12 web migrations (0100 … 20261012000100, plus any merged since). Anything else → stop.
+The dry run must list exactly the 12 web migrations: `20261011000100` … `20261012000100` and `20261012000200_balance_adjustments`. Anything else → stop.
 
 **5. Verify (Dashboard → SQL editor, read-only).**
 ```sql
 select tgname from pg_trigger where tgrelid = 'public.ledger_entries'::regclass and not tgisinternal order by 1;
--- expect: ledger_entries_entry_bucket_ins, ledger_entries_entry_bucket_upd, ledger_entries_income_recognition_ins
+-- expect: ledger_entries_adjustment_bucket_ins, ledger_entries_adjustment_bucket_upd,
+--         ledger_entries_entry_bucket_ins, ledger_entries_entry_bucket_upd, ledger_entries_income_recognition_ins
 -- and NOT ledger_entries_set_updated_at
 select count(*) from information_schema.tables where table_schema = 'public' and table_name in ('user_profiles','buckets','allocations','entry_buckets','income_meta');
 ```
@@ -57,7 +58,7 @@ select count(*) from information_schema.tables where table_schema = 'public' and
 **6. Web.** Open the Vercel site, sign in → `/welcome` should load the app path ("Found your Salin data").
 
 **7. Phone sync check.** On the phone: add one expense and one income, sync. Then:
-- Dashboard → Logs → Postgres, search `WARNING` for the last 15 min: expect none from `trg_entry_bucket_upsert` / `trg_income_recognition`.
+- Dashboard → Logs → Postgres, search `WARNING` for the last 15 min: expect none from `trg_entry_bucket_upsert`, `trg_income_recognition` or `trg_adjustment_bucket`.
 - Phone shows both entries normally after a pull; web shows the income in Money in.
 
 ## Rollback
