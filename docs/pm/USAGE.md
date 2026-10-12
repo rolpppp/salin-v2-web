@@ -81,3 +81,6 @@ Running total of finished agents: ~4.54M reported, 25 agents.
 | ~21:35 | mobile-update-balances | sonnet | 22 (mobile, salin-v2) | 153,146 | — | 41 | 12.2 min |
 
 Running total of finished agents: ~4.86M reported, 27 agents.
+| ~22:00 | mobile-sync-push-fk | sonnet | sync 409 fix (salin-v2), 2 rounds | 113,884 | — | 30 | 6.9 min |
+
+Running total of finished agents: ~4.97M reported, 28 agents.
