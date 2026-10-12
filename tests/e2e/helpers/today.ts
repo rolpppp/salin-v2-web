@@ -126,7 +126,13 @@ export async function confirmAllAndSend(page: Page): Promise<void> {
   await expect(page.getByRole("heading", { level: 1, name: "Move the money" })).toBeVisible();
   const boxes = page.getByTestId("move-money-step").getByRole("checkbox");
   const n = await boxes.count();
-  for (let i = 0; i < n; i++) await boxes.nth(i).check({ force: true });
+  // Each tick is a server action (Next runs them one after another). Wait for each write to land so this setup helper doesn't depend
+  // on how fast a loaded machine drains that queue; two ticks in flight at once is covered by the MoveMoneyStep unit test.
+  for (let i = 0; i < n; i++) {
+    const saved = page.waitForResponse((r) => r.request().method() === "POST");
+    await page.getByTestId("transfer-row").nth(i).locator("b").click();
+    await saved;
+  }
   await expect(page.getByRole("heading", { level: 1, name: "Every peso has a home" })).toBeVisible();
 }
 

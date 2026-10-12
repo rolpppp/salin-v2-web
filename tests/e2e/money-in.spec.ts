@@ -55,7 +55,7 @@ test("Add income validates inline, writes a mobile-shaped inflow, then a picked 
   await expect(amount).toBeFocused();
 
   await amount.fill("5,000");
-  await page.getByLabel("Source").selectOption({ label: "Gift" });
+  await page.getByTestId("add-income-form").getByLabel("Source").selectOption({ label: "Gift" });
   await page.getByRole("button", { name: "Add to Money in" }).click();
 
   // the new income is in the queue, selected, with focus on its row

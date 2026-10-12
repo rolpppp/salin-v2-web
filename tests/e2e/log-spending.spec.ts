@@ -86,8 +86,9 @@ test("opens as a dialog with Amount focused, groups categories by bucket, and Es
   const dialog = page.getByRole("dialog", { name: "Log spending" });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByLabel("Amount")).toBeFocused();
-  await expect(dialog.getByRole("group", { name: "Living" }).getByRole("option", { name: "Lunch" })).toHaveCount(1);
-  await expect(dialog.getByRole("group", { name: "Fun money" }).getByRole("option", { name: "Movies" })).toHaveCount(1);
+  // A closed <select> flattens optgroups in the accessibility tree, so check the DOM grouping.
+  await expect(dialog.locator('optgroup[label="Living"] > option', { hasText: "Lunch" })).toHaveCount(1);
+  await expect(dialog.locator('optgroup[label="Fun money"] > option', { hasText: "Movies" })).toHaveCount(1);
   expect(await noHorizontalScroll(page)).toBe(true);
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();

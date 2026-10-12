@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { shortDate } from "../../lib/data/money-in-model";
 import { formatPeso } from "../../lib/money";
+import { TZ_COOKIE } from "../../lib/time";
 import { adminClient, createTestUser, eventsFor, type TestUser } from "./helpers/supabase";
 import { seedMoneyIn, signInAs } from "./helpers/money-in";
 import { addOthersPayday, confirmAllAndSend, seedSpending, seedToday, type TodayOptions, type TodaySeed } from "./helpers/today";
@@ -24,6 +25,9 @@ async function g9(page: Page, opts: TodayOptions = {}): Promise<{ user: TestUser
   await seedSpending(user.id, seed);
   await signInAs(page, user, "/money-in");
   await confirmAllAndSend(page);
+  // Pin the zone cookie so Today doesn't do its one-time zone refresh (a router.refresh that re-renders the page right after load,
+  // which would eat a keyboard focus the test just set). The refresh itself is TimezoneSync's own concern.
+  await page.context().addCookies([{ name: TZ_COOKIE, value: "Asia/Manila", url: new URL(page.url()).origin }]);
   await page.goto("/today");
   return { user, seed };
 }
@@ -89,7 +93,7 @@ test("Cover from Buffer: moves exactly the deficit, shows the flag, announces, w
 });
 
 test("a second tab can't over-cover: pressing Cover again after it was covered says nothing is below zero", async ({ page, context }) => {
-  await g9(page);
+  const { user } = await g9(page);
   const other = await context.newPage();
   await other.goto("/today");
   await page.getByRole("button", { name: "Cover from Buffer" }).click();
@@ -97,13 +101,15 @@ test("a second tab can't over-cover: pressing Cover again after it was covered s
   // the other tab still shows the old card; its action reads the balances on the server
   await other.getByRole("button", { name: "Cover from Buffer" }).click();
   await expect(other.getByTestId("cover-flag")).toHaveText("Living isn't below zero any more.");
-  const { data } = await adminClient().from("bucket_covers").select("id").is("deletedAt", null);
+  const { data } = await adminClient().from("bucket_covers").select("id").eq("user_id", user.id).is("deletedAt", null);
   expect((data ?? []).length).toBe(1);
 });
 
 test("bucket drawer: keyboard open, Close has focus, plan text and this month's slip, Escape closes and returns focus", async ({ page }) => {
   await g9(page);
   const slot = page.getByTestId("slot-living");
+  // A key press before React hydrates does nothing, so wait until the button has its React handlers.
+  await expect.poll(() => slot.evaluate((el) => Object.keys(el).some((k) => k.startsWith("__reactProps")))).toBe(true);
   await slot.focus();
   await page.keyboard.press("Enter");
   const drawer = page.getByRole("dialog", { name: "Living" });
@@ -234,6 +240,8 @@ test("under 720px the shelf scrolls inside its card and the page never does", as
   await g9(page);
   const vw = page.viewportSize()?.width ?? 1440;
   test.skip(vw > 720, "desktop layout");
+  // the page's styles stream in after load: an unstyled shelf has no width yet
+  await expect(page.getByTestId("shelf-scroll")).toBeVisible();
   const { scroll, client } = await page.evaluate(() => {
     const el = document.querySelector('[data-testid="shelf-scroll"]') as HTMLElement;
     return { scroll: el.scrollWidth, client: el.clientWidth };

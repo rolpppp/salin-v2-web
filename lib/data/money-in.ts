@@ -119,6 +119,8 @@ export async function getMoneyInData(client: Client, opts: { nowMs: number; time
   fail(cycleRes.error);
 
   const buckets = bucketRows;
+  // Split lines have no order of their own (ordered by random id above): show them in bucket order so the job text is stable.
+  const bucketPos = new Map(bucketRows.map((b, i) => [b.id, i]));
   const sources: MiSource[] = sourceRows.map((s) => ({
     id: s.id,
     name: s.name,
@@ -128,7 +130,10 @@ export async function getMoneyInData(client: Client, opts: { nowMs: number; time
     landsInAccountId: s.landsInAccountId,
     categoryId: s.categoryId,
     isArchived: s.isArchived,
-    splitLines: splitRows.filter((l) => l.sourceId === s.id).map((l): PercentLine => ({ bucketId: l.bucketId, bp: l.percentBp })),
+    splitLines: splitRows
+      .filter((l) => l.sourceId === s.id)
+      .map((l): PercentLine => ({ bucketId: l.bucketId, bp: l.percentBp }))
+      .sort((a, b) => (bucketPos.get(a.bucketId) ?? Infinity) - (bucketPos.get(b.bucketId) ?? Infinity)),
   }));
 
   // ---- plan context (mirrors engine_emergency_bucket / engine_rent_bucket / active_plan)

@@ -103,6 +103,8 @@
 }
 .move {
   position: relative;
+  /* Scrolled or focused into view, a row must clear the 68px sticky header (it covered the first row's checkbox on phones). */
+  scroll-margin-top: 88px;
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) auto auto;
   gap: 12px;
@@ -117,6 +119,10 @@
 }
 .rowLabel {
   display: contents;
+}
+/* The label has no box of its own (display: contents), so its children carry the scroll margin. */
+.rowLabel > * {
+  scroll-margin-top: 88px;
 }
 .moveInput {
   position: absolute;

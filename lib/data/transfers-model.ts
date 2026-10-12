@@ -98,6 +98,11 @@ export function applyTick(plan: readonly MiTransferRow[], key: string, sent: num
   });
 }
 
+/** Transfers still to send, counting what the person has asked for on rows whose requests are in flight or just settled. */
+export function transfersLeft(transfers: ReadonlyArray<{ key: string; checked: boolean }>, intent: ReadonlyMap<string, boolean>): number {
+  return transfers.filter((t) => !(intent.get(t.key) ?? t.checked)).length;
+}
+
 /** Announcement after a tick or untick: "Sent. 2 to go." */
 export function tickAnnouncement(ticked: boolean, left: number): string {
   if (!ticked) return left === 1 ? "Unticked. 1 transfer to send." : `Unticked. ${left} transfers to send.`;

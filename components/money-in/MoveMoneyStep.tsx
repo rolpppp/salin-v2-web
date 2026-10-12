@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useOptimistic, useRef, useState, useTransition } from "react";
+import { useEffect, useId, useMemo, useOptimistic, useRef, useState, useTransition } from "react";
 import { ButtonLink, Button } from "@/components/button/Button";
 import { Card } from "@/components/card/Card";
 import { ArrowRightIcon, CheckIcon } from "@/components/icons";
 import { useAnnounce } from "@/components/live-region/LiveRegion";
 import { tickTransferAction, untickTransferAction } from "@/lib/actions/transfers";
 import type { MiAccount, MiBucket, MiDone, MiTransferRow, MoneyInPhase } from "@/lib/data/money-in-model";
-import { TICK_FAILED, UNTICK_FAILED, applyTick, buildMoveModel, completionLines, sentText, tickAnnouncement, type TransferRowView } from "@/lib/data/transfers-model";
+import { TICK_FAILED, UNTICK_FAILED, applyTick, buildMoveModel, completionLines, transfersLeft, sentText, tickAnnouncement, type TransferRowView } from "@/lib/data/transfers-model";
 import { formatPeso } from "@/lib/money";
 import styles from "./money-in.module.css";
 import { StepHead } from "./StepHead";
@@ -40,7 +40,10 @@ export function MoveMoneyStep({ phase, confirmed, cycle, transferPlan, accounts,
   const announce = useAnnounce();
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
-  const busy = useRef(false);
+  const baseId = useId();
+  // Rows with a request in flight (different pairs are independent), and what the person last asked for per row.
+  const inFlight = useRef(new Set<string>());
+  const intent = useRef(new Map<string, boolean>());
   const [plan, setOptimistic] = useOptimistic(transferPlan, (rows: ReadonlyArray<MiTransferRow>, a: { key: string; sent: number }) => applyTick(rows, a.key, a.sent));
   const model = useMemo(() => buildMoveModel(plan, accounts, buckets), [plan, accounts, buckets]);
 
@@ -54,28 +57,36 @@ export function MoveMoneyStep({ phase, confirmed, cycle, transferPlan, accounts,
     document.getElementById(MOVE_MONEY_FOCUS_ID)?.focus();
   }, [celebrate, announce]);
 
+  // Once fresh server data arrives, rows that have settled no longer need an override.
+  useEffect(() => {
+    for (const k of [...intent.current.keys()]) if (!inFlight.current.has(k)) intent.current.delete(k);
+  }, [transferPlan]);
+
   function run(row: TransferRowView, tick: boolean) {
-    if (busy.current) return;
-    busy.current = true;
+    if (inFlight.current.has(row.key)) return;
+    inFlight.current.add(row.key);
+    intent.current.set(row.key, tick);
     setError(null);
     startTransition(async () => {
       setOptimistic({ key: row.key, sent: tick ? row.amount : 0 });
       try {
         const r = tick ? await tickTransferAction({ from: row.from, to: row.to, amount: row.amount }) : await untickTransferAction({ from: row.from, to: row.to });
         if (!r.ok) {
+          intent.current.delete(row.key);
           setError(r.error);
           announce(r.error);
           return;
         }
         // "Already ticked / unticked" is the state the person asked for: not an error.
-        const left = model.transfers.filter((t) => (t.key === row.key ? !tick : !t.checked)).length;
+        const left = transfersLeft(model.transfers, intent.current);
         announce(tickAnnouncement(tick, left));
       } catch {
+        intent.current.delete(row.key);
         const msg = tick ? TICK_FAILED : UNTICK_FAILED;
         setError(msg);
         announce(msg);
       } finally {
-        busy.current = false;
+        inFlight.current.delete(row.key);
       }
     });
   }
@@ -104,6 +115,7 @@ export function MoveMoneyStep({ phase, confirmed, cycle, transferPlan, accounts,
     );
   }
 
+  const textId = (i: number) => `${baseId}-t${i}`;
   const locked = confirmed.length === 0;
   return (
     <Card as="section" aria-labelledby="money-in-s2" aria-disabled={locked ? true : undefined} className={styles.stepMove} data-testid="move-money-step" data-phase={phase} data-cycle={cycle?.id}>
@@ -129,7 +141,7 @@ export function MoveMoneyStep({ phase, confirmed, cycle, transferPlan, accounts,
             </li>
           ))}
           {model.transfers.map((t, i) => {
-            const text = `${t.key}-t`;
+            const text = textId(i);
             return (
               <li key={t.key} className={`${styles.move}${t.checked ? ` ${styles.isDone}` : ""}`} data-testid="transfer-row" data-state={t.checked ? "sent" : t.partial ? "partial" : t.oversent ? "oversent" : "unsent"}>
                 <label className={styles.rowLabel}>

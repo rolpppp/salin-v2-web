@@ -18,14 +18,9 @@ import {
   type MiSource,
   type MoneyInData,
 } from "@/lib/data/money-in-model";
-import { activePlan, moneyErrorMessage, parseMoney, type MoneyField } from "@/lib/money";
+import { activePlan } from "@/lib/money";
 import styles from "./money-in.module.css";
 import { StepHead } from "./StepHead";
-
-const parseFor = (field: MoneyField) => (raw: string) => {
-  const r = parseMoney(raw);
-  return r.ok ? r : { ok: false as const, error: moneyErrorMessage(field, r.error) };
-};
 
 export type AddIncomeFormProps = {
   data: MoneyInData;
@@ -131,7 +126,6 @@ export function AddIncomeForm({ data, onCancel, onAdded }: AddIncomeFormProps) {
               autoFocus
               value={amount}
               error={errors.amount}
-              parse={parseFor("received")}
               onValueChange={(raw) => {
                 setAmount(raw);
                 clearError("amount");
@@ -189,7 +183,6 @@ export function AddIncomeForm({ data, onCancel, onAdded }: AddIncomeFormProps) {
                   name="aud"
                   value={aud}
                   error={errors.aud}
-                  parse={parseFor("aud")}
                   onValueChange={(raw) => {
                     setAud(raw);
                     clearError("aud");

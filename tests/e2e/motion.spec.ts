@@ -49,6 +49,8 @@ test("Money in's 'See your buckets grow' goes to /today?grow=confirm, plays once
   await page.reload();
   await expect(page).toHaveURL(/\/today$/);
   await expect(page.locator("[data-grow]")).toHaveCount(0);
+  // wait for the page's styles (they stream in after load), or the unstyled shelf reads as a wide page
+  await expect(page.getByTestId("shelf-scroll")).toBeVisible();
   expect(await noHorizontalScroll(page)).toBe(true);
   expect(errors).toEqual([]);
 });

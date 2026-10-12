@@ -16,9 +16,10 @@ async function setup(page: Page): Promise<{ user: TestUser; seed: MoneyInSeed }>
 }
 
 const box = (page: Page, name: string) => page.getByRole("checkbox", { name });
-// The real checkbox is visually hidden inside its row; clicking the row's label text is what a person does.
+// The real checkbox is a 1px input; click the row's title text, as a person does. (A forced click on the 1px input can miss while the
+// page is still scrolling the first row into view on a phone, and the row's <label> is display: contents so it can't be scrolled to.)
 async function tick(page: Page, name: string) {
-  await box(page, name).check({ force: true });
+  await page.getByTestId("transfer-row").filter({ has: box(page, name) }).locator("b").click();
   await expect(box(page, name)).toBeChecked();
 }
 
@@ -75,6 +76,9 @@ test("G7: confirming G2 and G5 together nets the pair, and ticking writes mobile
     }
   }
 
+  // the last tick closes the cycle: wait for the completion card so every write has landed before reading the database
+  await expect(page.getByTestId("completion-card")).toBeVisible();
+
   // mobile shape: one transfers row + `_out` (outflow, from) and `_in` (inflow, to) legs, origin transfer, synced
   const live = await liveTransfers(user.id);
   expect(live).toHaveLength(5);
@@ -106,6 +110,8 @@ test("G7: confirming G2 and G5 together nets the pair, and ticking writes mobile
 
   await page.getByRole("link", { name: /See your buckets grow/ }).click();
   await page.waitForURL(/\/today(\?|$)/);
+  // Today's styles stream in after load; measure the page only once the shelf has its width
+  await expect(page.getByTestId("shelf-scroll")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   expect(errors).toEqual([]);
 });
@@ -130,7 +136,8 @@ test("G8: with MariBank -> GCash or Maya already sent, confirming G5 later does 
   const { user, seed } = await setup(page);
 
   // confirm G2 alone (the Work row), then send the Fun money transfer (₱2,300.00)
-  await page.getByRole("button", { name: /Work/ }).click();
+  // the oldest row (Work) is open by default; clicking its header would collapse it
+  await expect(page.getByRole("button", { name: /Work/ })).toHaveAttribute("aria-expanded", "true");
   await page.getByRole("button", { name: "Confirm just this one" }).click();
   const sendFun = `Send ${formatPeso(230_000)} to GCash or Maya`;
   await expect(box(page, sendFun)).toBeVisible();

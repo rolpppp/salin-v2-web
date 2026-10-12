@@ -85,6 +85,22 @@ describe("Step 2: Move the money", () => {
     await act(async () => finish({ ok: true, already: false }));
   });
 
+  it("a second tick on another row while the first is in flight is not dropped; out-of-order resolves keep the count right", async () => {
+    const done: Array<(v: unknown) => void> = [];
+    actions.tickTransferAction.mockImplementation(() => new Promise((r) => done.push(r)));
+    step();
+    const boxes = screen.getAllByRole("checkbox");
+    await userEvent.click(boxes[0]);
+    await userEvent.click(boxes[1]);
+    expect(actions.tickTransferAction).toHaveBeenCalledTimes(2);
+    expect(boxes[0]).toBeChecked();
+    expect(boxes[1]).toBeChecked();
+    expect(screen.getByTestId("sent-count")).toHaveTextContent("2 of 5 sent");
+    await act(async () => done[1]({ ok: true, already: false }));
+    await act(async () => done[0]({ ok: true, already: false }));
+    await waitFor(() => expect(screen.getByTestId("live-region")).toHaveTextContent("Sent. 3 to go."));
+  });
+
   it("a failed tick restores the box, says why at the control and announces no success", async () => {
     actions.tickTransferAction.mockResolvedValue({ ok: false, error: "Couldn't save that transfer. Nothing was changed. Check your connection and try again." });
     step();
