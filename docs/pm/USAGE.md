@@ -89,3 +89,7 @@ Running total of finished agents: ~4.97M reported, 28 agents.
 | ~22:40 | web-speed | sonnet | 23 | 149,490 | — | 62 | 8.1 min |
 
 Running total of finished agents: ~5.32M reported, 31 agents. E2E with local realtime: 422 pass / 4 skip / 2 known-flaky.
+| ~23:00 | plans2-sql | sonnet | 26 (SQL + engine) | 261,222 | — | 84 | 13.9 min |
+| ~23:15 | plans2-ui | sonnet | 26 (UI + integration, 2 rounds) | 290,559 | — | 131 | 20.7 min |
+
+Running total of finished agents: ~5.87M reported, 33 agents. In flight: ticket 27 (AUD income), onboarding flake.
