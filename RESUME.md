@@ -1,6 +1,6 @@
 # Resume: Salin Web build
 
-Last paused Oct 12, 2026: Phase 0 + Phase 1 build complete and verified (e2e green on all 4 projects). Remaining work is owner-side. Start a new session by reading this file, then `docs/pm/BOARD.md`.
+Last paused Oct 12, 2026: Phase 0 + Phase 1 build complete and verified (e2e green on all 4 projects). Remaining work is owner-side. Start a new session by reading this file, then `docs/pm/BOARD.md` (its "Resume here" has the latest state: tickets 21–27, live rollout, owner to-dos).
 
 ## How we work
 
