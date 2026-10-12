@@ -84,3 +84,8 @@ Running total of finished agents: ~4.86M reported, 27 agents.
 | ~22:00 | mobile-sync-push-fk | sonnet | sync 409 fix (salin-v2), 2 rounds | 113,884 | — | 30 | 6.9 min |
 
 Running total of finished agents: ~4.97M reported, 28 agents.
+| ~22:30 | web-realtime | sonnet | 24 | 79,791 | — | 23 | 2.7 min |
+| ~22:35 | mobile-auto-sync | sonnet | 25 (salin-v2) | 116,137 | — | 28 | 6.5 min |
+| ~22:40 | web-speed | sonnet | 23 | 149,490 | — | 62 | 8.1 min |
+
+Running total of finished agents: ~5.32M reported, 31 agents. E2E with local realtime: 422 pass / 4 skip / 2 known-flaky.
