@@ -8,7 +8,7 @@ import { initCategories } from "@/lib/onboarding/appPath";
 import type { OnboardingDraft } from "@/lib/onboarding/draft";
 import { appDraft, ctx, facts as phoneFacts, plan } from "@/lib/onboarding/testkit";
 
-const noEnv = { userId: "u", refreshPhone: async () => true, track: vi.fn(), switchToWeb: vi.fn(), finishLater: vi.fn(), finishing: false };
+const noEnv = { userId: "u", refreshPhone: async () => true, track: vi.fn(), switchToWeb: vi.fn(), finishLater: vi.fn(), finish: async () => {}, finishing: false };
 
 /** Holds the draft like the shell does, so a change re-renders the step. */
 function Harness({ initial, onDraft }: { initial: OnboardingDraft; onDraft?: (d: OnboardingDraft) => void }) {

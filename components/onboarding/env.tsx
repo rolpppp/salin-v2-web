@@ -2,6 +2,7 @@
 
 import { createContext, useContext } from "react";
 import type { OnboardingEvent } from "@/lib/actions/onboarding";
+import type { OnboardingDraft } from "@/lib/onboarding/draft";
 import type { PhoneFacts } from "@/lib/onboarding/facts";
 
 /**
@@ -19,6 +20,8 @@ export interface OnboardingEnv {
   switchToWeb: () => void;
   /** "Do it later": record the choice, finish, go to Today. */
   finishLater: () => void;
+  /** Finish with this draft (flush, then the one SQL transaction). "done" shows the Done card in place; "today" opens Today. */
+  finish: (final: OnboardingDraft, after: "done" | "today") => Promise<void>;
   finishing: boolean;
 }
 

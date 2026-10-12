@@ -122,7 +122,7 @@ test("app path: Found your Salin data, Income, shared steps, Categories, then Fi
   expect(completed.map((e) => (e.props as { step: string }).step).slice(0, 2)).toEqual(["app", "income"]);
 });
 
-test("First pay: Give it a job stops at the placeholder; Do it later finishes and opens Today", async ({ page }) => {
+test("First pay: Give it a job opens the split (nothing finished); Do it later asks for a reminder, then finishes and opens Today", async ({ page }) => {
   const user = await createTestUser("ob-first");
   const phone = await seedPhone(user);
   await signIn(page, user, "/welcome/app");
@@ -132,13 +132,17 @@ test("First pay: Give it a job stops at the placeholder; Do it later finishes an
   await expect(heading(page)).toHaveText(`Your ${shortDate(phone.latestIso)} pay is waiting for a job`);
 
   await page.getByRole("button", { name: "Give it a job" }).click();
-  await expect(page.getByText(/Split, move, done come next/)).toBeVisible();
-  await expect(page.getByRole("group", { name: "Plan slip" })).toContainText("PLAN SET");
+  await expect(heading(page)).toHaveText("₱25,000.00 from Salary, split by your plan");
+  await expect(page.getByRole("button", { name: "Confirm split" })).toBeVisible();
+  await expect(page.getByRole("group", { name: "Plan slip" })).not.toContainText("PLAN SET");
   await page.getByRole("button", { name: "Back" }).click();
   await expect(page.getByRole("button", { name: "Do it later" })).toBeVisible();
 
   // Needs finish_onboarding (ticket 16 SQL): onboarding writes nothing to plan tables until here.
   await page.getByRole("button", { name: "Do it later" }).click();
+  await expect(heading(page)).toHaveText("That's fine. Payday is the moment.");
+  await expect(page.getByText(/Your pay waits in Money in/)).toBeVisible();
+  await page.getByRole("button", { name: "Open Today" }).click();
   await page.waitForURL("**/today");
   const { data } = await adminClient().from("user_profiles").select("onboardedAt").eq("user_id", user.id).single();
   expect(data?.onboardedAt).not.toBeNull();

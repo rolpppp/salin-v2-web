@@ -1,0 +1,357 @@
+/* First pay (SPEC §7.5): entry form, split bars, the transfer checklist, the later card and the Done card. Tokens only. */
+.note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border-radius: var(--r-control);
+  padding: 12px 14px;
+}
+.row2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.fld {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.fldLabel {
+  font: 650 13.5px/1.2 var(--sans);
+  color: var(--ink);
+}
+.date {
+  font: 500 15px/1.2 var(--sans);
+  color: var(--ink);
+  background: var(--surface);
+  border: 0;
+  box-shadow: inset 0 0 0 1.5px var(--line-2);
+  border-radius: var(--r-field);
+  padding: 11px 12px;
+  width: 100%;
+  min-width: 0;
+}
+.date:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.date[aria-invalid="true"] {
+  box-shadow: inset 0 0 0 2px var(--warm);
+}
+
+/* ---- split bars */
+.bars {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.barRow {
+  display: grid;
+  grid-template-columns: minmax(96px, 150px) minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+.barName {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font: 600 14px/1.2 var(--sans);
+  min-width: 0;
+}
+.barName i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--c);
+  flex: none;
+}
+.track {
+  height: 14px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.track i {
+  display: block;
+  height: 100%;
+  width: var(--w);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--c) 70%, var(--surface));
+  transform-origin: left;
+  animation: grow 520ms var(--ease-out) var(--d) both;
+}
+@keyframes grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.barValue {
+  font: 650 14.5px/1 var(--sans);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* ---- move the money */
+.moves {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.move {
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  transition: background-color 220ms ease;
+}
+.move:has(.moveInput) {
+  cursor: pointer;
+}
+.rowLabel {
+  display: contents;
+}
+.moveInput {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.box {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1.5px var(--line-2);
+  display: grid;
+  place-items: center;
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+.box svg {
+  width: 15px;
+  height: 15px;
+  color: var(--done-ink);
+}
+.box svg path {
+  stroke-dasharray: 16;
+  stroke-dashoffset: 16;
+  transition: stroke-dashoffset 260ms var(--ease-out);
+}
+.moveInput:checked ~ .box,
+.stays .box {
+  background: var(--done);
+  box-shadow: none;
+}
+.moveInput:checked ~ .box svg path,
+.stays .box svg path {
+  stroke-dashoffset: 0;
+}
+.moveInput:focus-visible ~ .box {
+  outline: 2.5px solid var(--accent);
+  outline-offset: 2px;
+}
+.isDone,
+.stays {
+  background: var(--good-soft);
+}
+.moveT {
+  font-size: 14.5px;
+  min-width: 0;
+}
+.moveT b {
+  font-weight: 650;
+}
+.moveT small {
+  display: block;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.moveV {
+  font: 650 15px/1 var(--sans);
+  font-variant-numeric: tabular-nums;
+  grid-column: 4;
+}
+.stamp {
+  grid-column: 3;
+  font: 700 11px/1 var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 2px solid currentColor;
+  border-radius: 6px;
+  padding: 4px 6px;
+  color: var(--good);
+  transform: rotate(-6deg);
+}
+.count {
+  margin: 0;
+  font: 650 13.5px/1 var(--sans);
+  color: var(--ink-2);
+}
+
+/* ---- later */
+.fs {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+}
+.fs legend {
+  font: 650 14.5px/1.3 var(--sans);
+  padding: 0;
+  margin-bottom: 10px;
+}
+.chips {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.chip {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+}
+.chip input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.chip span {
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1.5px var(--line-2);
+  font: 600 14px/1.2 var(--sans);
+}
+.chip input:checked + span {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.chip input:focus-visible + span {
+  outline: 2.5px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---- done card (the root carries data-burst="onboarding"; the burst itself is styled elsewhere) */
+.peak {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  gap: 14px;
+  animation: peak-in 320ms var(--ease-out) both;
+}
+.peak h2 {
+  font: 700 24px/1.2 var(--sans);
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: var(--good);
+}
+.peak h2:focus-visible {
+  outline: 2.5px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+.peak ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.peak li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 14.5px;
+}
+.ck {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--done);
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.ck svg {
+  width: 12px;
+  height: 12px;
+  color: var(--done-ink);
+}
+.ckSun {
+  background: var(--sun);
+}
+.ckSun svg {
+  color: var(--ink);
+}
+.row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+@keyframes peak-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .row2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .barRow {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .track {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .move {
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+  }
+  .stamp {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: start;
+  }
+  .moveV {
+    grid-column: 3;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .track i,
+  .peak {
+    animation: none;
+  }
+  .box,
+  .box svg path,
+  .move {
+    transition: none;
+  }
+}

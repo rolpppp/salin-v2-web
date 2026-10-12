@@ -10,6 +10,7 @@ import { finishOnboarding, loadPhoneData, saveDraft, trackOnboarding, type Onboa
 import { createAutosaver } from "@/lib/onboarding/autosave";
 import { emptyDraft, type OnboardingDraft, type StepId } from "@/lib/onboarding/draft";
 import type { PhoneFacts } from "@/lib/onboarding/facts";
+import { completedProps, finalDraft, parseSummary, type FinishSummary } from "@/lib/onboarding/first-pay";
 import { enterPatch, firstBlockedBefore, moduleFor, validateStep } from "@/lib/onboarding/registry";
 import { nextStepId, prevStepId, resolveRoute, stepHref, stepParamFrom, stepsFor, type RouteView } from "@/lib/onboarding/route";
 import type { StepContext, StepError } from "@/lib/onboarding/step";
@@ -17,6 +18,7 @@ import { undoSkipOnBack } from "@/lib/onboarding/web-path";
 import { nowMs } from "@/lib/time";
 import { OnboardingEnvContext, type OnboardingEnv } from "./env";
 import styles from "./onboarding.module.css";
+import { DoneCard } from "./first-pay/DoneCard";
 import { PlanSlip } from "./PlanSlip";
 import { Rail } from "./Rail";
 import { Welcome } from "./Welcome";
@@ -62,6 +64,10 @@ export function OnboardingFlow({ initialDraft, initialCtx, initialFacts, autoDet
   const [error, setError] = useState<StepError | null>(null);
   const [saveFailed, setSaveFailed] = useState(false);
   const [finishing, setFinishing] = useState(false);
+  /** Set once Finish succeeded with "show Done": the Done card replaces the step card in place. */
+  const [done, setDone] = useState<{ draft: OnboardingDraft; summary: FinishSummary | null } | null>(null);
+  const startedAt = useRef(nowMs());
+  const completedFired = useRef(false);
   const [entered, setEntered] = useState<{ id: string | null; facts: PhoneFacts | null }>({ id: null, facts: initialFacts });
 
   // ------------------------------------------------------------ route -> view
@@ -196,9 +202,10 @@ export function OnboardingFlow({ initialDraft, initialCtx, initialFacts, autoDet
     return run;
   }, []);
 
-  /** Save what's on screen, then run the one SQL transaction, then go to Today. */
+  /** Save what's on screen, then run the one SQL transaction, then show Done or go to Today. */
   const finishNow = useCallback(
-    async (final: OnboardingDraft) => {
+    async (given: OnboardingDraft, after: "done" | "today" = "today") => {
+      const final = finalDraft(given);
       setFinishing(true);
       setError(null);
       saver.schedule(final);
@@ -216,10 +223,20 @@ export function OnboardingFlow({ initialDraft, initialCtx, initialFacts, autoDet
         focusField("ob-primary");
         return;
       }
+      if (!final.planOnly && !completedFired.current) {
+        completedFired.current = true;
+        track({ event: "onboarding_completed", props: completedProps(final, (nowMs() - startedAt.current) / 60_000) });
+      }
+      if (after === "done") {
+        setFinishing(false);
+        setDone({ draft: final, summary: parseSummary(r.value?.summary ?? null) });
+        announce("Every peso has a home.");
+        return;
+      }
       announce("Your plan is set. Opening Today.");
       router.push("/today");
     },
-    [saver, announce, router],
+    [saver, announce, router, track],
   );
 
   const finishLater = useCallback(() => {
@@ -228,7 +245,7 @@ export function OnboardingFlow({ initialDraft, initialCtx, initialFacts, autoDet
     void finishNow(final);
   }, [draft, finishNow]);
 
-  const env = useMemo<OnboardingEnv>(() => ({ userId, facts, refreshPhone, track, switchToWeb, finishLater, finishing }), [userId, facts, refreshPhone, track, switchToWeb, finishLater, finishing]);
+  const env = useMemo<OnboardingEnv>(() => ({ userId, facts, refreshPhone, track, switchToWeb, finishLater, finish: finishNow, finishing }), [userId, facts, refreshPhone, track, switchToWeb, finishLater, finishNow, finishing]);
 
   const steps = stepsFor(draft);
   const index = stepId ? steps.indexOf(stepId) : -1;
@@ -244,10 +261,18 @@ export function OnboardingFlow({ initialDraft, initialCtx, initialFacts, autoDet
       return;
     }
     setError(null);
-    track({ event: "onboarding_step_completed", props: { path: draft.path ?? ctx.path, step: stepId, seconds_on_step: Math.max(0, Math.round((nowMs() - stepStartedAt.current) / 1000)) } });
     const adv = mod.onAdvance?.(draft) ?? null;
     const next = adv ? { ...draft, ...adv } : draft;
     if (adv) update(adv);
+    // A step with stages (First pay) counts as completed when its last stage finishes onboarding.
+    const finishAfter = mod.finishOn?.(next) ?? null;
+    if (!mod.finishOn || finishAfter) {
+      track({ event: "onboarding_step_completed", props: { path: draft.path ?? ctx.path, step: stepId, seconds_on_step: Math.max(0, Math.round((nowMs() - stepStartedAt.current) / 1000)) } });
+    }
+    if (finishAfter) {
+      await finishNow(next, finishAfter);
+      return;
+    }
     const nextId = nextStepId(steps, stepId);
     if (nextId) goTo(stepHref(nextId));
     else if (draft.planOnly) await finishNow(next);
@@ -286,13 +311,16 @@ export function OnboardingFlow({ initialDraft, initialCtx, initialFacts, autoDet
   const primary = mod.primaryLabel?.(draft) ?? (isLast && draft.planOnly ? "Save my plan" : "Continue");
   const Extra = mod.Extra;
   const Body = mod.Body;
-  const planSet = stepId === "first" && draft.firstPay.choice !== null;
+  const planSet = done !== null;
 
   return (
     <OnboardingEnvContext.Provider value={env}>
       <Rail steps={modulesLabels(steps, draft.path)} currentIndex={index} showSignedIn={!draft.planOnly} />
       <div className={styles.grid}>
         <div>
+          {done ? (
+            <DoneCard draft={done.draft} summary={done.summary} />
+          ) : (
           <form className={styles.card} onSubmit={onSubmit} noValidate aria-labelledby="ob-question">
             <header className={styles.head}>
               <p className={styles.kicker}>{kicker}</p>
@@ -323,6 +351,7 @@ export function OnboardingFlow({ initialDraft, initialCtx, initialFacts, autoDet
               </Button>
             </div>
           </form>
+          )}
         </div>
         <aside className={styles.side} aria-label="Your plan so far">
           <PlanSlip draft={draft} ctx={ctx} done={planSet} />

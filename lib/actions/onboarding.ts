@@ -94,6 +94,16 @@ const eventSchema = z.discriminatedUnion("event", [
   z.object({ event: z.literal("onboarding_step_completed"), props: z.object({ path: z.enum(["web", "app"]), step: z.string().max(20), seconds_on_step: z.number().int().min(0).max(86_400) }) }),
   z.object({ event: z.literal("sync_prompt_shown"), props: z.object({ seconds_waited: z.number().int().min(0).max(86_400) }) }),
   z.object({ event: z.literal("sync_connected"), props: z.object({ seconds_waited: z.number().int().min(0).max(86_400) }) }),
+  z.object({
+    event: z.literal("onboarding_completed"),
+    props: z.object({
+      path: z.enum(["web", "app"]),
+      plan_mode: z.string().max(20),
+      first_pay: z.enum(["confirmed", "later"]),
+      transfers_ticked: z.number().int().min(0).max(20),
+      minutes: z.number().int().min(0).max(100_000),
+    }),
+  }),
 ]);
 
 export type OnboardingEvent = z.infer<typeof eventSchema>;

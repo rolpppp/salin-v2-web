@@ -391,35 +391,84 @@ describe("app path to First pay", () => {
     expect(screen.getByRole("button", { name: "Give it a job" })).toBeInTheDocument();
   });
 
-  it("Give it a job records the choice and stops at the placeholder for ticket 18", async () => {
+  it("Give it a job opens the split stage: the choice is staged, nothing is finished, Back returns to the question", async () => {
     await toFirstPay();
     await userEvent.click(screen.getByRole("button", { name: "Give it a job" }));
-    expect(await screen.findByText(/Split, move, done come next/)).toBeInTheDocument();
-    expect(screen.getByRole("group", { name: "Plan slip" })).toHaveTextContent("PLAN SET");
-    await waitFor(() => expect(lastSaved().firstPay).toMatchObject({ choice: "yes", entryId: "sal-oct", amountMinor: 2_500_000, date: "2026-10-07" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "₱25,000.00 from Salary, split by your plan" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Confirm split" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Plan slip" })).not.toHaveTextContent("PLAN SET");
+    await waitFor(() => expect(lastSaved().firstPay).toMatchObject({ choice: "yes", entryId: "sal-oct", amountMinor: 2_500_000, date: "2026-10-07", splitConfirmed: false }));
     expect(actions.finishOnboarding).not.toHaveBeenCalled();
-    // Back undoes the choice and returns to the question.
     await userEvent.click(screen.getByRole("button", { name: "Back" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Your Oct 7 pay is waiting for a job" })).toBeInTheDocument();
   });
 
-  it("Do it later saves the choice, finishes, and opens Today", async () => {
+  it("split, confirm, move: ticking every transfer finishes and shows the Done card in place", async () => {
+    actions.finishOnboarding.mockResolvedValue({
+      ok: true,
+      value: { summary: { splitMinor: 2_500_000, splitBucketsCount: 6, transfersCount: 2, transfersTicked: 2, safeToSpendMinor: 1_150_000, emergencyLeftMinor: 625_000, spendingBeforeMinor: 50_000 } },
+    });
+    await toFirstPay();
+    await userEvent.click(screen.getByRole("button", { name: "Give it a job" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Confirm split" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Now move the money" })).toBeInTheDocument();
+    expect(actions.finishOnboarding).not.toHaveBeenCalled(); // confirming is staged
+    const boxes = screen.getAllByRole("checkbox");
+    expect(boxes.length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "Finish" })).toBeDisabled();
+    expect(screen.getByText(`0 of ${boxes.length} sent`)).toBeInTheDocument();
+    await waitFor(() => expect(boxes[0]).toHaveFocus());
+    for (const box of boxes) await userEvent.click(box);
+    const card = await screen.findByTestId("onboarding-done");
+    expect(card).toHaveAttribute("data-burst", "onboarding");
+    expect(within(card).getByRole("heading", { name: "Every peso has a home." })).toHaveFocus();
+    expect(card).toHaveTextContent("Safe to spend until");
+    expect(card).toHaveTextContent("₱11,500.00, after what you've already spent");
+    expect(within(card).getByRole("link", { name: /Open Today/ })).toHaveAttribute("href", "/today?grow=onboarding");
+    expect(screen.getByRole("group", { name: "Plan slip" })).toHaveTextContent("PLAN SET");
+    expect(nav.push).not.toHaveBeenCalledWith("/today");
+    expect(lastSaved().firstPay).toMatchObject({ choice: "yes", splitConfirmed: true });
+    expect(lastSaved().firstPay.ticked).toHaveLength(boxes.length);
+    expect(actions.trackOnboarding).toHaveBeenCalledWith({ event: "onboarding_completed", props: expect.objectContaining({ path: "app", first_pay: "confirmed", transfers_ticked: boxes.length }) });
+    expect(actions.trackOnboarding.mock.calls.filter(([e]) => e.event === "onboarding_completed")).toHaveLength(1);
+  });
+
+  it("I'll send them later finishes with the transfers left open and goes to Today", async () => {
+    actions.finishOnboarding.mockResolvedValue({ ok: true, value: { summary: null } });
+    await toFirstPay();
+    await userEvent.click(screen.getByRole("button", { name: "Give it a job" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Confirm split" }));
+    await userEvent.click(await screen.findByRole("button", { name: "I'll send them later" }));
+    await waitFor(() => expect(nav.push).toHaveBeenCalledWith("/today"));
+    expect(lastSaved().firstPay).toMatchObject({ choice: "yes", splitConfirmed: true, ticked: [] });
+    expect(screen.queryByTestId("onboarding-done")).not.toBeInTheDocument();
+  });
+
+  it("Do it later shows the reminder choice; Open Today saves the choice, finishes, and opens Today", async () => {
     actions.finishOnboarding.mockResolvedValue({ ok: true, value: { summary: null } });
     await toFirstPay();
     await userEvent.click(screen.getByRole("button", { name: "Do it later" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "That's fine. Payday is the moment." })).toBeInTheDocument();
+    expect(screen.getByText(/Your pay waits in Money in/)).toBeInTheDocument();
+    expect(actions.finishOnboarding).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole("radio", { name: "No reminder" }));
+    await userEvent.click(screen.getByRole("button", { name: "Open Today" }));
     await waitFor(() => expect(nav.push).toHaveBeenCalledWith("/today"));
-    // The stored draft the SQL reads has the choice, and it was saved before finishing was called.
-    expect(lastSaved().firstPay.choice).toBe("later");
+    // The stored draft the SQL reads has the choice and reminder, and it was saved before finishing was called.
+    expect(lastSaved().firstPay).toMatchObject({ choice: "later", reminder: "none" });
     expect(actions.saveDraft.mock.invocationCallOrder.at(-1)!).toBeLessThan(actions.finishOnboarding.mock.invocationCallOrder[0]!);
+    expect(actions.trackOnboarding).toHaveBeenCalledWith({ event: "onboarding_completed", props: expect.objectContaining({ first_pay: "later", transfers_ticked: 0 }) });
   });
 
   it("if Finish fails the message shows above the buttons and the person stays on the step", async () => {
     actions.finishOnboarding.mockResolvedValue({ ok: false, error: "Pick one main pay." });
     await toFirstPay();
     await userEvent.click(screen.getByRole("button", { name: "Do it later" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Open Today" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Pick one main pay.");
     expect(nav.push).not.toHaveBeenCalledWith("/today");
-    expect(screen.getByRole("button", { name: "Give it a job" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open Today" })).toBeInTheDocument();
+    expect(actions.trackOnboarding).not.toHaveBeenCalledWith(expect.objectContaining({ event: "onboarding_completed" }));
   });
 });
 

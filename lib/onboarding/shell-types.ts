@@ -18,6 +18,8 @@ export interface ShellStepModule extends StepModule {
   validateWithFacts?: (draft: OnboardingDraft, ctx: StepContext, facts: PhoneFacts | null) => StepError | null;
   /** Back pressed: return a patch to stay on this step (e.g. undo "Give it a job"), or null to go to the previous step. */
   onBack?: (draft: OnboardingDraft) => Partial<OnboardingDraft> | null;
+  /** After the primary succeeds (and `onAdvance` has applied): finish onboarding here, then show Done ("done") or open Today ("today"). Null = keep going. */
+  finishOn?: (draft: OnboardingDraft) => "done" | "today" | null;
   /** The primary can't be used yet (e.g. still waiting for the phone). */
   primaryDisabled?: (draft: OnboardingDraft, facts: PhoneFacts | null) => boolean;
 }
