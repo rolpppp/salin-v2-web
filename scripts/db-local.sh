@@ -38,6 +38,12 @@ case "$cmd" in
       echo "Applying $(basename "$f")"
       psql_db -f "$f"
     done
+    # Held migrations (D-16): not on live yet, but tested locally.
+    for f in supabase/held/*.sql; do
+      [ -f "$f" ] || continue
+      echo "Applying held $(basename "$f")"
+      psql_db -f "$f"
+    done
     if [ -f supabase/seed.sql ]; then
       echo "Seeding"
       psql_db -f supabase/seed.sql

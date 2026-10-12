@@ -56,4 +56,6 @@ jobs:
         run: |
           mkdir -p supabase/.temp && echo 17.6.1.147 > supabase/.temp/postgres-version
           supabase start -x gotrue,kong,postgrest,edge-runtime,logflare,vector,imgproxy,studio,mailpit,storage-api,postgres-meta,realtime
+      # Held migrations (D-16) aren't on live, but pgTAP 04 tests them.
+      - run: for f in supabase/held/*.sql; do psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -v ON_ERROR_STOP=1 -f "$f"; done
       - run: supabase test db
