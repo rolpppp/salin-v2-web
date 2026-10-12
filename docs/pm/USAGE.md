@@ -77,3 +77,7 @@
 | ~20:50 | forgot-password | sonnet | 21 (+ recovery-session fix after PM review) | 122,556 | — | 80 | 11.2 min |
 
 Running total of finished agents: ~4.54M reported, 25 agents.
+| ~21:30 | web-adjustments | sonnet | 22 (web) | 167,892 | — | 60 | 7.5 min |
+| ~21:35 | mobile-update-balances | sonnet | 22 (mobile, salin-v2) | 153,146 | — | 41 | 12.2 min |
+
+Running total of finished agents: ~4.86M reported, 27 agents.
