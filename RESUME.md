@@ -1,6 +1,6 @@
 # Resume: Salin Web build
 
-Last paused Oct 12, 2026 after Wave 5 (all in-scope tickets built; e2e not yet run). Start a new session by reading this file, then `docs/pm/BOARD.md`.
+Last paused Oct 12, 2026: Phase 0 + Phase 1 build complete and verified (e2e green on all 4 projects). Remaining work is owner-side. Start a new session by reading this file, then `docs/pm/BOARD.md`.
 
 ## How we work
 
@@ -30,29 +30,27 @@ Last paused Oct 12, 2026 after Wave 5 (all in-scope tickets built; e2e not yet r
 
 ## State on `main`
 
-Wave 5 done (Oct 12). Tickets 1–20 are all merged (4 is web half only). What's left is verification: e2e (needs Docker), type regen, Phase 1 gate. See `docs/pm/BOARD.md` for commits and follow-ups.
+Build complete (Oct 12). Tickets 1–20 merged (4 is web half only); e2e 388 pass / 4 viewport skips / 0 fail; types regenerated. Every golden case (G1–G12, O1–O6) is covered. See `docs/pm/BOARD.md` for commits and follow-ups.
 
-Checks on main: `npm run lint`, `npm run typecheck`, `npm test` (866), `npm run build`, `npm run db:reset && npm run db:test` (1104 pgTAP), `npm run test:parity` (8 suites; run it with the same `SALIN_DB` you just reset), `npm run test:mobile-compat` (83; set `SALIN_MOBILE_PATH=/Volumes/RolfStuffs/Developer/salin-v2` when run from a worktree).
+Checks on main: `npm run lint`, `npm run typecheck`, `npm test` (867), `npm run build`, `npm run db:reset && npm run db:test` (1107 pgTAP), `npm run test:parity` (8 suites; run it with the same `SALIN_DB` you just reset), `npm run test:mobile-compat` (83; set `SALIN_MOBILE_PATH=/Volumes/RolfStuffs/Developer/salin-v2` when run from a worktree).
 
-## Not verified yet (needs Docker)
+## Running e2e
 
-- **No e2e has run since ticket 3.** Every page is behind sign-in, so `npm run e2e` needs `supabase start` (GoTrue). Specs exist for Today (G9, G10, cover, drawer), auth, Plans (all sections), Money in, transfers (G7, G8, G12), Review and Log spending. Expect selector tuning on first run.
-- To run them:
-  1. Get Docker's engine up. Oct 11 late: system disk had 4.4 GB free, Desktop said "running" but `~/.docker/run/docker.sock` never appeared. Try Docker Desktop → Troubleshoot → Restart, or free more space.
-  2. Start Docker and `supabase start -x edge-runtime,logflare,vector,imgproxy,studio,mailpit,storage-api,postgres-meta`. Pin `supabase/.temp/postgres-version` to `17.6.1.147`.
-  3. Recreate `.env.test.local` from `supabase status` (see `.env.example`).
-  4. `npm run e2e`.
-- `tests/e2e/helpers/` should switch to `lib/domain/mobile` builders (ticket 3 follow-up).
-- Regenerate `lib/database.types.ts` with `supabase gen types` (hand-edited since ticket 7).
-- PostgREST embeds in `lib/data/money-in.ts` are untested against a real server.
+1. Docker Desktop running (it works again as of Oct 12, session 4).
+2. `supabase start -x edge-runtime,logflare,vector,imgproxy,studio,mailpit,storage-api,postgres-meta` with `supabase/.temp/postgres-version` = `17.6.1.147`. After migration changes: `supabase db reset --local`.
+3. `.env.test.local` from `supabase status -o env` (URL, anon key, service-role key; local only).
+4. `npx playwright test` (all 4 projects, ~4 min). Let Playwright start the server; parallel agents need their own `E2E_PORT` and must never `pkill` broadly.
 
 ## Next waves (after the above)
 
 - **Waves 3, 4, 5a and 5b:** done. Wave 5b: 15 (6e5b05f), 20 (9a9ea9b), 18 UI (1a73ec9).
-- **Next:** Docker → run the whole e2e suite, regenerate `lib/database.types.ts`, Phase 1 gate.
+- **E2E wave:** done (see BOARD.md "E2E + verification").
+- **Next (owner-side):** deploy, migrations-to-live plan (D-16, P-5, Realtime), real-device sync, 4 weeks of owner-only use (Phase 1 gate).
 - **Contracts:** `lib/onboarding/draft.ts` and `step.ts` (P-8); the shell extends them with `lib/onboarding/shell-types.ts`.
 - **Known follow-ups:**
   - Ticket 18: the email reminder is stored but nothing sends it yet.
+  - `onb_*` helpers are exposed as RPCs (invoker rights, RLS holds); move to a private schema.
+  - Add income lost its blur-time error; reserve space for `.error` in `components/field`, then restore.
   - Ticket 20: Make a plan for a web user who chose Not yet has no pay amount.
   - Cross-user id references aren't guarded by FKs, so the SQL functions must check ownership.
   - Read-only types for the other 8 mobile tables.
@@ -75,9 +73,9 @@ Checks on main: `npm run lint`, `npm run typecheck`, `npm test` (866), `npm run 
 
 | Item | Amount |
 |---|---|
-| Finished agents, reported | ~4.01M tokens (Wave 1 ~537K, Waves 2–3 ~1.21M, Wave 4 ~813K, Wave 5a ~817K, Wave 5b ~627K) |
+| Finished agents, reported | ~4.42M tokens (Wave 1 ~537K, Waves 2–3 ~1.21M, Wave 4 ~813K, Wave 5a ~817K, Wave 5b ~627K, e2e ~407K) |
 | Stopped agents (2), from transcripts | ~275K fresh input, ~5.4M cache reads |
 | Cache reads, all 6 agents | ~13M |
-| Agents | 21 Sonnet agents finished (+3 stopped at launch) |
+| Agents | 24 Sonnet agents finished (+3 stopped at launch) |
 
 Opus PM usage is not reported per turn. Per-agent detail is in `docs/pm/USAGE.md`.

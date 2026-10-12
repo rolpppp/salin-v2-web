@@ -61,3 +61,13 @@
 | ~19:05 | first-pay | sonnet | 18 UI | 208,646 | — | 52 | 10.3 min |
 
 **Wave 5b done** (Oct 12): 3 agents in parallel, ~627K reported, ~10 min wall clock. All three cherry-picked onto main without conflicts. Running total of finished agents: ~4.01M reported, 21 agents.
+
+**E2E fix wave** (Oct 12, after Docker came back):
+
+| When (Oct 12) | Agent | Model | Area | Reported | Cache reads | Tool calls | Duration |
+|---|---|---|---|---|---|---|---|
+| ~19:40 | e2e-plans-review-smoke | sonnet | Plans, Review, smoke | 123,840 | — | 56 | 8.8 min |
+| ~19:45 | e2e-onboarding | sonnet | onboarding | 100,845 | — | 36 | 12.4 min |
+| ~20:00 | e2e-money-in-today | sonnet | Money in, Today, transfers, motion, Log spending | 182,318 | — | 156 | 27.1 min |
+
+**E2E wave done:** 3 agents, ~407K reported. PM fixed the scholarship SQL bug directly (one line + pgTAP). Running total of finished agents: ~4.42M reported, 24 agents.
