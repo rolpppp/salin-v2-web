@@ -134,6 +134,10 @@ test.describe("Income sources", () => {
     await fun.fill("40");
     await fun.blur();
     await expect(total).toHaveText("90% · needs 100%");
+    // The split saves on blur in the background; reloading before it lands would cancel it.
+    await expect
+      .poll(async () => ((await adminClient().from("income_source_split_lines").select("percentBp").eq("user_id", user.id).is("deletedAt", null)).data ?? []).reduce((s, l) => s + l.percentBp, 0))
+      .toBe(9000);
     await page.reload();
     await expect(page.getByLabel("Fun percent for Freelance")).toHaveValue("40");
     const { data } = await adminClient().from("income_source_split_lines").select("percentBp").eq("user_id", user.id).is("deletedAt", null);

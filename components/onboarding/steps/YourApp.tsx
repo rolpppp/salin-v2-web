@@ -37,9 +37,16 @@ function usePhoneWatch() {
     let connected = false;
     let cleanup = () => {};
     if (realtimeEnabled()) {
-      void import("@/lib/supabase/browser").then(({ createClient }) => {
+      void import("@/lib/supabase/browser").then(async ({ createClient }) => {
         if (cancelled) return;
         const client = createClient();
+        if (!client) return;
+        // Join with the user's JWT, not the anon key: RLS would otherwise filter out every event while the channel
+        // still reports SUBSCRIBED (and the poll would slow down for nothing).
+        const { data } = await client.auth.getSession();
+        if (cancelled || !data.session) return;
+        await client.realtime.setAuth(data.session.access_token);
+        if (cancelled) return;
         const channel = client
           ?.channel(`onboarding-phone-${userId}`)
           .on("postgres_changes", { event: "*", schema: "public", table: "accounts", filter: `user_id=eq.${userId}` }, onChange)
