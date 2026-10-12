@@ -1620,10 +1620,6 @@ export type Database = {
     }
     Functions: {
       account_in_use_reason: { Args: { p_account: string }; Returns: string }
-      accounts_in_use: {
-        Args: { p_user?: string }
-        Returns: { account_id: string; reason: string }[]
-      }
       account_should_hold: {
         Args: { p_user?: string }
         Returns: {
@@ -1635,18 +1631,28 @@ export type Database = {
           should_hold: number
         }[]
       }
+      accounts_in_use: {
+        Args: { p_user?: string }
+        Returns: {
+          account_id: string
+          reason: string
+        }[]
+      }
       active_plan: { Args: { p_user?: string }; Returns: string }
-      apply_plan_only: { Args: { p_draft: Json }; Returns: undefined }
-      finish_onboarding: { Args: { p_draft: Json }; Returns: Json }
-      suggest_plan: { Args: { p_inputs: Json }; Returns: Json }
       add_goal: {
-        Args: { p_bucket?: string; p_name: string; p_share_bp?: number; p_target: number }
+        Args: {
+          p_bucket?: string
+          p_name: string
+          p_share_bp?: number
+          p_target: number
+        }
         Returns: string
       }
       add_income_source: {
         Args: { p_kind: string; p_name?: string }
         Returns: string
       }
+      apply_plan_only: { Args: { p_draft: Json }; Returns: undefined }
       archive_account: { Args: { p_account: string }; Returns: undefined }
       archive_goal: { Args: { p_goal: string }; Returns: undefined }
       assert_self: { Args: { p_user: string }; Returns: string }
@@ -1662,14 +1668,31 @@ export type Database = {
           spent: number
         }[]
       }
-      category_in_use_reason: { Args: { p_category: string }; Returns: string }
       categories_in_use: {
         Args: { p_user?: string }
-        Returns: { category_id: string; reason: string }[]
+        Returns: {
+          category_id: string
+          reason: string
+        }[]
       }
+      category_in_use_reason: { Args: { p_category: string }; Returns: string }
       category_month_spend: {
         Args: { p_currency?: string; p_from: number; p_to: number }
-        Returns: { bucket_id: string; category_id: string; entries: number; total_minor: number }[]
+        Returns: {
+          bucket_id: string
+          category_id: string
+          entries: number
+          total_minor: number
+        }[]
+      }
+      close_week: {
+        Args: { p_observation?: string; p_week_start: string }
+        Returns: {
+          check_results: Json
+          closed_at_ms: number
+          safe_to_spend_minor: number
+          was_already_closed: boolean
+        }[]
       }
       confirm_incomes: {
         Args: { entry_ids: string[] }
@@ -1726,70 +1749,6 @@ export type Database = {
       cover_bucket: {
         Args: { p_amount: number; p_from: string; p_to: string }
         Returns: string
-      }
-      engine_waiting_income: {
-        Args: { p_user: string }
-        Returns: {
-          amount: number
-          entry_id: string
-          occurred_at: number
-          source_id: string
-        }[]
-      }
-      week_slip_figures: {
-        Args: { p_from: number }
-        Returns: {
-          came_in_week: number
-          carried_in: number
-          has_history: boolean
-          sources: Json
-          spent_week: number
-          to_assign: number
-        }[]
-      }
-      week_bucket_flows: {
-        Args: { p_from: number; p_to: number }
-        Returns: {
-          allocated_minor: number
-          bucket_id: string
-          change_minor: number
-          covers_in_minor: number
-          covers_out_minor: number
-          spent_minor: number
-        }[]
-      }
-      week_category_spend: {
-        Args: { p_from: number; p_to: number }
-        Returns: {
-          amount_minor: number
-          bucket_id: string
-          category_id: string
-          category_name: string
-        }[]
-      }
-      tab_badges: {
-        Args: { p_today: string }
-        Returns: {
-          review_due: boolean
-          waiting_count: number
-        }[]
-      }
-      close_week: {
-        Args: { p_observation?: string; p_week_start: string }
-        Returns: {
-          check_results: Json
-          closed_at_ms: number
-          safe_to_spend_minor: number
-          was_already_closed: boolean
-        }[]
-      }
-      nudge_plan_percent: {
-        Args: { p_bp: number; p_from_bucket: string; p_to_bucket: string }
-        Returns: {
-          from_bp: number
-          plan_key: string
-          to_bp: number
-        }[]
       }
       engine_account_should_hold: {
         Args: { p_user: string }
@@ -1897,7 +1856,17 @@ export type Database = {
           to_account_id: string
         }[]
       }
+      engine_waiting_income: {
+        Args: { p_user: string }
+        Returns: {
+          amount: number
+          entry_id: string
+          occurred_at: number
+          source_id: string
+        }[]
+      }
       entry_local_date: { Args: { p_ms: number }; Returns: string }
+      finish_onboarding: { Args: { p_draft: Json }; Returns: Json }
       goal_check_links: {
         Args: { p_bucket: string; p_share_bp: number; p_user: string }
         Returns: undefined
@@ -1907,6 +1876,86 @@ export type Database = {
         Returns: number
       }
       now_ms: { Args: never; Returns: number }
+      nudge_plan_percent: {
+        Args: { p_bp: number; p_from_bucket: string; p_to_bucket: string }
+        Returns: {
+          from_bp: number
+          plan_key: string
+          to_bp: number
+        }[]
+      }
+      onb_account_type: { Args: { p: string }; Returns: number }
+      onb_apply_categories: {
+        Args: { p_d: Json; p_ids: Json; p_mode: string; p_user: string }
+        Returns: undefined
+      }
+      onb_apply_plan: {
+        Args: { p_d: Json; p_mode: string; p_user: string }
+        Returns: Json
+      }
+      onb_apply_sources: {
+        Args: { p_d: Json; p_ids: Json; p_user: string }
+        Returns: Json
+      }
+      onb_auto_bucket: {
+        Args: { p_just_track: boolean; p_name: string; p_pa: number[] }
+        Returns: string
+      }
+      onb_bill_label: { Args: { p: string }; Returns: string }
+      onb_bool: { Args: { p: Json; p_what: string }; Returns: boolean }
+      onb_bucket_def: { Args: { p_key: string }; Returns: Json }
+      onb_ceil_div: { Args: { a: number; b: number }; Returns: number }
+      onb_date: { Args: { p: Json; p_what: string }; Returns: string }
+      onb_default_categories: { Args: never; Returns: Json }
+      onb_ensure_accounts: {
+        Args: { p_d: Json; p_mode: string; p_user: string }
+        Returns: undefined
+      }
+      onb_int: {
+        Args: { p: Json; p_max: number; p_min: number; p_what: string }
+        Returns: number
+      }
+      onb_map_category: {
+        Args: {
+          p_bucket: string
+          p_cat: string
+          p_since: number
+          p_source: string
+          p_user: string
+        }
+        Returns: undefined
+      }
+      onb_monthly: {
+        Args: { p_amount: number; p_frequency: string }
+        Returns: number
+      }
+      onb_mul_div_round: {
+        Args: { a: number; d: number; n: number }
+        Returns: number
+      }
+      onb_pcts: { Args: { p: Json; p_what: string }; Returns: number[] }
+      onb_plan_a: { Args: { p_d: Json }; Returns: number[] }
+      onb_plan_b: { Args: { p_a: number[] }; Returns: number[] }
+      onb_plan_json: { Args: { p: number[] }; Returns: Json }
+      onb_present: { Args: { p: Json }; Returns: boolean }
+      onb_rent_name: { Args: { p_kinds: Json }; Returns: string }
+      onb_safety_target: {
+        Args: { p_bills: number; p_living: number; p_monthly: number }
+        Returns: number
+      }
+      onb_str: {
+        Args: { p: Json; p_max: number; p_min: number; p_what: string }
+        Returns: string
+      }
+      onb_summary: { Args: { p_entry: string; p_user: string }; Returns: Json }
+      onb_text: {
+        Args: { p: Json; p_allowed: string[]; p_what: string }
+        Returns: string
+      }
+      onb_validate_draft: {
+        Args: { p_d: Json; p_mode: string }
+        Returns: undefined
+      }
       remove_category: { Args: { p_category: string }; Returns: undefined }
       remove_income_source: { Args: { p_source: string }; Returns: undefined }
       rename_income_source: {
@@ -1959,6 +2008,14 @@ export type Database = {
           percent_bp: number
         }[]
       }
+      suggest_plan: { Args: { p_inputs: Json }; Returns: Json }
+      tab_badges: {
+        Args: { p_today: string }
+        Returns: {
+          review_due: boolean
+          waiting_count: number
+        }[]
+      }
       tick_transfer: {
         Args: { p_amount: number; p_from: string; p_to: string }
         Returns: string
@@ -1984,8 +2041,45 @@ export type Database = {
         Returns: undefined
       }
       update_goal: {
-        Args: { p_bucket: string; p_goal: string; p_name: string; p_share_bp: number; p_target: number }
+        Args: {
+          p_bucket: string
+          p_goal: string
+          p_name: string
+          p_share_bp: number
+          p_target: number
+        }
         Returns: undefined
+      }
+      week_bucket_flows: {
+        Args: { p_from: number; p_to: number }
+        Returns: {
+          allocated_minor: number
+          bucket_id: string
+          change_minor: number
+          covers_in_minor: number
+          covers_out_minor: number
+          spent_minor: number
+        }[]
+      }
+      week_category_spend: {
+        Args: { p_from: number; p_to: number }
+        Returns: {
+          amount_minor: number
+          bucket_id: string
+          category_id: string
+          category_name: string
+        }[]
+      }
+      week_slip_figures: {
+        Args: { p_from: number }
+        Returns: {
+          came_in_week: number
+          carried_in: number
+          has_history: boolean
+          sources: Json
+          spent_week: number
+          to_assign: number
+        }[]
       }
     }
     Enums: {
