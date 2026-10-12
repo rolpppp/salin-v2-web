@@ -129,7 +129,8 @@ export function buildPhoneFacts(input: { accounts: readonly RawAccount[]; catego
   }
 
   const dated = input.entries.map((e) => ({ e, date: isoDateIn(e.occurredAt, timeZone) }));
-  const isTransfer = (e: RawEntry) => e.origin === LedgerOrigin.transfer || e.transferId !== null;
+  // Transfers and balance adjustments are neither income nor logged spending: onboarding detection skips both.
+  const isTransfer = (e: RawEntry) => e.origin === LedgerOrigin.transfer || e.origin === LedgerOrigin.adjustment || e.transferId !== null;
   const sinceIso = addDays(todayIso, -60);
 
   let entriesSince = 0;

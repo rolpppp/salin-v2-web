@@ -809,7 +809,7 @@ export function buildDrawers(input: TodayInput): Record<string, DrawerView> {
       dated.push({ dateIso, line: { kind: "in", label: `${shortDate(dateIso)} ${(a.sourceId && sourceName.get(a.sourceId)) || "Payday"}`, amountMinor: a.amountMinor } });
     }
     for (const s of input.spendingThisMonth) {
-      if (s.bucketId === b.id) dated.push({ dateIso: s.dateIso, line: { kind: "out", label: `${shortDate(s.dateIso)} ${s.label}`, amountMinor: -s.amountMinor } });
+      if (s.bucketId === b.id) dated.push({ dateIso: s.dateIso, line: { kind: s.amountMinor < 0 ? "in" : "out", label: `${shortDate(s.dateIso)} ${s.label}`, amountMinor: -s.amountMinor } });
     }
     for (const c of input.coversThisMonth) {
       if (c.toBucketId === b.id) dated.push({ dateIso: c.dateIso, line: { kind: "cover_in", label: `${shortDate(c.dateIso)} From ${nameOf.get(c.fromBucketId) ?? "another bucket"}`, amountMinor: c.amountMinor } });

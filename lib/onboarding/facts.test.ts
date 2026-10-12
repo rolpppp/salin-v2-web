@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { RecurringFrequency } from "@/lib/domain/enums";
+import { LedgerOrigin, MoneyDirection, RecurringFrequency } from "@/lib/domain/enums";
 import { buildPhoneFacts, phoneBillsFrom, windowStartMs } from "./facts";
 import { accounts, at, categories, entries, facts, phone, TODAY, TZ } from "./testkit";
 
@@ -22,6 +22,31 @@ describe("buildPhoneFacts", () => {
     // Salary Sep + Oct, stipend, groceries Sep + Oct, movies, misc = 7 real entries since Aug 13; Aug 7 is out; the transfer leg isn't an entry.
     expect(f.entriesSince).toBe(7);
     expect(f.incomeSinceMinor).toBe(2_500_000 * 2 + 700_000);
+  });
+
+  it("ignores balance adjustments: not income, not an entry, never a source or waiting income", () => {
+    const base = facts();
+    const adj = (direction: number, amountMinor: number) => ({
+      id: `adj${direction}`,
+      accountId: "a-gcash",
+      categoryId: null,
+      amountMinor,
+      direction,
+      origin: LedgerOrigin.adjustment,
+      transferId: null,
+      occurredAt: at("2026-10-09"),
+    });
+    const withAdj = buildPhoneFacts({
+      accounts,
+      categories,
+      entries: [...entries(), adj(MoneyDirection.inflow, 999_999), adj(MoneyDirection.outflow, 5_000)],
+      todayIso: TODAY,
+      timeZone: TZ,
+    }).facts;
+    expect(withAdj?.entriesSince).toBe(base.entriesSince);
+    expect(withAdj?.incomeSinceMinor).toBe(base.incomeSinceMinor);
+    expect(withAdj?.sources).toEqual(base.sources);
+    expect(withAdj?.waiting).toEqual(base.waiting);
   });
 
   it("detects sources per BR 12.4: main pay = most entries, latest entry and landing account kept", () => {

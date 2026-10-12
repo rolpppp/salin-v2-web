@@ -97,13 +97,14 @@ export async function getTodayInput(client: Client, opts: { userId: string; nowM
     pageAll<{ ledgerEntryId: string; sourceId: string | null }>((from, to) =>
       client.from("income_meta").select("ledgerEntryId, sourceId").is("deletedAt", null).order("ledgerEntryId").range(from, to),
     ),
-    pageAll<{ bucketId: string; ledger_entries: { amountMinor: number; occurredAt: number; categoryId: string | null; note: string | null } | null }>((from, to) =>
+    pageAll<{ bucketId: string; ledger_entries: { amountMinor: number; occurredAt: number; categoryId: string | null; note: string | null; direction: number; origin: number } | null }>((from, to) =>
       client
         .from("entry_buckets")
         .select("bucketId, ledger_entries!inner(amountMinor, occurredAt, categoryId, note, direction, origin, deletedAt)")
         .is("deletedAt", null)
         .is("ledger_entries.deletedAt", null)
-        .eq("ledger_entries.direction", MoneyDirection.outflow)
+        // spending = outflows, plus balance adjustments (an inflow adjustment is negative spending)
+        .or(`direction.eq.${MoneyDirection.outflow},origin.eq.${LedgerOrigin.adjustment}`, { referencedTable: "ledger_entries" })
         .neq("ledger_entries.origin", LedgerOrigin.transfer)
         .gte("ledger_entries.occurredAt", monthStartMs)
         .lt("ledger_entries.occurredAt", monthEndMs)
@@ -129,6 +130,7 @@ export async function getTodayInput(client: Client, opts: { userId: string; nowM
           .is("deletedAt", null)
           .eq("direction", MoneyDirection.outflow)
           .neq("origin", LedgerOrigin.transfer)
+          .neq("origin", LedgerOrigin.adjustment)
           .gt("createdAt", onboardedAt)
       : Promise.resolve({ count: 0, error: null }),
     client.from("accounts").select("id").limit(1),
@@ -165,8 +167,8 @@ export async function getTodayInput(client: Client, opts: { userId: string; nowM
     spendingThisMonth.push({
       bucketId: s.bucketId,
       dateIso: isoDateIn(le.occurredAt, timeZone),
-      amountMinor: le.amountMinor,
-      label: (le.categoryId && categoryName.get(le.categoryId)) || le.note?.trim() || "Spending",
+      amountMinor: le.direction === MoneyDirection.inflow ? -le.amountMinor : le.amountMinor,
+      label: le.origin === LedgerOrigin.adjustment ? "Balance adjustment" : (le.categoryId && categoryName.get(le.categoryId)) || le.note?.trim() || "Spending",
     });
   }
   const coversThisMonth: MonthCover[] = coverRows.map((c) => ({

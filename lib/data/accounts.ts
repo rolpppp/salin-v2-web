@@ -46,11 +46,11 @@ export function holdCaption(bucketKeptHere: boolean, shouldHoldMinor: number): s
   return "no buckets kept here";
 }
 
-/** BR 5.2: received (inflows that are not transfers) minus transferred out (outflow transfer legs). Integer centavos. */
+/** BR 5.2: received (inflows that are not transfers or balance adjustments) minus transferred out (outflow transfer legs). Integer centavos. */
 export function retained(entries: ReadonlyArray<{ direction: number; origin: number; amountMinor: number }>): number {
   let total = 0;
   for (const e of entries) {
-    if (e.direction === MoneyDirection.inflow && e.origin !== LedgerOrigin.transfer) total += e.amountMinor;
+    if (e.direction === MoneyDirection.inflow && e.origin !== LedgerOrigin.transfer && e.origin !== LedgerOrigin.adjustment) total += e.amountMinor;
     else if (e.direction === MoneyDirection.outflow && e.origin === LedgerOrigin.transfer) total -= e.amountMinor;
   }
   return total;

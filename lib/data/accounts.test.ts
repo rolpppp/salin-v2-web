@@ -21,5 +21,8 @@ describe("retained (BR 5.2): received minus transferred out", () => {
       ]),
     ).toBe(1_701_000);
   });
+  it("a balance adjustment is not money received", () => {
+    expect(retained([e(MoneyDirection.inflow, LedgerOrigin.adjustment, 700), e(MoneyDirection.outflow, LedgerOrigin.adjustment, 300), e(MoneyDirection.inflow, LedgerOrigin.manual, 1_000)])).toBe(1_000);
+  });
   it("is 0 with no entries", () => expect(retained([])).toBe(0));
 });

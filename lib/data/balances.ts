@@ -70,13 +70,15 @@ export function computeWeekSpending(
   const groups = new Map<string, Map<string | null, number>>();
   for (const e of entries) {
     if (e.deletedAt !== null) continue;
-    if (e.direction !== MoneyDirection.outflow) continue;
     if (e.origin === LedgerOrigin.transfer) continue;
+    // A balance adjustment is untracked spending: an outflow adds, an inflow takes back (negative spending).
+    if (e.direction !== MoneyDirection.outflow && e.origin !== LedgerOrigin.adjustment) continue;
+    const amountMinor = e.direction === MoneyDirection.outflow ? e.amountMinor : -e.amountMinor;
     if (e.occurredAt < range.startMs || e.occurredAt >= range.endMs) continue;
     const currency = currencyByAccount.get(e.accountId);
     if (!currency) continue;
     const cats = groups.get(currency) ?? new Map<string | null, number>();
-    cats.set(e.categoryId, (cats.get(e.categoryId) ?? 0) + e.amountMinor);
+    cats.set(e.categoryId, (cats.get(e.categoryId) ?? 0) + amountMinor);
     groups.set(currency, cats);
   }
   const out: CurrencySpend[] = [];

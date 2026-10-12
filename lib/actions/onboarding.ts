@@ -155,6 +155,7 @@ export async function startMakeAPlan(_previous: MakePlanState, _form?: FormData)
           .eq("categoryId", main.categoryId)
           .eq("direction", MoneyDirection.inflow)
           .neq("origin", LedgerOrigin.transfer)
+          .neq("origin", LedgerOrigin.adjustment)
           .is("deletedAt", null)
           .order("occurredAt", { ascending: false })
           .limit(1);
