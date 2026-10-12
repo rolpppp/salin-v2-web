@@ -15,6 +15,8 @@ import {
   kindChipText,
   moneyInPhase,
   needsHelper,
+  planKeysInPlay,
+  planLabel,
   occurredAtFor,
   rateText,
   ruleJobText,
@@ -25,6 +27,7 @@ import {
   validateAddIncome,
   whyText,
   type Choice,
+  type PlanContext,
   type Preview,
 } from "./money-in-model";
 
@@ -145,7 +148,7 @@ describe("job resolution and the live preview (goldens)", () => {
   it("a plan that doesn't add to 100% is an error preview, not a crash", () => {
     const data = moneyInData({
       incomes: [income("g2", "others", 2_300_000, 8)],
-      plan: { ...moneyInData().plan, planA: [{ bucketId: BUCKET.living, bp: 5000 }] },
+      plan: { ...moneyInData().plan, plans: { ...moneyInData().plan.plans, A: [{ bucketId: BUCKET.living, bp: 5000 }] } },
     });
     expect(computePreviews(data, {}).get("g2")).toMatchObject({ kind: "error", message: "Your plan doesn't add up to 100%, fix it in Plans" });
   });
@@ -353,5 +356,41 @@ describe("snapshots and errors in plain words", () => {
     expect(confirmErrorText('Bucket b has no "kept in" account; set one')).toContain("Set one in Plans");
     expect(confirmErrorText("income not found, not yours")).toContain("Reload");
     expect(confirmErrorText("fetch failed")).toContain("Nothing was changed");
+  });
+});
+
+describe("plans v2: names and the active-plan setting", () => {
+  const withPlans = (activePlan: PlanContext["activePlan"], switchOn = true): PlanContext => ({
+    ...moneyInData().plan,
+    plans: { ...moneyInData().plan.plans, p_1a2b3c4d: [{ bucketId: BUCKET.living, bp: 10_000 }] },
+    planNames: { A: "Plan A", B: "Plan B", p_1a2b3c4d: "Lean month" },
+    activePlan,
+    switchOn,
+  });
+
+  it("a manual plan splits every income and the row names it", () => {
+    const data = moneyInData({ incomes: [income("g2", "others", 1_000_000, 8)], plan: withPlans({ mode: "manual", planKey: "p_1a2b3c4d" }) });
+    const p = computePreviews(data, {}).get("g2") as Preview;
+    expect(p).toMatchObject({ kind: "ready", planKey: "p_1a2b3c4d" });
+    expect(hueAmounts(p)).toEqual({ living: 1_000_000 });
+    expect(jobText(p, data.incomes[0], sources[0], buckets, data.plan)).toBe("Split by Lean month");
+    expect(whyText(p, data.incomes[0], data)).toBe("Your plan's percentages, applied to this amount.");
+  });
+  it("automatic with custom from/to names the plan in the explanation", () => {
+    const plan = withPlans({ mode: "auto", from: "A", to: "p_1a2b3c4d" });
+    const data = moneyInData({ incomes: [income("x", "work", 1, 8, { engineDate: "2027-02-01" })], plan: { ...plan, emergencyAllocatedSoFar: 5_000_000 } });
+    const p = computePreviews(data, {}).get("x") as Preview;
+    expect(p).toMatchObject({ kind: "ready", planKey: "p_1a2b3c4d" });
+    expect(whyText(p, data.incomes[0], data)).toBe("Lean month applies now that the Emergency fund reached ₱50,000.00.");
+  });
+  it("planLabel falls back to Plan A / Plan B, and planKeysInPlay follows the setting", () => {
+    expect(planLabel({ planNames: {} }, "B")).toBe("Plan B");
+    expect(planLabel({ planNames: {} }, "p_zzzzzzzz")).toBe("Your plan");
+    expect(planKeysInPlay(withPlans({ mode: "manual", planKey: "p_1a2b3c4d" }))).toEqual(["p_1a2b3c4d"]);
+    expect(planKeysInPlay(withPlans({ mode: "auto", from: "A", to: "B" }))).toEqual(["A", "B"]);
+    expect(planKeysInPlay(withPlans({ mode: "auto", from: "A", to: "B" }, false))).toEqual(["A"]);
+  });
+  it("ruleJobText names the plan", () => {
+    expect(ruleJobText(sources[1], buckets, "p_1a2b3c4d", { planNames: { p_1a2b3c4d: "Lean month" } })).toEqual({ kind: "job", text: "Split by Lean month" });
   });
 });

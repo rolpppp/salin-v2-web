@@ -79,7 +79,7 @@ export async function insertPlan(db: Db, key: string, lines: readonly { i: numbe
   );
 }
 
-export async function insertRule(db: Db, kind: "switch_on_goal" | "redirect_until_date", params: Record<string, unknown>): Promise<void> {
+export async function insertRule(db: Db, kind: "switch_on_goal" | "redirect_until_date" | "active_plan", params: Record<string, unknown>): Promise<void> {
   await db.query("insert into public.allocation_rules (user_id, kind, params) values ($1, $2, $3::jsonb)", [USER, kind, JSON.stringify(params)]);
 }
 

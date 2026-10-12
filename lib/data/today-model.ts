@@ -34,6 +34,8 @@ import {
   isoDateIn,
   isValidIsoDate,
   pctText,
+  planKeysInPlay,
+  planLabel,
   shortDate,
   sortQueue,
   type Choice,
@@ -244,13 +246,12 @@ export interface ShelfView {
  * A bucket is on show when money moved through it, the plan gives it a share, or a source keeps money in it
  * (SPEC §1 "Shelf visibility"). Archived buckets show only while they hold or spent money.
  */
-export function bucketOnShelf(b: TodayBucket, flow: BucketFlow, plan: Pick<PlanContext, "planA" | "planB" | "switchOn">, sources: readonly MiSource[]): boolean {
+export function bucketOnShelf(b: TodayBucket, flow: BucketFlow, plan: Pick<PlanContext, "plans" | "activePlan" | "switchOn">, sources: readonly MiSource[]): boolean {
   if (flow.allocated !== 0 || flow.spent !== 0 || flow.coversIn !== 0 || flow.coversOut !== 0) return true;
   if (b.isArchived) return false;
   if (sources.some((s) => !s.isArchived && ((s.rule === "whole" && s.wholeBucketId === b.id) || (s.rule === "own" && s.splitLines.some((l) => l.bucketId === b.id && l.bp > 0))))) return true;
   if (b.planless) return false;
-  const bp = (lines: PlanContext["planA"]) => lines.find((l) => l.bucketId === b.id)?.bp ?? 0;
-  return bp(plan.planA) > 0 || (plan.switchOn && bp(plan.planB) > 0);
+  return planKeysInPlay(plan).some((k) => (plan.plans[k] ?? []).some((l) => l.bucketId === b.id && l.bp > 0));
 }
 
 const GROUPS: readonly { key: ShelfGroup["key"]; title: string; hint: string }[] = [
@@ -369,7 +370,7 @@ export function buildShelf(input: TodayInput): ShelfView | null {
     groups.push({ key: g.key, title: g.title, hint: g.key === "set_aside" ? setAsideHint(members) || g.hint : g.hint, slots: members.map(slotOf) });
   }
 
-  const planName = `Plan ${input.activePlan}`;
+  const planName = planLabel(input.plan, input.activePlan);
   return {
     groups,
     scaleMinor: scale,
@@ -548,7 +549,7 @@ export function buildWeekAndNext(input: TodayInput): { week: WeekView; next: Nex
     weekClosed: phase === "regular" ? input.weekClosed : false,
     anyAllocation: confirmedCount > 0,
     anyPayRecorded: confirmedCount > 0 || waiting > 0,
-    hasPlan: input.profile.planMode !== "track" || input.plan.planA.some((l) => l.bp > 0 && l.bucketId !== living?.id),
+    hasPlan: input.profile.planMode !== "track" || (input.plan.plans[planKeysInPlay(input.plan)[0] as string] ?? []).some((l) => l.bp > 0 && l.bucketId !== living?.id),
     spendingLoggedAfterOnboarding: input.spendingLoggedAfterOnboarding,
   });
   const week: WeekView = {
@@ -741,12 +742,14 @@ export function buildGoalsView(input: TodayInput): GoalsView {
     const main = g.isPlanSwitch;
 
     let tail = "";
-    if (reached) tail = `Target reached.${main && input.activePlan === "B" ? " Plan B is active." : ""}`;
+    const setting = input.plan.activePlan;
+    const switched = setting.mode === "auto" && input.activePlan === setting.to;
+    if (reached) tail = `Target reached.${main && switched ? ` ${planLabel(input.plan, input.activePlan)} is active.` : ""}`;
     else if (main) {
       const bucket = g.linkedBucketId ?? input.plan.emergencyBucketId;
       const share = last && bucket ? input.allocations.filter((a) => a.entryId === last.entryId && a.bucketId === bucket).reduce((t, a) => t + a.amountMinor, 0) : null;
       const n = paydaysToGo(g.savedMinor, g.targetMinor, share);
-      if (n !== null && last) tail = `About ${n} more payday${n === 1 ? "" : "s"} like ${shortDate(isoDateIn(last.occurredAt, input.timeZone))}${input.plan.switchOn && input.activePlan === "A" ? ", then Plan B starts" : ""}.`;
+      if (n !== null && last) tail = `About ${n} more payday${n === 1 ? "" : "s"} like ${shortDate(isoDateIn(last.occurredAt, input.timeZone))}${input.plan.switchOn && setting.mode === "auto" && input.activePlan === setting.from ? `, then ${planLabel(input.plan, setting.to)} starts` : ""}.`;
     } else tail = g.feed;
 
     return {
@@ -821,11 +824,12 @@ export function buildDrawers(input: TodayInput): Record<string, DrawerView> {
     const before = f.left - lines.reduce((t, l) => t + l.amountMinor, 0);
     if (before !== 0) lines.unshift({ kind: "before", label: `Before ${monthName}`, amountMinor: before });
 
-    const bp = (ls: PlanContext["planA"]) => ls.find((l) => l.bucketId === b.id)?.bp ?? 0;
+    const bp = (key: string) => (input.plan.plans[key] ?? []).find((l) => l.bucketId === b.id)?.bp ?? 0;
     let planText: string;
     if (b.planless) planText = "Not part of the payday split.";
     else {
-      planText = `${pctText(bp(input.plan.planA))} of each payday on Plan A${input.plan.switchOn ? `, ${pctText(bp(input.plan.planB))} on Plan B` : ""}.`;
+      const keys = planKeysInPlay(input.plan);
+      planText = `${pctText(bp(keys[0] as string))} of each payday on ${planLabel(input.plan, keys[0] as string)}${keys[1] !== undefined ? `, ${pctText(bp(keys[1]))} on ${planLabel(input.plan, keys[1])}` : ""}.`;
       const r = input.plan.rentRedirect;
       if (r && b.id === r.rentBucketId) {
         const em = nameOf.get(input.plan.emergencyBucketId ?? "") ?? "Emergency fund";

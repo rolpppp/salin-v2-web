@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PLAN_BUCKETS, autoMapCategory, bpShare, confirmIncomes, effectivePlanBp, monthlyIncome, safetyNetTarget, splitByPlan, splitOwn, suggestPlan, transferPlan } from "../../lib/money";
 import type { PayFrequency, PlanPercents, PlanPreset, Priority, SuggestPlanInput } from "../../lib/money";
 import { rng } from "../../lib/money/testkit";
-import type { ConfirmIncome, PercentLine, SentCheck, TransferAllocation } from "../../lib/money";
+import type { ActivePlanSetting, ConfirmIncome, PercentLine, SentCheck, TransferAllocation } from "../../lib/money";
 import { DATES, chance, int, pick, randomAmount, randomBps, shuffle } from "./gen";
 import type { Rand } from "./gen";
 import { USER, acctId, asAdmin, asUser, bucketId, connect, insertBuckets, insertPlan, insertRule, noonManilaMs, rolledBack, seedUser } from "./db";
@@ -15,7 +15,7 @@ const SEED = 20261011;
 const N_PLAN = 200;
 const N_OWN = 100;
 const N_TRANSFER = 100;
-const N_CONFIRM = 100;
+const N_CONFIRM = 200;
 
 let db: Db;
 beforeAll(async () => {
@@ -64,6 +64,7 @@ describe("parity: split_by_plan", () => {
       }
       const lines: PercentLine[] = inPlan.map((idx, k) => ({ bucketId: bucketId(idx), bp: bps[k] as number }));
       const emByRule = chance(r, 0.5);
+      const planKey = pick(r, ["A", "B", "p_1a2b3c4d"]);
       const explicitTo = chance(r, 0.5);
       const rentRule = rentIdx === null ? null : { rentBucketId: bucketId(rentIdx), startDate: "2027-01-01" };
       const opts = { onDate: date, buckets: range(n).map(bucketId), emergencyBucketId: bucketId(emIdx), rentRedirect: rentRule };
@@ -73,14 +74,15 @@ describe("parity: split_by_plan", () => {
 
       const actual = await rolledBack(db, async () => {
         await seedUser(db, 2);
-        await insertBuckets(db, range(n).map((k) => ({ i: k, hue: !emByRule && k === emIdx ? "emergency" : undefined, keptIn: acctId(0) })));
-        await insertPlan(db, "A", inPlan.map((idx, k) => ({ i: idx, bp: bps[k] as number })));
+        // custom buckets carry a palette hue (c1..c8); the plan may sit under any key
+        await insertBuckets(db, range(n).map((k) => ({ i: k, hue: k === emIdx ? (emByRule ? `c${(k % 8) + 1}` : "emergency") : `c${(k % 8) + 1}`, keptIn: acctId(0) })));
+        await insertPlan(db, planKey, inPlan.map((idx, k) => ({ i: idx, bp: bps[k] as number })));
         if (emByRule) await insertRule(db, "switch_on_goal", { bucketId: bucketId(emIdx), targetMinor: 5000000 });
         if (rentIdx !== null) {
           await insertRule(db, "redirect_until_date", { fromBucketId: bucketId(rentIdx), ...(explicitTo ? { toBucketId: bucketId(emIdx) } : {}), untilDate: "2027-01-01" });
         }
         await asUser(db);
-        const res = await db.query<{ bucket_id: string; amount: string; percent_bp: number }>("select bucket_id, amount, percent_bp from split_by_plan($1, 'A', $2::date)", [amount, date]);
+        const res = await db.query<{ bucket_id: string; amount: string; percent_bp: number }>("select bucket_id, amount, percent_bp from split_by_plan($1, $2, $3::date)", [amount, planKey, date]);
         await asAdmin(db);
         return res.rows.map((x) => ({ bucketId: x.bucket_id, amount: Number(x.amount), bp: x.percent_bp }));
       });
@@ -285,6 +287,8 @@ describe("parity: confirm_incomes", () => {
     let refusedCases = 0;
     let comparedCases = 0;
     let switched = 0;
+    let manualUsed = 0;
+    const planKeysSeen = new Set<string>();
     for (let i = 0; i < N_CONFIRM; i++) {
       const r = caseRng(4, i);
       const n = int(r, 3, 7);
@@ -297,10 +301,16 @@ describe("parity: confirm_incomes", () => {
         const bps = randomBps(r, subset.length);
         return subset.map((idx, k) => ({ i: idx, bp: bps[k] as number }));
       };
-      const planA = randomPlan();
-      const planB = randomPlan();
+      // P-9: 2 to 4 plans under any keys (the original A/B or generated p_ keys) and one of three ways to pick the payday plan
+      const mode = pick(r, ["auto", "auto", "auto", "manual", "manual", "noRule"] as const);
+      const planKeys = shuffle(r, ["A", "B", "p_1a2b3c4d", "p_5e6f7a8b"]).slice(0, int(r, 2, 4));
+      if (mode === "noRule" && !planKeys.includes("A")) planKeys[0] = "A";
+      const planDefs = planKeys.map((key) => ({ key, lines: randomPlan() }));
+      const [fromKey, toKey] = shuffle(r, planKeys) as [string, string];
+      const manualKey = pick(r, planKeys);
       const target = pick(r, [0, 100, 5000, 100000, 1_000_000, 3_000_000]);
       const toLines = (p: { i: number; bp: number }[]): PercentLine[] => p.map((l) => ({ bucketId: bucketId(l.i), bp: l.bp }));
+      const setting: ActivePlanSetting = mode === "manual" ? { mode: "manual", planKey: manualKey } : mode === "auto" ? { mode: "auto", from: fromKey, to: toKey } : { mode: "auto", from: "A", to: "B" };
 
       interface Inc {
         id: string;
@@ -340,24 +350,25 @@ describe("parity: confirm_incomes", () => {
         source: { rule: x.rule, wholeBucketId: x.whole === null ? null : bucketId(x.whole), splitLines: toLines(x.own) },
       }));
       const expected = confirmIncomes(tsIncomes, {
-        planA: toLines(planA),
-        planB: toLines(planB),
+        plans: Object.fromEntries(planDefs.map((d) => [d.key, toLines(d.lines)])),
+        activePlan: setting,
         buckets: range(n).map(bucketId),
         emergencyBucketId: bucketId(emIdx),
         rentRedirect: rentIdx === null ? null : { rentBucketId: bucketId(rentIdx), startDate: "2027-01-01" },
         emergencyAllocatedSoFar: 0,
         switchTarget: target,
-        switchOn: true,
+        switchOn: mode !== "noRule",
       });
       const refused = expected.some((e) => !e.confirmed);
 
       const run = (): Promise<{ entry: string; bucket: string; amount: number; planKey: string | null; dest: string }[]> =>
         rolledBack(db, async () => {
           await seedUser(db, nAcct);
-          await insertBuckets(db, range(n).map((k) => ({ i: k, keptIn: keptIn[k] as string })));
-          await insertPlan(db, "A", planA);
-          await insertPlan(db, "B", planB);
-          await insertRule(db, "switch_on_goal", { fromPlan: "A", toPlan: "B", bucketId: bucketId(emIdx), targetMinor: target });
+          // custom buckets (hue c1..c8) next to the Emergency one; a plan may give them a share like any other
+          await insertBuckets(db, range(n).map((k) => ({ i: k, keptIn: keptIn[k] as string, hue: k === emIdx ? "emergency" : `c${(k % 8) + 1}` })));
+          for (const d of planDefs) await insertPlan(db, d.key, d.lines);
+          if (mode !== "noRule") await insertRule(db, "switch_on_goal", { fromPlan: fromKey, toPlan: toKey, bucketId: bucketId(emIdx), targetMinor: target });
+          if (mode === "manual") await insertRule(db, "active_plan", { mode: "manual", planKey: manualKey });
           if (rentIdx !== null) await insertRule(db, "redirect_until_date", { fromBucketId: bucketId(rentIdx), untilDate: "2027-01-01" });
           for (const x of incomes) {
             const src = await db.query<{ id: string }>(
@@ -410,12 +421,16 @@ describe("parity: confirm_incomes", () => {
       );
       expect(await run(), ctx("confirm_incomes", i)).toEqual(flat);
       comparedCases++;
-      if (flat.some((x) => x.planKey === "B")) switched++;
+      if (mode === "auto" && flat.some((x) => x.planKey === toKey)) switched++;
+      if (mode === "manual" && flat.some((x) => x.planKey === manualKey)) manualUsed++;
+      for (const x of flat) if (x.planKey !== null) planKeysSeen.add(x.planKey);
     }
     // the generator must keep exercising both branches, or this test proves nothing
     expect(refusedCases).toBeGreaterThanOrEqual(10);
     expect(comparedCases).toBeGreaterThanOrEqual(30);
     expect(switched).toBeGreaterThanOrEqual(5);
+    expect(manualUsed).toBeGreaterThanOrEqual(5);
+    expect([...planKeysSeen].some((k) => k.startsWith("p_"))).toBe(true);
   });
 });
 

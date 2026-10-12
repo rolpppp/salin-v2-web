@@ -79,7 +79,7 @@ export function QueueRow({ data, income, source, preview, choice, open, canConfi
             {aud ? ` · ${aud}` : ""}
           </span>
           <span className={`${styles.qsmall} ${needs ? styles.needs : ""}`} data-testid="job-text">
-            {jobText(preview, income, source, data.buckets)}
+            {jobText(preview, income, source, data.buckets, data.plan)}
           </span>
         </span>
         <span className={styles.qamt} data-amount>

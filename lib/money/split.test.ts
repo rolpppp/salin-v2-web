@@ -234,14 +234,13 @@ describe("activePlan (D-14)", () => {
     expect(activePlan(5000000, 5000000)).toBe("B");
   });
   it("switch off keeps Plan A", () => {
-    expect(activePlan(9e9, 5000000, false)).toBe("A");
+    expect(activePlan(9e9, 5000000, undefined, false)).toBe("A");
   });
 });
 
 describe("confirmIncomes", () => {
   const ctx = (emergencyAllocatedSoFar: number, switchTarget: number): ConfirmContext => ({
-    planA: PLAN_A,
-    planB: PLAN_B,
+    plans: { A: PLAN_A, B: PLAN_B },
     buckets: BUCKETS,
     emergencyBucketId: "emergency",
     rentRedirect: { rentBucketId: "rent", startDate: "2027-01-01" },
@@ -336,5 +335,61 @@ describe("property: parts always sum to the amount", () => {
       expect(total(ownLines(res))).toBe(amount);
       expect(ownLines(res).every((l) => l.amount >= 0)).toBe(true);
     }
+  });
+});
+
+describe("plans v2 (P-9): any plan keys, manual or automatic", () => {
+  const CUSTOM: PercentLine[] = [
+    { bucketId: "living", bp: 4000 },
+    { bucketId: "emergency", bp: 6000 },
+  ];
+  const THIRD: PercentLine[] = [{ bucketId: "living", bp: 10_000 }];
+  const base = (over: Partial<ConfirmContext> = {}): ConfirmContext => ({
+    plans: { A: PLAN_A, B: PLAN_B, p_1a2b3c4d: CUSTOM, p_5e6f7a8b: THIRD },
+    buckets: BUCKETS,
+    emergencyBucketId: "emergency",
+    rentRedirect: null,
+    emergencyAllocatedSoFar: 0,
+    switchTarget: 1_000_000,
+    ...over,
+  });
+  const work = { rule: "plan" as const };
+  const one = (ctx: ConfirmContext) => confirmIncomes([{ id: "i", date: "2026-10-01", amount: 100_000, choice: {}, source: work }], ctx)[0];
+
+  it("manual mode always uses the chosen plan, whatever Emergency holds", () => {
+    const r = one(base({ activePlan: { mode: "manual", planKey: "p_1a2b3c4d" }, emergencyAllocatedSoFar: 9e9 }));
+    expect(r).toMatchObject({ confirmed: true, planKey: "p_1a2b3c4d" });
+    expect(r && r.confirmed && toMap(r.lines)).toMatchObject({ living: 40_000, emergency: 60_000 });
+  });
+  it("auto uses the configured from and to plans, not just A and B", () => {
+    const setting = { mode: "auto", from: "p_1a2b3c4d", to: "p_5e6f7a8b" } as const;
+    expect(one(base({ activePlan: setting, emergencyAllocatedSoFar: 999_999 }))).toMatchObject({ planKey: "p_1a2b3c4d" });
+    const r = one(base({ activePlan: setting, emergencyAllocatedSoFar: 1_000_000 }));
+    expect(r).toMatchObject({ planKey: "p_5e6f7a8b" });
+    expect(r && r.confirmed && toMap(r.lines)).toMatchObject({ living: 100_000, emergency: 0 });
+  });
+  it("the first income can switch to a custom plan for the next", () => {
+    const r = confirmIncomes(
+      [
+        { id: "i1", date: "2026-10-01", amount: 2_000_000, choice: {}, source: work },
+        { id: "i2", date: "2026-10-02", amount: 1000, choice: {}, source: work },
+      ],
+      base({ plans: { A: PLAN_A, B: PLAN_B, p_x: CUSTOM }, activePlan: { mode: "auto", from: "A", to: "p_x" }, switchTarget: 500_000 }),
+    );
+    expect(r.map((x) => (x.confirmed && x.planKey) || null)).toEqual(["A", "p_x"]);
+  });
+  it("no switch rule (switchOn false) stays on the from plan", () => {
+    expect(one(base({ activePlan: { mode: "auto", from: "p_1a2b3c4d", to: "A" }, emergencyAllocatedSoFar: 9e9, switchOn: false }))).toMatchObject({ planKey: "p_1a2b3c4d" });
+  });
+  it("activePlan() picks per setting", () => {
+    expect(activePlan(0, 100, { mode: "manual", planKey: "z" })).toBe("z");
+    expect(activePlan(100, 100, { mode: "manual", planKey: "z" })).toBe("z");
+    expect(activePlan(99, 100, { mode: "auto", from: "x", to: "y" })).toBe("x");
+    expect(activePlan(100, 100, { mode: "auto", from: "x", to: "y" })).toBe("y");
+    expect(activePlan(100, 100, { mode: "auto", from: "x", to: "y" }, false)).toBe("x");
+  });
+  it("a plan that is not in the context throws instead of guessing", () => {
+    expect(() => one(base({ activePlan: { mode: "manual", planKey: "p_gone" } }))).toThrow(/plan p_gone not found/);
+    expect(() => one(base({ activePlan: { mode: "manual", planKey: "toString" } }))).toThrow(/not found/);
   });
 });

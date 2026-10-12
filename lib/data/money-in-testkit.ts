@@ -112,8 +112,9 @@ export function moneyInData(overrides: Partial<MoneyInData> = {}): MoneyInData {
     done: [],
     cycle: null,
     plan: {
-      planA: PLAN_A,
-      planB: PLAN_B,
+      plans: { A: PLAN_A, B: PLAN_B },
+      planNames: { A: "Plan A", B: "Plan B" },
+      activePlan: { mode: "auto", from: "A", to: "B" },
       emergencyBucketId: BUCKET.emergency,
       rentRedirect: { rentBucketId: BUCKET.rent, startDate: "2027-01-01" },
       emergencyAllocatedSoFar: 0,

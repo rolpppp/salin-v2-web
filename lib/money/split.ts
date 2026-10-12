@@ -210,17 +210,34 @@ export function resolveJob(income: IncomeJobChoice, source: SourceJobRule): Reso
 
 // ---------------------------------------------------------------- active plan (D-14)
 
-export type PlanKey = "A" | "B";
+/** A plan's immutable key: `A` / `B` for the original two, `p_` + 8 hex for plans made later. */
+export type PlanKey = string;
 
 /**
- * Active plan (BR §2.2.1 with D-14): Plan A until the SUM OF ALL Emergency allocations ever
- * (withdrawals ignored) reaches the switch target, then Plan B. Evaluate before the income
- * being confirmed is added. This is the one function to change if the measure changes.
+ * Which plan splits paydays (P-9). `manual`: always that plan. `auto`: plan `from` until the Emergency
+ * allocations reach the switch target, then plan `to`. Mirrors the `active_plan` allocation_rules row
+ * (no row = auto) and the switch rule's `fromPlan` / `toPlan` (default A -> B).
  */
-export function activePlan(emergencyAllocatedSoFar: Minor, switchTarget: Minor, switchOn = true): PlanKey {
+export type ActivePlanSetting = { mode: "manual"; planKey: PlanKey } | { mode: "auto"; from: PlanKey; to: PlanKey };
+
+export const DEFAULT_ACTIVE_PLAN: ActivePlanSetting = { mode: "auto", from: "A", to: "B" };
+
+/**
+ * Active plan (BR §2.2.1 with D-14, P-9). Manual: the chosen plan. Auto: the `from` plan until the SUM OF ALL
+ * Emergency allocations ever (withdrawals ignored) reaches the switch target, then the `to` plan. Evaluate before
+ * the income being confirmed is added. `switchOn` is false when there is no switch rule or it has no target
+ * (then auto stays on `from`). This is the one function to change if the measure changes.
+ */
+export function activePlan(
+  emergencyAllocatedSoFar: Minor,
+  switchTarget: Minor,
+  setting: ActivePlanSetting = DEFAULT_ACTIVE_PLAN,
+  switchOn = true,
+): PlanKey {
   assertMinor(emergencyAllocatedSoFar, "emergencyAllocatedSoFar");
   assertMinor(switchTarget, "switchTarget");
-  return switchOn && emergencyAllocatedSoFar >= switchTarget ? "B" : "A";
+  if (setting.mode === "manual") return setting.planKey;
+  return switchOn && emergencyAllocatedSoFar >= switchTarget ? setting.to : setting.from;
 }
 
 // ---------------------------------------------------------------- confirm in date order
@@ -235,8 +252,10 @@ export interface ConfirmIncome {
 }
 
 export interface ConfirmContext {
-  planA: readonly PercentLine[];
-  planB: readonly PercentLine[];
+  /** Every live plan's lines, by key. */
+  plans: Readonly<Record<PlanKey, readonly PercentLine[]>>;
+  /** Which plan splits paydays; default automatic A -> B. */
+  activePlan?: ActivePlanSetting;
   buckets: readonly BucketId[];
   emergencyBucketId: BucketId;
   rentRedirect?: RentRedirect | null;
@@ -257,6 +276,13 @@ export type ConfirmedIncome =
     }
   | { id: string; confirmed: false; reason: NoJobReason; totalBp?: Bp };
 
+/** A plan's lines from the context; throws when the plan is not there (the SQL raises "plan not found"). */
+export function planLinesOf(ctx: Pick<ConfirmContext, "plans">, planKey: PlanKey): readonly PercentLine[] {
+  const lines = Object.hasOwn(ctx.plans, planKey) ? ctx.plans[planKey] : undefined;
+  if (!lines) throw new Error(`plan ${planKey} not found`);
+  return lines;
+}
+
 /** The lines a job produces, or null when the job needs a plan evaluation. */
 export function allocateIncome(
   amount: Minor,
@@ -267,7 +293,7 @@ export function allocateIncome(
 ): SplitLine[] {
   switch (job.job) {
     case "plan":
-      return splitByPlan(amount, planKey === "A" ? ctx.planA : ctx.planB, {
+      return splitByPlan(amount, planLinesOf(ctx, planKey), {
         onDate: date,
         buckets: ctx.buckets,
         emergencyBucketId: ctx.emergencyBucketId,
@@ -302,7 +328,7 @@ export function confirmIncomes(incomes: readonly ConfirmIncome[], ctx: ConfirmCo
       out.push({ id: inc.id, confirmed: false, reason: job.reason, ...(job.totalBp !== undefined ? { totalBp: job.totalBp } : {}) });
       continue;
     }
-    const planKey = activePlan(emergency, ctx.switchTarget, ctx.switchOn ?? true);
+    const planKey = activePlan(emergency, ctx.switchTarget, ctx.activePlan ?? DEFAULT_ACTIVE_PLAN, ctx.switchOn ?? true);
     const lines = allocateIncome(inc.amount, inc.date, job, planKey, ctx);
     emergency += lines.filter((l) => l.bucketId === ctx.emergencyBucketId).reduce((t, l) => t + l.amount, 0);
     out.push({ id: inc.id, confirmed: true, job: job.job, ...(job.job === "plan" ? { planKey } : {}), lines });

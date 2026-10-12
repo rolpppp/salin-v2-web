@@ -200,7 +200,7 @@ describe("shelf", () => {
   });
 
   it("visibility rules: plan share, source keeps money, or it holds/spent money; groups with nothing are hidden", () => {
-    const plan = { planA: [{ bucketId: BUCKET.living, bp: 10_000 }], planB: [], switchOn: false };
+    const plan = { plans: { A: [{ bucketId: BUCKET.living, bp: 10_000 }], B: [] }, activePlan: mi.plan.activePlan, switchOn: false };
     const noFlow: BucketFlow = { allocated: 0, spent: 0, coversIn: 0, coversOut: 0, left: 0 };
     const b = (hue: Hue): TodayBucket => todayBuckets.find((x) => x.id === BUCKET[hue]) as TodayBucket;
     expect(bucketOnShelf(b("living"), noFlow, plan, [])).toBe(true);
@@ -208,9 +208,13 @@ describe("shelf", () => {
     expect(bucketOnShelf(b("fun"), { ...noFlow, spent: 100, left: -100 }, plan, [])).toBe(true);
     expect(bucketOnShelf(b("fun"), noFlow, plan, [{ ...sources[0]!, rule: "whole", wholeBucketId: BUCKET.fun }])).toBe(true);
     expect(bucketOnShelf({ ...b("fun"), isArchived: true }, noFlow, plan, [])).toBe(false);
+    // a manual plan counts alone; the switch rule's plans are ignored (P-9)
+    const manual = { plans: { A: [{ bucketId: BUCKET.living, bp: 10_000 }], p_x: [{ bucketId: BUCKET.fun, bp: 500 }, { bucketId: BUCKET.living, bp: 9_500 }] }, activePlan: { mode: "manual", planKey: "A" } as const, switchOn: true };
+    expect(bucketOnShelf(b("fun"), noFlow, manual, [])).toBe(false);
+    expect(bucketOnShelf(b("fun"), noFlow, { ...manual, activePlan: { mode: "manual", planKey: "p_x" } }, [])).toBe(true);
     // Plan B counts only while the switch is on
-    expect(bucketOnShelf(b("fun"), noFlow, { ...plan, planB: [{ bucketId: BUCKET.fun, bp: 500 }], switchOn: true }, [])).toBe(true);
-    const onlyLiving = buildTodayView(g9({ plan: { ...mi.plan, planA: [{ bucketId: BUCKET.living, bp: 10_000 }], planB: [], switchOn: false }, flows: flowsOf({}), allocations: [], sources: [] }));
+    expect(bucketOnShelf(b("fun"), noFlow, { ...plan, plans: { ...plan.plans, B: [{ bucketId: BUCKET.fun, bp: 500 }] }, switchOn: true }, [])).toBe(true);
+    const onlyLiving = buildTodayView(g9({ plan: { ...mi.plan, plans: { A: [{ bucketId: BUCKET.living, bp: 10_000 }], B: [] }, switchOn: false }, flows: flowsOf({}), allocations: [], sources: [] }));
     expect(onlyLiving.shelf?.groups.map((g) => g.key)).toEqual(["spend"]);
     expect(onlyLiving.safe?.caption).toBe("Living money, until your next payday.");
   });
@@ -366,7 +370,7 @@ describe("Getting started (BR §12.6)", () => {
   });
 
   it("just tracking has its own steps and asks for a plan", () => {
-    const v = buildTodayView(first({ profile: { ...g9().profile, onboardedAt: ms(5), planMode: "track" }, plan: { ...mi.plan, planA: [{ bucketId: BUCKET.living, bp: 10_000 }] } }));
+    const v = buildTodayView(first({ profile: { ...g9().profile, onboardedAt: ms(5), planMode: "track" }, plan: { ...mi.plan, plans: { ...mi.plan.plans, A: [{ bucketId: BUCKET.living, bp: 10_000 }] } } }));
     expect(v.week.steps.map((s) => s.label)).toEqual(["Income and accounts set up", "Make a plan", "First pay recorded", "First spending logged", "First week closed"]);
     expect(v.next.kind).toBe("make_plan");
     // The card's button is a server action (SPEC §7.6), not a link.
@@ -379,7 +383,7 @@ describe("Getting started (BR §12.6)", () => {
 
   it("just tracking: Make a plan stays first until a plan exists, then First pay recorded and the rest follow", () => {
     const track = { ...g9().profile, onboardedAt: ms(5), planMode: "track" };
-    const justLiving = { ...mi.plan, planA: [{ bucketId: BUCKET.living, bp: 10_000 }] };
+    const justLiving = { ...mi.plan, plans: { ...mi.plan.plans, A: [{ bucketId: BUCKET.living, bp: 10_000 }] } };
     // A pay is waiting: the card goes to it, and the step reads done.
     const waiting = buildTodayView(first({ profile: track, plan: justLiving, incomes: [income("a", "work", 100_000, 9)] }));
     expect(waiting.next.kind).toBe("assign");

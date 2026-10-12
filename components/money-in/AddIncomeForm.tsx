@@ -48,8 +48,8 @@ export function AddIncomeForm({ data, onCancel, onAdded }: AddIncomeFormProps) {
   const source = sources.find((s) => s.id === sourceId);
   const showAud = source?.kind === "salary";
   const blocked = sources.length === 0 ? "no_sources" : accounts.length === 0 ? "no_accounts" : null;
-  const planKey = activePlan(data.plan.emergencyAllocatedSoFar, data.plan.switchTarget, data.plan.switchOn);
-  const job = source ? ruleJobText(source, data.buckets, planKey) : null;
+  const planKey = activePlan(data.plan.emergencyAllocatedSoFar, data.plan.switchTarget, data.plan.activePlan, data.plan.switchOn);
+  const job = source ? ruleJobText(source, data.buckets, planKey, data.plan) : null;
 
   function focusField(field: AddIncomeField) {
     formRef.current?.querySelector<HTMLElement>(`[data-field="${field}"] input, [data-field="${field}"] select`)?.focus();

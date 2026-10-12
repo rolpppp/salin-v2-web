@@ -1639,6 +1639,15 @@ export type Database = {
         }[]
       }
       active_plan: { Args: { p_user?: string }; Returns: string }
+      create_bucket: {
+        Args: { p_group: string; p_hue?: string; p_kept_in?: string; p_name: string }
+        Returns: string
+      }
+      create_plan: {
+        Args: { p_copy_from?: string; p_lines: Json; p_name: string }
+        Returns: string
+      }
+      delete_plan: { Args: { p_plan_key: string }; Returns: undefined }
       add_goal: {
         Args: {
           p_bucket?: string
@@ -1654,6 +1663,8 @@ export type Database = {
       }
       apply_plan_only: { Args: { p_draft: Json }; Returns: undefined }
       archive_account: { Args: { p_account: string }; Returns: undefined }
+      archive_bucket: { Args: { p_bucket: string }; Returns: undefined }
+      bucket_archive_reason: { Args: { p_bucket: string }; Returns: string }
       archive_goal: { Args: { p_goal: string }; Returns: undefined }
       assert_self: { Args: { p_user: string }; Returns: string }
       backfill_entry_buckets: { Args: { p_user?: string }; Returns: number }
@@ -1875,6 +1886,7 @@ export type Database = {
         Args: { p_bucket: string; p_category: string }
         Returns: number
       }
+      plan_settings: { Args: never; Returns: Json }
       now_ms: { Args: never; Returns: number }
       nudge_plan_percent: {
         Args: { p_bp: number; p_from_bucket: string; p_to_bucket: string }
@@ -1958,11 +1970,13 @@ export type Database = {
       }
       remove_category: { Args: { p_category: string }; Returns: undefined }
       remove_income_source: { Args: { p_source: string }; Returns: undefined }
+      rename_plan: { Args: { p_name: string; p_plan_key: string }; Returns: undefined }
       rename_income_source: {
         Args: { p_name: string; p_source: string }
         Returns: undefined
       }
       restore_account: { Args: { p_account: string }; Returns: undefined }
+      restore_bucket: { Args: { p_bucket: string }; Returns: undefined }
       restore_goal: { Args: { p_goal: string }; Returns: undefined }
       save_income_source_split: {
         Args: { p_lines: Json; p_source: string }
@@ -1970,6 +1984,10 @@ export type Database = {
       }
       save_plan_lines: {
         Args: { p_lines: Json; p_plan_key: string }
+        Returns: undefined
+      }
+      set_active_plan: {
+        Args: { p_from?: string; p_mode: string; p_plan_key?: string; p_to?: string }
         Returns: undefined
       }
       set_bucket_kept_in: {
@@ -2038,6 +2056,10 @@ export type Database = {
       }
       untick_transfer: {
         Args: { p_from: string; p_to: string }
+        Returns: undefined
+      }
+      update_bucket: {
+        Args: { p_bucket: string; p_group: string; p_hue: string; p_name: string; p_short_name: string }
         Returns: undefined
       }
       update_goal: {

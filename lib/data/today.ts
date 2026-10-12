@@ -179,7 +179,7 @@ export async function getTodayInput(client: Client, opts: { userId: string; nowM
   }));
 
   const reviews = reviewRes.data ?? [];
-  const activePlan: PlanKey = activeRes.data === "B" ? "B" : "A";
+  const activePlan: PlanKey = activeRes.data || "A";
 
   return {
     nowMs,

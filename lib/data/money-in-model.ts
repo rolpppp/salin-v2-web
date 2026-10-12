@@ -14,7 +14,9 @@ import {
   parseMoney,
   ratePerAud,
   resolveJob,
+  planLinesOf,
   splitOwn,
+  type ActivePlanSetting,
   type JobKind,
   type PercentLine,
   type PlanKey,
@@ -105,14 +107,29 @@ export interface MiTransferRow {
 }
 
 export interface PlanContext {
-  planA: PercentLine[];
-  planB: PercentLine[];
+  /** Every live plan's lines, by key (`A`, `B`, `p_xxxxxxxx`). */
+  plans: Record<string, PercentLine[]>;
+  /** Every live plan's name, by key. */
+  planNames: Record<string, string>;
+  /** Which plan splits paydays: one chosen plan, or automatic from -> to at the switch target (P-9). */
+  activePlan: ActivePlanSetting;
   emergencyBucketId: string | null;
   rentRedirect: RentRedirect | null;
   /** Σ of all Emergency allocations already confirmed (D-14). */
   emergencyAllocatedSoFar: number;
   switchTarget: number;
   switchOn: boolean;
+}
+
+/** A plan's name for display; "Plan A" / "Plan B" for the original two when the name is missing. */
+export function planLabel(plan: Pick<PlanContext, "planNames">, key: string): string {
+  return plan.planNames[key] ?? (key.length === 1 ? `Plan ${key}` : "Your plan");
+}
+
+/** The keys of the plans that can split a payday now: the chosen plan, or both ends of the automatic switch. */
+export function planKeysInPlay(plan: Pick<PlanContext, "activePlan" | "switchOn">): string[] {
+  const s = plan.activePlan;
+  return s.mode === "manual" ? [s.planKey] : plan.switchOn ? [s.from, s.to] : [s.from];
 }
 
 export interface MoneyInData {
@@ -292,10 +309,10 @@ export function computePreviews(
         out.set(inc.id, { kind: "error", message: "Rent can't be picked for a one-off. Choose another bucket." });
         continue;
       }
-      const planKey = activePlan(emergency, plan.switchTarget, plan.switchOn);
+      const planKey = activePlan(emergency, plan.switchTarget, plan.activePlan, plan.switchOn);
       const ctx = {
-        planA: plan.planA,
-        planB: plan.planB,
+        plans: plan.plans,
+        activePlan: plan.activePlan,
         buckets: allIds,
         emergencyBucketId: plan.emergencyBucketId,
         rentRedirect: plan.rentRedirect,
@@ -310,7 +327,7 @@ export function computePreviews(
 
       const bps = new Map<string, number>();
       if (resolved.job === "plan") {
-        const eff = effectivePlanBp(planKey === "A" ? plan.planA : plan.planB, {
+        const eff = effectivePlanBp(planLinesOf(plan, planKey), {
           onDate: inc.engineDate,
           buckets: allIds,
           emergencyBucketId: plan.emergencyBucketId,
@@ -331,12 +348,12 @@ export function computePreviews(
 }
 
 /** The row's job line: "Split by Plan A", "Own split: Tax 10 · Sinking 40 · Fun 50", "Kept whole in Scholarship", or the reason it has none. */
-export function jobText(preview: Preview, income: MiIncome, source: MiSource | undefined, buckets: readonly MiBucket[]): string {
+export function jobText(preview: Preview, income: MiIncome, source: MiSource | undefined, buckets: readonly MiBucket[], plan?: Pick<PlanContext, "planNames">): string {
   if (preview.kind === "needs") return needsJobText(preview.reason, preview.totalBp);
   if (preview.kind === "error") return preview.message;
   switch (preview.job) {
     case "plan":
-      return `Split by Plan ${preview.planKey ?? "A"}`;
+      return `Split by ${planLabel(plan ?? { planNames: {} }, preview.planKey ?? "A")}`;
     case "own":
       return `Own split: ${(source?.splitLines ?? [])
         .filter((l) => l.bp > 0)
@@ -350,10 +367,10 @@ export function jobText(preview: Preview, income: MiIncome, source: MiSource | u
 }
 
 /** `ruleText` for the "Use its rule" card and the Add income "Its job" line, or null when the rule gives no job. */
-export function ruleJobText(source: MiSource, buckets: readonly MiBucket[], planKey: PlanKey = "A"): { kind: "job" | "pick"; text: string } {
+export function ruleJobText(source: MiSource, buckets: readonly MiBucket[], planKey: PlanKey = "A", plan?: Pick<PlanContext, "planNames">): { kind: "job" | "pick"; text: string } {
   switch (source.rule) {
     case "plan":
-      return { kind: "job", text: `Split by Plan ${planKey}` };
+      return { kind: "job", text: `Split by ${planLabel(plan ?? { planNames: {} }, planKey)}` };
     case "own": {
       const r = splitOwn(0, source.splitLines);
       if (r.kind !== "split") {
@@ -388,17 +405,18 @@ export function whyText(preview: Preview, income: MiIncome, data: Pick<MoneyInDa
   const parts: string[] = [];
   const r = plan.rentRedirect;
   if (r && income.engineDate < r.startDate) {
-    const planLines = preview.planKey === "B" ? plan.planB : plan.planA;
+    const planLines = plan.plans[preview.planKey ?? ""] ?? [];
     const rentBp = planLines.find((l) => l.bucketId === r.rentBucketId)?.bp ?? 0;
     if (rentBp > 0) {
       parts.push(`${bucketName(buckets, r.rentBucketId)}'s ${pctText(rentBp)} went to ${bucketName(buckets, plan.emergencyBucketId)} until ${shortDate(r.startDate)}, ${r.startDate.slice(0, 4)}.`);
     }
   }
+  const setting = plan.activePlan;
   parts.push(
-    plan.switchOn && plan.switchTarget > 0
-      ? preview.planKey === "B"
-        ? `Plan B applies now that the Emergency fund reached ${formatPeso(plan.switchTarget)}.`
-        : `Plan A runs until the Emergency fund reaches ${formatPeso(plan.switchTarget)}.`
+    setting.mode === "auto" && plan.switchOn && plan.switchTarget > 0
+      ? preview.planKey === setting.to
+        ? `${planLabel(plan, setting.to)} applies now that the Emergency fund reached ${formatPeso(plan.switchTarget)}.`
+        : `${planLabel(plan, preview.planKey ?? setting.from)} runs until the Emergency fund reaches ${formatPeso(plan.switchTarget)}.`
       : "Your plan's percentages, applied to this amount.",
   );
   return parts.join(" ");

@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/lib/database.types";
 import { LedgerOrigin, MoneyDirection } from "@/lib/domain/enums";
-import type { JobKind, PercentLine, RentRedirect, SourceRule } from "@/lib/money";
+import type { ActivePlanSetting, JobKind, PercentLine, RentRedirect, SourceRule } from "@/lib/money";
 import { zonedParts } from "@/lib/time";
 import {
   doneHow,
@@ -87,7 +87,7 @@ export async function getMoneyInData(client: Client, opts: { nowMs: number; time
   const splitsP = pageAll<{ sourceId: string; bucketId: string; percentBp: number }>((from, to) =>
     client.from("income_source_split_lines").select("sourceId, bucketId, percentBp").is("deletedAt", null).order("id").range(from, to),
   );
-  const plansP = pageAll<{ id: string; key: string }>((from, to) => client.from("allocation_plans").select("id, key").is("deletedAt", null).order("id").range(from, to));
+  const plansP = pageAll<{ id: string; key: string; name: string }>((from, to) => client.from("allocation_plans").select("id, key, name").is("deletedAt", null).order("id").range(from, to));
   const planLinesP = pageAll<{ planId: string; bucketId: string; percentBp: number }>((from, to) =>
     client.from("allocation_plan_lines").select("planId, bucketId, percentBp").is("deletedAt", null).order("id").range(from, to),
   );
@@ -187,14 +187,24 @@ export async function getMoneyInData(client: Client, opts: { nowMs: number; time
   const rentBucketId = (rentFrom && known.has(rentFrom) ? rentFrom : null) ?? buckets.find((b) => b.hue === "rent")?.id ?? null;
   const rentRedirect: RentRedirect | null = redirectRule && untilDate && rentBucketId ? { rentBucketId, startDate: untilDate } : null;
   const switchTarget = asInt(switchRule?.params.targetMinor);
-  const planLines = (key: string): PercentLine[] => {
-    const plan = planRows.find((p) => p.key === key);
-    return plan ? planLineRows.filter((l) => l.planId === plan.id).map((l): PercentLine => ({ bucketId: l.bucketId, bp: l.percentBp })) : [];
-  };
+  const plans: Record<string, PercentLine[]> = {};
+  const planNames: Record<string, string> = {};
+  for (const p of planRows) {
+    plans[p.key] = planLineRows.filter((l) => l.planId === p.id).map((l): PercentLine => ({ bucketId: l.bucketId, bp: l.percentBp }));
+    planNames[p.key] = p.name?.trim() || `Plan ${p.key}`;
+  }
+  // which plan splits paydays (mirrors active_plan): a manual row naming a live plan, else automatic from -> to
+  const activeRow = rules.find((r) => r.kind === "active_plan");
+  const manualKey = activeRow?.params.mode === "manual" ? asString(activeRow.params.planKey) : null;
+  const activePlan: ActivePlanSetting =
+    manualKey && Object.hasOwn(plans, manualKey)
+      ? { mode: "manual", planKey: manualKey }
+      : { mode: "auto", from: asString(switchRule?.params.fromPlan) ?? "A", to: asString(switchRule?.params.toPlan) ?? "B" };
 
   const plan: PlanContext = {
-    planA: planLines("A"),
-    planB: planLines("B"),
+    plans,
+    planNames,
+    activePlan,
     emergencyBucketId,
     rentRedirect,
     emergencyAllocatedSoFar,

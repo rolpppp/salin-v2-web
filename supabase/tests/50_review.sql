@@ -2,7 +2,7 @@
 -- cover, close_week computes its checks server-side and is idempotent, tab_badges, and nudge_plan_percent
 -- changes BOTH plans atomically (D-18). Clock-independent: every date is relative to now.
 begin;
-select plan(67);
+select plan(69);
 
 insert into auth.users (id, instance_id, aud, role) values
   ('aaaaaaaa-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated'),
@@ -188,14 +188,16 @@ select is((select string_agg(plan_key || ':' || to_bp, ',' order by plan_key) fr
 select is(pg_temp.pcts('A'), 'tax=1000,living=4100,rent=100,emergency=2500,fun=1300,buffer=1000', 'Plan A got the Rent line');
 select ok(pg_temp.total('A') = 10000 and pg_temp.total('B') = 10000, 'still 10000 after adding a line');
 
-select throws_ok($$select * from public.nudge_plan_percent('b1000000-0000-0000-0000-000000000007', 'b1000000-0000-0000-0000-000000000002', 900)$$, '22023',
-  'Fun is at 8% in Plan B, so 9% can''t move to Living. Change the split in Plans instead.', 'refused when Fun would go below 0 in Plan B, and it says which plan');
-select is(pg_temp.pcts('A'), 'tax=1000,living=4100,rent=100,emergency=2500,fun=1300,buffer=1000', 'a refusal changes nothing: Plan A is untouched');
-select is(pg_temp.pcts('B'), 'tax=500,living=5100,rent=100,emergency=3000,fun=800,buffer=500', 'a refusal changes nothing: Plan B is untouched');
-select lives_ok($$select * from public.nudge_plan_percent('b1000000-0000-0000-0000-000000000007', 'b1000000-0000-0000-0000-000000000002', 800)$$, 'moving exactly what Fun has in the thinnest plan is allowed');
+select is((select string_agg(plan_key, ',') from public.nudge_plan_percent('b1000000-0000-0000-0000-000000000007', 'b1000000-0000-0000-0000-000000000002', 900)), 'A',
+  'only plans where Fun has the 9% move (P-9): Plan B (8%) is left alone');
+select is(pg_temp.pcts('A'), 'tax=1000,living=5000,rent=100,emergency=2500,fun=400,buffer=1000', 'Plan A moved');
+select is(pg_temp.pcts('B'), 'tax=500,living=5100,rent=100,emergency=3000,fun=800,buffer=500', 'Plan B is untouched');
+select is((select string_agg(plan_key, ',') from public.nudge_plan_percent('b1000000-0000-0000-0000-000000000007', 'b1000000-0000-0000-0000-000000000002', 800)), 'B', 'moving what only Plan B has changes only Plan B');
 select is(pg_temp.pcts('B'), 'tax=500,living=5900,rent=100,emergency=3000,fun=0,buffer=500', 'Plan B Fun is 0');
+select lives_ok($$select * from public.nudge_plan_percent('b1000000-0000-0000-0000-000000000007', 'b1000000-0000-0000-0000-000000000002', 400)$$, 'Plan A gives its last 4%');
 select throws_ok($$select * from public.nudge_plan_percent('b1000000-0000-0000-0000-000000000007', 'b1000000-0000-0000-0000-000000000002', 100)$$, '22023',
-  'Fun is at 0% in Plan B, so 1% can''t move to Living. Change the split in Plans instead.', 'Fun at 0 in Plan B is refused with its name');
+  'Fun has less than 1% in every plan, so 1% can''t move to Living. Change the split in Plans instead.', 'refused, naming the buckets, when no plan has enough');
+select ok(pg_temp.total('A') = 10000 and pg_temp.total('B') = 10000, 'both plans still total 10000 bp after every nudge');
 select throws_ok($$select * from public.nudge_plan_percent('b1000000-0000-0000-0000-000000000007', 'b1000000-0000-0000-0000-000000000007', 100)$$, '22023', null, 'same bucket twice is refused');
 select throws_ok($$select * from public.nudge_plan_percent('b1000000-0000-0000-0000-000000000007', 'b1000000-0000-0000-0000-000000000002', 0)$$, '22023', null, 'zero is refused');
 select is((select md5(coalesce(string_agg(a::text, '|' order by a.id), '')) from public.allocations a), (select h from before_alloc), 'confirmed allocations are untouched by plan nudges (future paydays only)');
