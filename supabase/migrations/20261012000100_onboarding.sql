@@ -590,7 +590,7 @@ begin
   end loop;
   if p_mode = 'finish' then
     for v_el in select value from jsonb_array_elements(p_d -> 'sources') loop
-      if v_el ->> 'kind' = 'scholarship' and not ('scholarship' = any (v_need)) then v_need := v_need || 'scholarship'; end if;
+      if v_el ->> 'kind' = 'scholarship' and not ('scholarship' = any (v_need)) then v_need := v_need || 'scholarship'::text; end if;
       if v_el ->> 'rule' = 'whole' and not ((v_el ->> 'wholeBucket') = any (v_need)) then v_need := v_need || (v_el ->> 'wholeBucket'); end if;
       if v_el ->> 'rule' = 'own' and public.onb_present(v_el -> 'ownSplit') then
         for v_k2, v_v in select key, value from jsonb_each(v_el -> 'ownSplit') loop

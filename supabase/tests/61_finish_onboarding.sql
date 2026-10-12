@@ -2,13 +2,13 @@
 -- Web path O1/O6 (4 transfers), idempotency, first pay with ticked transfers, rent redirect (O2), app path with
 -- existing rows, just track (O5) and then "Make a plan", draft validation (22023), ownership refusals (42501).
 begin;
-select plan(121);
+select plan(124);
 
 insert into auth.users (id, instance_id, aud, role)
 select u, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated' from unnest(array[
   'aaaaaaaa-0000-0000-0000-000000000001', 'bbbbbbbb-0000-0000-0000-000000000002', 'cccccccc-0000-0000-0000-000000000003',
   'dddddddd-0000-0000-0000-000000000004', 'eeeeeeee-0000-0000-0000-000000000005', 'ffffffff-0000-0000-0000-000000000006',
-  '99999999-0000-0000-0000-000000000007']::uuid[]) u;
+  '99999999-0000-0000-0000-000000000007', '88888888-0000-0000-0000-000000000008']::uuid[]) u;
 
 -- B owns rows whose ids no other user may reference
 insert into public.accounts (id, user_id, name, "accountType", "openingBalanceMinor", currency, icon, "displayOrder", "isArchived", "createdAt", "updatedAt", "syncStatus") values
@@ -312,6 +312,16 @@ select throws_ok($$select public.finish_onboarding(pg_temp.d('g') || '{"path":"a
   "homes":null,"firstPay":{"choice":"yes","entryId":"b-entry","amountMinor":null,"date":null,"splitConfirmed":true,"ticked":[],"reminder":"none"}}')$$,
   '42501', null, 'app path: the pay entry is another user''s');
 select is((select count(*)::int from public.buckets), 0, 'ownership refusals wrote nothing');
+
+-- =========================================================== H: an extra scholarship source (kept whole) finishes
+-- Regression: `text[] || 'scholarship'` parsed the literal as an array (22P02) for any draft with a scholarship source.
+select pg_temp.as_user('88888888-0000-0000-0000-000000000008');
+select lives_ok($$select public.finish_onboarding(jsonb_insert(pg_temp.d('h'), '{sources,1}',
+  '{"key":"scholarship","name":"DOST scholarship","kind":"scholarship","rule":"whole","wholeBucket":"scholarship","ownSplit":null,"landsInAccountId":"h-bpi","categoryId":null,"isMain":false}'))$$,
+  'a draft with a scholarship source finishes');
+select is((select count(*)::int from public.buckets where name = 'Scholarship' and planless), 1, 'the Scholarship bucket is created, planless');
+select is((select count(*)::int from public.income_sources where kind = 'scholarship' and "wholeBucketId" = (select id from public.buckets where name = 'Scholarship')), 1,
+  'the scholarship source keeps its money whole in Scholarship');
 
 select * from finish();
 rollback;
