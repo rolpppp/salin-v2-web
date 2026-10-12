@@ -91,7 +91,7 @@ async function seed(userId: string) {
     (
       await db.from("goals").insert([
         { user_id: userId, name: "Emergency fund", targetMinor: 5_000_000, linkedBucketId: b["Emergency fund"], isPlanSwitch: true },
-        { user_id: userId, name: "PC Build", targetMinor: 8_000_000 },
+        { user_id: userId, name: "PC Build", targetMinor: 8_000_000, linkedBucketId: null, isPlanSwitch: false },
       ])
     ).error,
   );
@@ -113,27 +113,28 @@ test.beforeAll(async ({}, info) => {
 test.beforeEach(async ({ page }) => signIn(page));
 
 test("accounts: in-use accounts say why and have no Archive; free ones archive and restore", async ({ page }) => {
-  const main = page.getByRole("listitem").filter({ hasText: "Main bank" });
+  // Account names are editable inputs, so a row is found by its name field, not by text.
+  const main = page.getByRole("listitem").filter({ has: page.getByRole("textbox", { name: "Account name for Main bank" }) });
   await expect(main).toContainText("Living is kept here");
   await expect(main.getByRole("button", { name: /Archive/ })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Archive Spare wallet" }).click();
-  await expect(page.getByTestId("accounts-rows")).not.toContainText("Spare wallet");
+  await expect(page.getByTestId("accounts-rows").getByRole("textbox", { name: "Account name for Spare wallet" })).toHaveCount(0);
   const archived = page.getByTestId("archived-accounts");
   await expect(archived).toContainText("Spare wallet");
   await archived.getByRole("button", { name: "Restore Spare wallet" }).click();
-  await expect(page.getByTestId("accounts-rows")).toContainText("Spare wallet");
+  await expect(page.getByTestId("accounts-rows").getByRole("textbox", { name: "Account name for Spare wallet" })).toBeVisible();
 });
 
 test("accounts: add with a duplicate name is refused inline, then a new account is added", async ({ page }) => {
   await page.getByRole("button", { name: "+ Add account" }).click();
-  await page.getByLabel("Name").fill("main bank");
+  await page.getByLabel("Name", { exact: true }).fill("main bank");
   await page.getByRole("button", { name: "Add account" }).click();
   await expect(page.getByText(/already have an account called main bank/)).toBeVisible();
-  await page.getByLabel("Name").fill("AUD savings");
+  await page.getByLabel("Name", { exact: true }).fill("AUD savings");
   await page.getByLabel("Currency").selectOption("AUD");
   await page.getByRole("button", { name: "Add account" }).click();
-  await expect(page.getByRole("listitem").filter({ hasText: "AUD savings" })).toContainText("AUD");
+  await expect(page.getByRole("listitem").filter({ has: page.getByRole("textbox", { name: "Account name for AUD savings" }) })).toContainText("AUD");
 });
 
 test("accounts: renaming keeps references (the bucket chip still shows under the renamed account)", async ({ page }) => {
@@ -141,7 +142,7 @@ test("accounts: renaming keeps references (the bucket chip still shows under the
   await name.fill("Main bank (renamed)");
   await name.blur();
   await expect(page.getByRole("textbox", { name: "Account name for Main bank (renamed)" })).toBeVisible();
-  await expect(page.getByRole("listitem").filter({ hasText: "Main bank (renamed)" })).toContainText("Living");
+  await expect(page.getByRole("listitem").filter({ has: page.getByRole("textbox", { name: "Account name for Main bank (renamed)" }) })).toContainText("Living");
 });
 
 test("archive is refused by the database even when the UI is bypassed", async () => {
@@ -175,14 +176,14 @@ test("categories: moving one leaves old spending behind with a 'logged before th
   await page.getByRole("combobox", { name: "Move Groceries to" }).selectOption({ label: "Move to Fun" });
   const living = page.getByTestId("cat-group-Living");
   await expect(living.getByTestId("moved-line")).toContainText(`${formatPeso(15_000)} from Groceries (now in Fun), logged before the move`);
-  await expect(page.getByTestId("cat-group-Fun")).toContainText("Groceries");
+  await expect(page.getByTestId("cat-group-Fun").getByRole("textbox", { name: "Category name for Groceries" })).toBeVisible();
   // nothing from before the move jumped to Fun
   await expect(page.getByTestId("cat-group-Fun").getByTestId("group-spent")).not.toContainText(formatPeso(15_000));
 });
 
 test("goals: retarget Emergency (it is the Plan B switch too), add, archive, restore", async ({ page }) => {
   await page.goto("/plans/goals");
-  const em = page.getByRole("listitem").filter({ hasText: "Emergency fund" }).first();
+  const em = page.getByRole("listitem").filter({ has: page.getByRole("textbox", { name: "Goal name for Emergency fund" }) });
   await expect(em.getByTestId("goal-saved")).toContainText(`${formatPeso(0)} saved`);
   await expect(page.getByRole("button", { name: "Archive Emergency fund" })).toHaveCount(0);
 
@@ -195,14 +196,14 @@ test("goals: retarget Emergency (it is the Plan B switch too), add, archive, res
   expect((await eventsFor(user.id, "plan_edited")).some((e) => (e.props as { field?: string }).field === "target")).toBe(true);
 
   await page.getByRole("button", { name: "+ Add a goal" }).click();
-  await page.getByLabel("Name").fill("Trip");
-  await page.getByLabel("Target").fill("30,000");
+  await page.getByLabel("Name", { exact: true }).fill("Trip");
+  await page.getByLabel("Target", { exact: true }).fill("30,000");
   await page.getByRole("button", { name: "Add goal" }).click();
-  await expect(page.getByRole("listitem").filter({ hasText: "Trip" })).toContainText(`of ${formatPeso(3_000_000)}`);
+  await expect(page.getByRole("listitem").filter({ has: page.getByRole("textbox", { name: "Goal name for Trip" }) })).toContainText(`of ${formatPeso(3_000_000)}`);
 
   await page.getByRole("button", { name: "Archive Trip" }).click();
   await page.getByTestId("archived-goals").getByRole("button", { name: "Restore Trip" }).click();
-  await expect(page.getByTestId("goal-rows")).toContainText("Trip");
+  await expect(page.getByTestId("goal-rows").getByRole("textbox", { name: "Goal name for Trip" })).toBeVisible();
 });
 
 for (const path of ["/plans/accounts", "/plans/categories", "/plans/goals"]) {

@@ -102,7 +102,7 @@ test.describe("Split plan", () => {
     const { user, seed } = await signedInWithPlans(page, "/plans/split");
     const fun = page.getByLabel("Fun Plan B percent");
     await fun.focus();
-    await page.keyboard.press("Control+A");
+    await page.keyboard.press("ControlOrMeta+A");
     await page.keyboard.type("10");
     await page.getByLabel("Emergency fund Plan B percent").fill("30");
     await page.getByLabel("Emergency fund Plan B percent").press("Enter");
@@ -151,6 +151,10 @@ test.describe("Income sources", () => {
     await page.getByLabel("Rule for Gifts").selectOption("whole");
     await expect(page.getByLabel("Bucket for Gifts")).toBeVisible();
     await page.getByLabel("Bucket for Gifts").selectOption(seed.bucket.living);
+    // The save is a server action; reload only once it has landed.
+    await expect
+      .poll(async () => (await adminClient().from("income_sources").select("wholeBucketId").eq("user_id", user.id).eq("name", "Gifts").single()).data?.wholeBucketId)
+      .toBe(seed.bucket.living);
     await page.reload();
     await expect(page.getByLabel("Rule for Gifts")).toHaveValue("whole");
     await expect(page.getByLabel("Bucket for Gifts")).toHaveValue(seed.bucket.living);
@@ -187,6 +191,7 @@ test.describe("Income sources", () => {
     await signedInWithPlans(page, "/plans/income");
     await page.getByLabel("Name of Gifts").fill("Birthday money");
     await page.getByLabel("Name of Gifts").blur();
+    await expect(page.getByTestId("live-region")).toContainText("Renamed to Birthday money.");
     await page.reload();
     await expect(page.getByLabel("Rule for Birthday money")).toBeVisible();
     await page.getByRole("button", { name: "Remove Birthday money" }).click();

@@ -2,15 +2,17 @@ import { expect, test, type Page } from "@playwright/test";
 
 const ROUTES: Array<{ path: string; heading: string | RegExp }> = [
   { path: "/today", heading: /^(Hello|Good (morning|afternoon|evening))/ },
-  { path: "/money-in", heading: "Money in" },
-  { path: "/review", heading: "Review" },
+  // The empty user's Money in title is its empty state; Review is titled by the week.
+  { path: "/money-in", heading: "Nothing waiting" },
+  { path: "/review", heading: /^Week of / },
   { path: "/plans/split", heading: "Plans" },
   { path: "/plans/income", heading: "Plans" },
   { path: "/plans/accounts", heading: "Plans" },
   { path: "/plans/categories", heading: "Plans" },
   { path: "/plans/goals", heading: "Plans" },
-  { path: "/welcome", heading: "Set up Salin" },
-  { path: "/welcome/accounts", heading: "Set up Salin" },
+  // A user with no onboarding draft lands on the Welcome step wherever they enter (/welcome/accounts resumes by draft).
+  { path: "/welcome", heading: "Let's give every peso a job." },
+  { path: "/welcome/accounts", heading: "Let's give every peso a job." },
 ];
 
 function trackConsole(page: Page) {
@@ -81,7 +83,7 @@ test("keyboard: tab to a nav link and press Enter to navigate", async ({ page })
   await expect(money).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\/money-in$/);
-  await expect(page.getByRole("heading", { level: 1, name: "Money in" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Nothing waiting" })).toBeVisible();
 });
 
 test("plans segmented control: arrow keys change section", async ({ page }) => {

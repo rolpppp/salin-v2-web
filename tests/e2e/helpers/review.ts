@@ -48,6 +48,12 @@ export async function seedReview(user: TestUser, opts: { spending?: boolean; con
   const db = adminClient();
   const now = Date.now();
 
+  // seedMoneyIn dates the incomes 1-3 days back, which is LAST week on a Monday or Tuesday and would make
+  // the slip carry them in and report history. These specs are about "this week", so pull them to just now.
+  for (const [i, id] of [seed.incomeIds.g2, seed.incomeIds.g5, seed.incomeIds.gift].entries()) {
+    must("income dates", (await db.from("ledger_entries").update({ occurredAt: now - (5 - i) * 60_000 }).eq("id", id)).error);
+  }
+
   if (confirm) {
     const client = await userClient(user);
     const { error } = await client.rpc("confirm_incomes", { entry_ids: [seed.incomeIds.g2, seed.incomeIds.g5] });

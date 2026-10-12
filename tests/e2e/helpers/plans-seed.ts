@@ -2,6 +2,7 @@
  * Test-only seed for the Plans screens (Split plan + Income). Uses the LOCAL service-role key.
  * Everything is keyed to one user so parallel specs never collide.
  */
+import { newAccountRow, newCategoryRow, newIncomeEntryRow } from "../../../lib/domain/mobile";
 import { adminClient } from "./supabase";
 
 const must = (label: string, error: { message: string } | null) => {
@@ -19,20 +20,8 @@ export type PlansSeed = {
 export async function seedPlans(userId: string): Promise<PlansSeed> {
   const db = adminClient();
   const now = Date.now();
-  const account = (key: string, name: string, order: number) => ({
-    id: `${key}-${userId.slice(0, 8)}`,
-    user_id: userId,
-    name,
-    accountType: 1,
-    openingBalanceMinor: 0,
-    currency: "PHP",
-    icon: "wallet",
-    displayOrder: order,
-    isArchived: false,
-    createdAt: now,
-    updatedAt: now,
-    syncStatus: 2,
-  });
+  const account = (key: string, name: string, order: number) =>
+    newAccountRow({ id: `${key}-${userId.slice(0, 8)}`, userId, nowMs: now, name, type: "bank", icon: "wallet", displayOrder: order });
   const mari = account("mari", "MariBank", 0);
   const gcash = account("gcash", "GCash", 1);
   must("accounts", (await db.from("accounts").insert([mari, gcash])).error);
@@ -90,8 +79,8 @@ export async function seedPlans(userId: string): Promise<PlansSeed> {
     (
       await db.from("allocations").insert([
         { id: allocationId, user_id: userId, bucketId: b.living, amountMinor: 50_000, destAccountId: mari.id, planKey: "A", percentBp: 5000, transferCycleId: cycle },
-        { user_id: userId, bucketId: b.emergency, amountMinor: 30_000, destAccountId: mari.id, planKey: "A", percentBp: 3000, transferCycleId: cycle },
-        { user_id: userId, bucketId: b.fun, amountMinor: 20_000, destAccountId: gcash.id, planKey: "A", percentBp: 2000, transferCycleId: cycle },
+        { id: crypto.randomUUID(), user_id: userId, bucketId: b.emergency, amountMinor: 30_000, destAccountId: mari.id, planKey: "A", percentBp: 3000, transferCycleId: cycle },
+        { id: crypto.randomUUID(), user_id: userId, bucketId: b.fun, amountMinor: 20_000, destAccountId: gcash.id, planKey: "A", percentBp: 2000, transferCycleId: cycle },
       ])
     ).error,
   );
@@ -113,15 +102,10 @@ export async function seedPlans(userId: string): Promise<PlansSeed> {
   const sl = (bucketId: string, percentBp: number) => ({ user_id: userId, sourceId: freelance, bucketId, percentBp });
   must("split", (await db.from("income_source_split_lines").insert([sl(b.tax, 1000), sl(b.sinking, 4000), sl(b.fun, 5000)])).error);
   const entryId = `inc-${userId.slice(0, 8)}`;
-  must(
-    "income",
-    (
-      await db.from("ledger_entries").insert({
-        id: entryId, user_id: userId, accountId: mari.id, amountMinor: 100_000, direction: 0, origin: 0, occurredAt: now, categoryId: null, transferId: null,
-        deletedAt: null, note: null, metadataJson: null, debtId: null, splitId: null, recurringInstanceId: null, createdAt: now, updatedAt: now, syncStatus: 2,
-      })
-    ).error,
-  );
+  const salaryCat = newCategoryRow({ userId, nowMs: now, name: "Salary", type: "income" });
+  must("income category", (await db.from("categories").insert(salaryCat)).error);
+  const income = newIncomeEntryRow({ id: entryId, userId, nowMs: now, accountId: mari.id, amountMinor: 100_000, occurredAt: now, categoryId: salaryCat.id });
+  must("income", (await db.from("ledger_entries").insert(income)).error);
   must("meta", (await db.from("income_meta").insert({ user_id: userId, ledgerEntryId: entryId, sourceId: work, job: null })).error);
 
   return { userId, bucket: b, accounts: { mari: mari.id, gcash: gcash.id }, allocationId };

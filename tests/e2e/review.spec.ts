@@ -47,7 +47,7 @@ test("the week slip reconciles with spending from Tax and an overspent Living (B
   expect(slip["Came in"]).toBe(slip.Spent + slip["Put away"] + slip["Tax set aside"] + slip["Cushions & kept whole"] + slip["To assign"] + slip["Safe to spend"]);
   await expect(page.getByTestId("slip-mismatch")).toHaveCount(0);
   await expect(page.getByTestId("slip-footer")).toContainText("no earlier week to compare yet");
-  await expect(page.getByText("WEEK CLOSED")).toHaveCount(0);
+  await expect(page.getByRole("group", { name: "Week slip" }).getByText("WEEK CLOSED")).toHaveCount(0);
 
   // where spending went: Living and Fun bars, and the spend from Tax is called out
   await expect(page.getByTestId("spend-bars").getByRole("listitem")).toHaveCount(2);
@@ -133,7 +133,7 @@ test("closing the week stores the row, stamps the slip, marks open items and can
   const card = page.getByTestId("week-closed");
   await expect(card.getByRole("heading", { name: "Week closed. Monday starts fresh." })).toBeVisible();
   await expect(card.getByRole("heading")).toBeFocused();
-  await expect(page.getByText("WEEK CLOSED")).toBeVisible();
+  await expect(page.getByRole("group", { name: "Week slip" }).getByText("WEEK CLOSED")).toBeVisible();
   await expect(card).toHaveAttribute("data-burst", "week");
   // Gift is still waiting and Living is below zero: those carry over; there is a transfer to send too
   await expect(card.locator('[data-check="assign"]')).toContainText("carries into next week");
@@ -154,7 +154,7 @@ test("closing the week stores the row, stamps the slip, marks open items and can
   // reload: still closed (a closed week is a record), and the checks come from the stored row
   await page.reload();
   await expect(page.getByTestId("week-closed")).toBeVisible();
-  await expect(page.getByText("WEEK CLOSED")).toBeVisible();
+  await expect(page.getByRole("group", { name: "Week slip" }).getByText("WEEK CLOSED")).toBeVisible();
 
   // closing again is harmless: the stored week comes back, no second row, no second event
   const client = await userClient(user);
