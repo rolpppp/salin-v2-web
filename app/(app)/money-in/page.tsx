@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/page-header/PageHeader";
 import { requireUser } from "@/lib/auth/session";
 import { getMoneyInData } from "@/lib/data/money-in";
 import type { MoneyInData } from "@/lib/data/money-in-model";
-import { getProfile } from "@/lib/data/today";
+import { getRequestProfile } from "@/lib/data/request-profile";
 import { createClient } from "@/lib/supabase/server";
 import { TZ_COOKIE, nowMs, validTimeZone } from "@/lib/time";
 
@@ -23,7 +23,7 @@ export default async function MoneyInPage({ searchParams }: { searchParams: Prom
   let data: MoneyInData | null = null;
   if (supabase) {
     try {
-      const profile = await getProfile(supabase, user.id);
+      const profile = await getRequestProfile(user.id);
       data = await getMoneyInData(supabase, { nowMs: now, timeZone, homeCurrency: profile?.homeCurrency ?? "PHP" });
     } catch (err) {
       console.error("[money-in] could not load", err);

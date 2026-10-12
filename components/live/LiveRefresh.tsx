@@ -2,9 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
+import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
 import { useAnnounce } from "@/components/live-region/LiveRegion";
 import { createRefreshScheduler, LIVE_TABLES, realtimeEnabled } from "@/lib/live/refresh-scheduler";
-import { createClient } from "@/lib/supabase/browser";
 
 /** Events within this long of the user's own click or keypress are their own writes: refresh, but don't announce. */
 const OWN_ACTION_MS = 4_000;
@@ -26,8 +26,6 @@ export function LiveRefresh({ userId }: { userId: string }) {
 
   useEffect(() => {
     if (!realtimeEnabled()) return;
-    const client = createClient();
-    if (!client) return;
 
     let lastOwnAction = 0;
     const markOwn = () => {
@@ -47,12 +45,26 @@ export function LiveRefresh({ userId }: { userId: string }) {
     document.addEventListener("keydown", markOwn, true);
 
     let cancelled = false;
-    let channel: ReturnType<typeof client.channel> | null = null;
+    // supabase-js (~350 kB) is loaded after first paint, not in every page's bundle.
+    let client: SupabaseClient | null = null;
+    let channel: RealtimeChannel | null = null;
+    let unsubscribeAuth = () => {};
     let subscribedBefore = false;
     let dropped = false;
 
     void (async () => {
       try {
+        const { createClient } = await import("@/lib/supabase/browser");
+        if (cancelled) return;
+        client = createClient();
+        if (!client) return;
+        const { data: sub } = client.auth.onAuthStateChange((event) => {
+          if (event === "SIGNED_OUT" && channel && client) {
+            void client.removeChannel(channel);
+            channel = null;
+          }
+        });
+        unsubscribeAuth = () => sub.subscription.unsubscribe();
         const { data } = await client.auth.getSession();
         if (cancelled || !data.session) return;
         await client.realtime.setAuth(data.session.access_token);
@@ -75,21 +87,14 @@ export function LiveRefresh({ userId }: { userId: string }) {
       }
     })();
 
-    const { data: sub } = client.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_OUT" && channel) {
-        void client.removeChannel(channel);
-        channel = null;
-      }
-    });
-
     return () => {
       cancelled = true;
       scheduler.dispose();
       document.removeEventListener("visibilitychange", onVisibility);
       document.removeEventListener("pointerdown", markOwn, true);
       document.removeEventListener("keydown", markOwn, true);
-      sub.subscription.unsubscribe();
-      if (channel) void client.removeChannel(channel);
+      unsubscribeAuth();
+      if (channel && client) void client.removeChannel(channel);
     };
   }, [userId]);
 

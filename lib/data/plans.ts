@@ -47,7 +47,9 @@ const int = (v: Json | undefined): number | null => (typeof v === "number" && Nu
 
 /** Everything the Split plan screen shows. RLS limits every query to the signed-in user. Throws on any error. */
 export async function getSplitPlanData(client: Client, userId: string): Promise<SplitPlanData> {
-  const [bucketRes, accountRes, planRes, ruleRes] = await Promise.all([
+  // One wave for everything that doesn't depend on another read (lines and the active plan included; the lines are
+  // filtered to the A/B plans below). Only the switch rule's measure needs the rules first.
+  const [bucketRes, accountRes, planRes, ruleRes, allLineRes, activeRes] = await Promise.all([
     client
       .from("buckets")
       .select("id, name, shortName, hue, note, planless, keptInAccountId, displayOrder")
@@ -58,6 +60,8 @@ export async function getSplitPlanData(client: Client, userId: string): Promise<
     client.from("accounts").select("id, name, isArchived").is("deletedAt", null).order("displayOrder").order("id"),
     client.from("allocation_plans").select("id, key, name").is("deletedAt", null).in("key", [...PLAN_KEYS]).order("key"),
     client.from("allocation_rules").select("kind, params, createdAt, id").is("deletedAt", null).order("createdAt").order("id"),
+    client.from("allocation_plan_lines").select("planId, bucketId, percentBp").is("deletedAt", null),
+    client.rpc("active_plan", { p_user: userId }),
   ]);
   for (const r of [bucketRes, accountRes, planRes, ruleRes]) if (r.error) throw new Error(r.error.message);
 
@@ -73,9 +77,7 @@ export async function getSplitPlanData(client: Client, userId: string): Promise<
   const accounts: PlanAccount[] = (accountRes.data ?? []).map((a) => ({ id: a.id, name: a.name, isArchived: a.isArchived }));
   const planRows = planRes.data ?? [];
 
-  const lineRes = planRows.length
-    ? await client.from("allocation_plan_lines").select("planId, bucketId, percentBp").is("deletedAt", null).in("planId", planRows.map((p) => p.id))
-    : { data: [], error: null };
+  const lineRes = planRows.length ? allLineRes : { data: [], error: null };
   if (lineRes.error) throw new Error(lineRes.error.message);
   const plans: PlanView[] = planRows.map((p) => {
     const lines: Record<string, number> = {};
@@ -109,7 +111,7 @@ export async function getSplitPlanData(client: Client, userId: string): Promise<
     if (until && from && to) redirectRule = { fromBucketName: from, toBucketName: to, untilDate: until };
   }
 
-  const active = planRows.length ? await client.rpc("active_plan", { p_user: userId }) : { data: "A", error: null };
+  const active = planRows.length ? activeRes : { data: "A", error: null };
   if (active.error) throw new Error(active.error.message);
 
   return { buckets, accounts, plans, activePlan: active.data ?? "A", switchRule, redirectRule };

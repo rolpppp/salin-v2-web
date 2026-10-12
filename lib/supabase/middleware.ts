@@ -3,6 +3,15 @@ import { NextResponse, type NextRequest } from "next/server";
 import { decideRedirect, isOnboardingEnabled } from "@/lib/auth/redirects";
 import type { Database } from "@/lib/database.types";
 import { getSupabaseEnv } from "./env";
+import { logRequest, traceFetch } from "./trace";
+
+/**
+ * Positive-only cache of "this user finished onboarding" so the proxy does not query user_profiles on every
+ * navigation (it sits in front of every render, so that query is a full extra round trip on the critical path).
+ * The value is the verified user id: another account signing in on the same browser misses the cache and is
+ * checked normally. It only skips the /welcome redirect, it grants nothing (RLS still guards every read).
+ */
+const ONBOARDED_COOKIE = "salin_onboarded";
 
 /**
  * Refreshes the Supabase session cookie, then applies route protection:
@@ -10,11 +19,13 @@ import { getSupabaseEnv } from "./env";
  * NEXT_PUBLIC_ONBOARDING_ENABLED, decision P-6) not-onboarded -> /welcome.
  */
 export async function updateSession(request: NextRequest): Promise<NextResponse> {
+  logRequest(request.nextUrl.pathname);
   let response = NextResponse.next({ request });
   const env = getSupabaseEnv();
   if (!env) return response;
 
   const supabase = createServerClient<Database>(env.url, env.anonKey, {
+    global: { fetch: traceFetch("proxy") },
     cookies: {
       getAll() {
         return request.cookies.getAll();
@@ -39,17 +50,24 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   const { pathname, search } = request.nextUrl;
   const onboardingEnabled = isOnboardingEnabled();
   let onboarded = true;
-  if (userId && onboardingEnabled && !pathname.startsWith("/welcome")) {
+  let confirmOnboarded = false;
+  if (userId && onboardingEnabled && !pathname.startsWith("/welcome") && request.cookies.get(ONBOARDED_COOKIE)?.value !== userId) {
     try {
       const { data } = await supabase.from("user_profiles").select("onboardedAt").eq("user_id", userId).maybeSingle();
       onboarded = data?.onboardedAt != null;
+      confirmOnboarded = onboarded && data !== null;
     } catch {
       onboarded = true; // never lock someone out because the profile lookup failed
     }
   }
 
   const target = decideRedirect({ pathname, search, signedIn: userId !== null, onboarded, onboardingEnabled });
-  if (!target) return response;
+  if (!target) {
+    if (confirmOnboarded && userId) {
+      response.cookies.set(ONBOARDED_COOKIE, userId, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 60 * 60 * 24 * 30 });
+    }
+    return response;
+  }
 
   const url = request.nextUrl.clone();
   const [path, query = ""] = target.split("?");

@@ -69,9 +69,9 @@ export async function getTodayInput(client: Client, opts: { userId: string; nowM
   const monthEndMs = p.month === 12 ? zonedMidnight(p.year + 1, 1, 1, timeZone) : zonedMidnight(p.year, p.month + 1, 1, timeZone);
   const onboardedAt = profile?.onboardedAt ?? null;
 
-  const mi = await getMoneyInData(client, { nowMs, timeZone, homeCurrency: profile?.homeCurrency ?? "PHP" });
-
-  const [leftRes, activeRes, noteRows, goalRows, allocRows, metaRows, spendRows, coverRows, categoryRows, reviewRes, loggedRes, anyAccount, anyCategory, anyEntry] = await Promise.all([
+  // One wave: Money in's own loader runs alongside the rest instead of ahead of it.
+  const [mi, leftRes, activeRes, noteRows, goalRows, allocRows, metaRows, spendRows, coverRows, categoryRows, reviewRes, loggedRes, anyAccount, anyCategory, anyEntry] = await Promise.all([
+    getMoneyInData(client, { nowMs, timeZone, homeCurrency: profile?.homeCurrency ?? "PHP" }),
     client.rpc("bucket_left"),
     client.rpc("active_plan", { p_user: userId }),
     pageAll<{ id: string; note: string | null }>((from, to) => client.from("buckets").select("id, note").is("deletedAt", null).order("id").range(from, to)),

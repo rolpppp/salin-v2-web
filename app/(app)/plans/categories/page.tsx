@@ -4,7 +4,7 @@ import { CategoriesPanel } from "@/components/plans/categories/CategoriesPanel";
 import { EmptyState } from "@/components/empty-state/EmptyState";
 import { requireUser } from "@/lib/auth/session";
 import { getCategoriesData, type CategoriesData } from "@/lib/data/categories";
-import { getProfile } from "@/lib/data/today";
+import { getRequestProfile } from "@/lib/data/request-profile";
 import { createClient } from "@/lib/supabase/server";
 import { TZ_COOKIE, nowMs, validTimeZone } from "@/lib/time";
 
@@ -19,7 +19,7 @@ export default async function CategoriesPage() {
   let currency = "PHP";
   if (supabase) {
     try {
-      const profile = await getProfile(supabase, user.id);
+      const profile = await getRequestProfile(user.id);
       currency = profile?.homeCurrency ?? "PHP";
       data = await getCategoriesData(supabase, { nowMs: nowMs(), timeZone, homeCurrency: currency });
     } catch (err) {

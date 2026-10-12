@@ -20,6 +20,11 @@ const loadLogSpending = cache(async (): Promise<LogSpendingData | null> => {
   }
 });
 
+/** Starts the load without waiting for it; the slot (and anything else) then shares the same promise. */
+export function startLogSpendingLoad(): void {
+  void loadLogSpending();
+}
+
 /**
  * "+ Log spending" for Today: a soft button in the greeting row, a primary one in the "Log your first
  * spending" next-step card. Loads what the sheet needs and renders the launcher (button, sheet, Logged flag).

@@ -9,7 +9,6 @@ import type { PhoneFacts } from "@/lib/onboarding/facts";
 import type { ShellStepModule } from "@/lib/onboarding/shell-types";
 import type { StepBodyProps } from "@/lib/onboarding/step";
 import { realtimeEnabled } from "@/lib/live/refresh-scheduler";
-import { createClient } from "@/lib/supabase/browser";
 import { useOnboardingEnv } from "../env";
 import styles from "./app-steps.module.css";
 
@@ -33,15 +32,26 @@ function usePhoneWatch() {
         void refreshPhone();
       }, NUDGE_MS);
     };
-    const client = realtimeEnabled() ? createClient() : null;
+    // supabase-js is ~350 kB of the setup page's JavaScript, so it loads only once this step is on screen.
+    let cancelled = false;
     let connected = false;
-    const channel = client
-      ?.channel(`onboarding-phone-${userId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "accounts", filter: `user_id=eq.${userId}` }, onChange)
-      .on("postgres_changes", { event: "*", schema: "public", table: "ledger_entries", filter: `user_id=eq.${userId}` }, onChange)
-      .subscribe((status) => {
-        connected = status === "SUBSCRIBED";
+    let cleanup = () => {};
+    if (realtimeEnabled()) {
+      void import("@/lib/supabase/browser").then(({ createClient }) => {
+        if (cancelled) return;
+        const client = createClient();
+        const channel = client
+          ?.channel(`onboarding-phone-${userId}`)
+          .on("postgres_changes", { event: "*", schema: "public", table: "accounts", filter: `user_id=eq.${userId}` }, onChange)
+          .on("postgres_changes", { event: "*", schema: "public", table: "ledger_entries", filter: `user_id=eq.${userId}` }, onChange)
+          .subscribe((status) => {
+            connected = status === "SUBSCRIBED";
+          });
+        cleanup = () => {
+          if (client && channel) void client.removeChannel(channel);
+        };
       });
+    }
     // Ticks every POLL_MS; once realtime is connected only every sixth tick re-reads.
     let tick = 0;
     const poll = setInterval(() => {
@@ -49,9 +59,10 @@ function usePhoneWatch() {
       if (!connected || tick % (POLL_CONNECTED_MS / POLL_MS) === 0) void refreshPhone();
     }, POLL_MS);
     return () => {
+      cancelled = true;
       clearInterval(poll);
       if (nudge !== null) clearTimeout(nudge);
-      if (client && channel) void client.removeChannel(channel);
+      cleanup();
     };
   }, [userId, refreshPhone]);
 }

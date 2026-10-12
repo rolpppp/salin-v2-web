@@ -59,62 +59,101 @@ export function engineDate(ms: number): string {
  * move that into an SQL function if a user ever has tens of thousands of paydays.
  */
 export async function getMoneyInData(client: Client, opts: { nowMs: number; timeZone: string; homeCurrency: string }): Promise<MoneyInData> {
-  const [bucketRows, accountRows, sourceRows, splitRows, planRows, planLineRows, ruleRows, cycleRes, confirmedIds, metaRows] = await Promise.all([
-    pageAll<MiBucket>((from, to) =>
+  // Everything is started up front so the whole screen costs two round trips, not four: the first wave holds the
+  // table reads; the three queries that depend on one of them (Emergency's allocations need the buckets and rules,
+  // the done list and the checklist need the latest cycle) start the moment their input lands, not after the rest.
+  const bucketsP = pageAll<MiBucket>((from, to) =>
+    client
+      .from("buckets")
+      .select("id, name, shortName, groupKey, hue, keptInAccountId, planless, displayOrder, isArchived")
+      .is("deletedAt", null)
+      .order("displayOrder")
+      .order("id")
+      .range(from, to),
+  );
+  const accountsP = pageAll<MiAccount>((from, to) =>
+    client.from("accounts").select("id, name, currency, isArchived").is("deletedAt", null).order("displayOrder").order("id").range(from, to),
+  );
+  const sourcesP = pageAll<{ id: string; name: string; kind: string; rule: string; wholeBucketId: string | null; landsInAccountId: string | null; categoryId: string | null; isArchived: boolean }>(
+    (from, to) =>
       client
-        .from("buckets")
-        .select("id, name, shortName, groupKey, hue, keptInAccountId, planless, displayOrder, isArchived")
+        .from("income_sources")
+        .select("id, name, kind, rule, wholeBucketId, landsInAccountId, categoryId, isArchived")
         .is("deletedAt", null)
-        .order("displayOrder")
+        .order("createdAt")
         .order("id")
         .range(from, to),
-    ),
-    pageAll<MiAccount>((from, to) =>
-      client.from("accounts").select("id, name, currency, isArchived").is("deletedAt", null).order("displayOrder").order("id").range(from, to),
-    ),
-    pageAll<{ id: string; name: string; kind: string; rule: string; wholeBucketId: string | null; landsInAccountId: string | null; categoryId: string | null; isArchived: boolean }>(
-      (from, to) =>
-        client
-          .from("income_sources")
-          .select("id, name, kind, rule, wholeBucketId, landsInAccountId, categoryId, isArchived")
-          .is("deletedAt", null)
-          .order("createdAt")
-          .order("id")
-          .range(from, to),
-    ),
-    pageAll<{ sourceId: string; bucketId: string; percentBp: number }>((from, to) =>
-      client.from("income_source_split_lines").select("sourceId, bucketId, percentBp").is("deletedAt", null).order("id").range(from, to),
-    ),
-    pageAll<{ id: string; key: string }>((from, to) => client.from("allocation_plans").select("id, key").is("deletedAt", null).order("id").range(from, to)),
-    pageAll<{ planId: string; bucketId: string; percentBp: number }>((from, to) =>
-      client.from("allocation_plan_lines").select("planId, bucketId, percentBp").is("deletedAt", null).order("id").range(from, to),
-    ),
-    pageAll<{ kind: string; params: Json }>((from, to) =>
-      client.from("allocation_rules").select("kind, params, createdAt, id").is("deletedAt", null).order("createdAt").order("id").range(from, to),
-    ),
-    client.from("transfer_cycles").select("id, closedAt").is("deletedAt", null).order("seq", { ascending: false }).limit(1).maybeSingle(),
-    pageAll<{ ledgerEntryId: string | null }>((from, to) =>
-      client.from("allocations").select("ledgerEntryId").is("deletedAt", null).order("seq").range(from, to),
-    ),
-    pageAll<{
-      ledgerEntryId: string;
-      sourceId: string | null;
-      job: string | null;
-      oneBucketId: string | null;
-      sentMinor: number | null;
-      sentCurrency: string | null;
-      ledger_entries: { id: string; accountId: string; amountMinor: number; occurredAt: number } | null;
-    }>((from, to) =>
+  );
+  const splitsP = pageAll<{ sourceId: string; bucketId: string; percentBp: number }>((from, to) =>
+    client.from("income_source_split_lines").select("sourceId, bucketId, percentBp").is("deletedAt", null).order("id").range(from, to),
+  );
+  const plansP = pageAll<{ id: string; key: string }>((from, to) => client.from("allocation_plans").select("id, key").is("deletedAt", null).order("id").range(from, to));
+  const planLinesP = pageAll<{ planId: string; bucketId: string; percentBp: number }>((from, to) =>
+    client.from("allocation_plan_lines").select("planId, bucketId, percentBp").is("deletedAt", null).order("id").range(from, to),
+  );
+  const rulesP = pageAll<{ kind: string; params: Json }>((from, to) =>
+    client.from("allocation_rules").select("kind, params, createdAt, id").is("deletedAt", null).order("createdAt").order("id").range(from, to),
+  );
+  const cycleP = (async () => await client.from("transfer_cycles").select("id, closedAt").is("deletedAt", null).order("seq", { ascending: false }).limit(1).maybeSingle())();
+  const confirmedP = pageAll<{ ledgerEntryId: string | null }>((from, to) =>
+    client.from("allocations").select("ledgerEntryId").is("deletedAt", null).order("seq").range(from, to),
+  );
+  const metaP = pageAll<{
+    ledgerEntryId: string;
+    sourceId: string | null;
+    job: string | null;
+    oneBucketId: string | null;
+    sentMinor: number | null;
+    sentCurrency: string | null;
+    ledger_entries: { id: string; accountId: string; amountMinor: number; occurredAt: number } | null;
+  }>((from, to) =>
+    client
+      .from("income_meta")
+      .select("ledgerEntryId, sourceId, job, oneBucketId, sentMinor, sentCurrency, ledger_entries!inner(id, accountId, amountMinor, occurredAt, direction, origin, deletedAt)")
+      .is("deletedAt", null)
+      .is("ledger_entries.deletedAt", null)
+      .eq("ledger_entries.direction", MoneyDirection.inflow)
+      .neq("ledger_entries.origin", LedgerOrigin.transfer)
+      .order("ledgerEntryId")
+      .range(from, to),
+  );
+  const emergencyP = Promise.all([bucketsP, rulesP]).then(async ([bucketRows, ruleRows]): Promise<number> => {
+    const rules = ruleRows.map((r) => ({ kind: r.kind, params: asObject(r.params) }));
+    const known = new Set(bucketRows.map((b) => b.id));
+    const switchBucket = asString(rules.find((r) => r.kind === "switch_on_goal")?.params.bucketId);
+    const emergencyBucketId = (switchBucket && known.has(switchBucket) ? switchBucket : null) ?? bucketRows.find((b) => b.hue === "emergency")?.id ?? null;
+    if (!emergencyBucketId) return 0;
+    // D-14 measure: the sum of all Emergency allocations ever (deleted incomes excluded, P-4)
+    const rows = await pageAll<{ amountMinor: number; ledger_entries: { deletedAt: number | null } | null }>((from, to) =>
       client
-        .from("income_meta")
-        .select("ledgerEntryId, sourceId, job, oneBucketId, sentMinor, sentCurrency, ledger_entries!inner(id, accountId, amountMinor, occurredAt, direction, origin, deletedAt)")
+        .from("allocations")
+        .select("amountMinor, ledger_entries!inner(deletedAt)")
+        .eq("bucketId", emergencyBucketId)
         .is("deletedAt", null)
         .is("ledger_entries.deletedAt", null)
-        .eq("ledger_entries.direction", MoneyDirection.inflow)
-        .neq("ledger_entries.origin", LedgerOrigin.transfer)
-        .order("ledgerEntryId")
+        .order("seq")
         .range(from, to),
-    ),
+    );
+    return rows.reduce((t, r) => t + r.amountMinor, 0);
+  });
+  const doneP = cycleP.then(async (cycleRes) => {
+    const cycleId = cycleRes.data?.id;
+    if (!cycleId) return [];
+    return pageAll<{ ledgerEntryId: string | null; bucketId: string; amountMinor: number; ruleTrace: Json; seq: number; ledger_entries: { deletedAt: number | null } | null }>((from, to) =>
+      client
+        .from("allocations")
+        .select("ledgerEntryId, bucketId, amountMinor, ruleTrace, seq, ledger_entries!inner(deletedAt)")
+        .eq("transferCycleId", cycleId)
+        .is("deletedAt", null)
+        .is("ledger_entries.deletedAt", null)
+        .order("seq")
+        .range(from, to),
+    );
+  });
+  // the checklist (SQL: transfer_plan() reads the latest cycle; the TS mirror is only for previews)
+  const transferP = cycleP.then(async (cycleRes) => (cycleRes.data ? await client.rpc("transfer_plan") : null));
+  const [bucketRows, accountRows, sourceRows, splitRows, planRows, planLineRows, ruleRows, cycleRes, confirmedIds, metaRows, emergencyAllocatedSoFar, doneRows, transferRes] = await Promise.all([
+    bucketsP, accountsP, sourcesP, splitsP, plansP, planLinesP, rulesP, cycleP, confirmedP, metaP, emergencyP, doneP, transferP,
   ]);
   fail(cycleRes.error);
 
@@ -153,21 +192,6 @@ export async function getMoneyInData(client: Client, opts: { nowMs: number; time
     return plan ? planLineRows.filter((l) => l.planId === plan.id).map((l): PercentLine => ({ bucketId: l.bucketId, bp: l.percentBp })) : [];
   };
 
-  // ---- D-14 measure: the sum of all Emergency allocations ever (deleted incomes excluded, P-4)
-  let emergencyAllocatedSoFar = 0;
-  if (emergencyBucketId) {
-    const rows = await pageAll<{ amountMinor: number; ledger_entries: { deletedAt: number | null } | null }>((from, to) =>
-      client
-        .from("allocations")
-        .select("amountMinor, ledger_entries!inner(deletedAt)")
-        .eq("bucketId", emergencyBucketId)
-        .is("deletedAt", null)
-        .is("ledger_entries.deletedAt", null)
-        .order("seq")
-        .range(from, to),
-    );
-    emergencyAllocatedSoFar = rows.reduce((t, r) => t + r.amountMinor, 0);
-  }
   const plan: PlanContext = {
     planA: planLines("A"),
     planB: planLines("B"),
@@ -205,17 +229,7 @@ export async function getMoneyInData(client: Client, opts: { nowMs: number; time
   const cycle = cycleRes.data ? { id: cycleRes.data.id, closedAt: cycleRes.data.closedAt } : null;
   let done: MiDone[] = [];
   if (cycle) {
-    const rows = await pageAll<{ ledgerEntryId: string | null; bucketId: string; amountMinor: number; ruleTrace: Json; seq: number; ledger_entries: { deletedAt: number | null } | null }>(
-      (from, to) =>
-        client
-          .from("allocations")
-          .select("ledgerEntryId, bucketId, amountMinor, ruleTrace, seq, ledger_entries!inner(deletedAt)")
-          .eq("transferCycleId", cycle.id)
-          .is("deletedAt", null)
-          .is("ledger_entries.deletedAt", null)
-          .order("seq")
-          .range(from, to),
-    );
+    const rows = doneRows;
     const byEntry = new Map<string, typeof rows>();
     for (const r of rows) {
       if (!r.ledgerEntryId) continue;
@@ -233,10 +247,10 @@ export async function getMoneyInData(client: Client, opts: { nowMs: number; time
     });
   }
 
-  // ---- the checklist (SQL: transfer_plan() reads the latest cycle; the TS mirror is only for previews)
+  // ---- the checklist
   let transferPlan: MiTransferRow[] = [];
-  if (cycle) {
-    const { data, error } = await client.rpc("transfer_plan");
+  if (cycle && transferRes) {
+    const { data, error } = transferRes;
     if (error) throw new Error(error.message);
     transferPlan = (data ?? []).map(
       (r): MiTransferRow => ({

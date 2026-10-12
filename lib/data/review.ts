@@ -38,7 +38,25 @@ const asChecks = (j: Json): ClosedWeek["checks"] => {
  */
 export async function getReviewData(client: Client, opts: { userId: string; nowMs: number; timeZone: string }): Promise<ReviewData> {
   const { timeZone: tz, nowMs } = opts;
-  const profileRes = await client.from("user_profiles").select("firstName, weekStartsOn, reviewDay, deletedAt").eq("user_id", opts.userId).maybeSingle();
+  const todayIso = iso(nowMs, tz);
+
+  // Two waves instead of four. The week's range depends on the profile (week start day), so the queries that
+  // don't depend on it (buckets, balances, plan, badges...) start with the profile read and finish alongside it.
+  const profileP = (async () => await client.from("user_profiles").select("firstName, weekStartsOn, reviewDay, deletedAt").eq("user_id", opts.userId).maybeSingle())();
+  const staticP = Promise.all([
+    client.from("buckets").select("id, name, shortName, groupKey, hue, isArchived, displayOrder").is("deletedAt", null).order("displayOrder").order("id"),
+    client.rpc("bucket_left"),
+    client.rpc("transfer_plan"),
+    client.rpc("tab_badges", { p_today: todayIso }),
+    client.from("allocations").select("id").is("deletedAt", null).limit(1),
+    client.from("goals").select("targetMinor").eq("isPlanSwitch", true).is("deletedAt", null).order("createdAt").limit(1),
+    client.rpc("active_plan"),
+    // Living's plan lines, read whole and picked below instead of a plan lookup followed by a line lookup.
+    client.from("allocation_plans").select("id, key").is("deletedAt", null),
+    client.from("allocation_plan_lines").select("planId, bucketId, percentBp").is("deletedAt", null),
+  ]);
+  staticP.catch(() => undefined); // if the profile read throws first, don't leave this one unhandled
+  const profileRes = await profileP;
   if (profileRes.error) throw new Error(profileRes.error.message);
   const p = profileRes.data && profileRes.data.deletedAt === null ? profileRes.data : null;
   const weekStartsOn: 0 | 1 = p?.weekStartsOn === WeekStart.sunday ? 0 : 1;
@@ -48,21 +66,16 @@ export async function getReviewData(client: Client, opts: { userId: string; nowM
   const last = weekRange(week.startMs - 1, tz, weekStartsOn);
   const weekStart = iso(week.startMs, tz);
   const weekEnd = iso(week.endMs - 1, tz);
-  const todayIso = iso(nowMs, tz);
 
-  const [bucketRows, leftRows, flowRows, lastFlowRows, figuresRows, catRows, transferRows, badgeRows, reviewRes, allocAny, goalRows, planKeyRes] = await Promise.all([
-    client.from("buckets").select("id, name, shortName, groupKey, hue, isArchived, displayOrder").is("deletedAt", null).order("displayOrder").order("id"),
-    client.rpc("bucket_left"),
-    client.rpc("week_bucket_flows", { p_from: week.startMs, p_to: week.endMs }),
-    client.rpc("week_bucket_flows", { p_from: last.startMs, p_to: last.endMs }),
-    client.rpc("week_slip_figures", { p_from: week.startMs }),
-    client.rpc("week_category_spend", { p_from: week.startMs, p_to: week.endMs }),
-    client.rpc("transfer_plan"),
-    client.rpc("tab_badges", { p_today: todayIso }),
-    client.from("week_reviews").select("checks, safeToSpendMinor, observation, closedAt").eq("weekStart", weekStart).is("deletedAt", null).maybeSingle(),
-    client.from("allocations").select("id").is("deletedAt", null).limit(1),
-    client.from("goals").select("targetMinor").eq("isPlanSwitch", true).is("deletedAt", null).order("createdAt").limit(1),
-    client.rpc("active_plan"),
+  const [[bucketRows, leftRows, transferRows, badgeRows, allocAny, goalRows, planKeyRes, planRowsRes, planLineRowsRes], [flowRows, lastFlowRows, figuresRows, catRows, reviewRes]] = await Promise.all([
+    staticP,
+    Promise.all([
+      client.rpc("week_bucket_flows", { p_from: week.startMs, p_to: week.endMs }),
+      client.rpc("week_bucket_flows", { p_from: last.startMs, p_to: last.endMs }),
+      client.rpc("week_slip_figures", { p_from: week.startMs }),
+      client.rpc("week_category_spend", { p_from: week.startMs, p_to: week.endMs }),
+      client.from("week_reviews").select("checks, safeToSpendMinor, observation, closedAt").eq("weekStart", weekStart).is("deletedAt", null).maybeSingle(),
+    ]),
   ]);
 
   const buckets = must(bucketRows);
@@ -98,10 +111,11 @@ export async function getReviewData(client: Client, opts: { userId: string; nowM
   let livingPlanBp: number | null = null;
   const living = buckets.find((b) => b.hue === "living");
   if (living && activeKey) {
-    const plan = await client.from("allocation_plans").select("id").eq("key", activeKey).is("deletedAt", null).maybeSingle();
-    if (plan.data) {
-      const line = await client.from("allocation_plan_lines").select("percentBp").eq("planId", plan.data.id).eq("bucketId", living.id).is("deletedAt", null).maybeSingle();
-      livingPlanBp = line.data?.percentBp ?? null;
+    const plans = (planRowsRes.error ? [] : (planRowsRes.data ?? [])).filter((pl) => pl.key === activeKey);
+    // A lookup by key that matches more than one plan reads as none (what `.maybeSingle()` did).
+    if (plans.length === 1) {
+      const line = (planLineRowsRes.error ? [] : (planLineRowsRes.data ?? [])).filter((l) => l.planId === plans[0].id && l.bucketId === living.id);
+      livingPlanBp = line.length === 1 ? line[0].percentBp : null;
     }
   }
 

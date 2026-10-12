@@ -8,8 +8,8 @@ import { getTabBadges } from "@/lib/data/badges";
 
 /** proxy.ts redirects signed-out users first; this re-checks on the server so no app route renders without a user. */
 export default async function AppLayout({ children }: { children: ReactNode }) {
-  const user = await requireUser();
-  const badges = await getTabBadges();
+  // Independent reads, so one wave: the badges RPC runs on the same token and does not need the user object.
+  const [user, badges] = await Promise.all([requireUser(), getTabBadges()]);
   return (
     <>
       <SkipLink />

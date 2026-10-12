@@ -34,7 +34,7 @@ const RULES = new Set<string>(["plan", "own", "whole", "ask"]);
 
 /** Everything the Income screen shows. RLS limits every query to the signed-in user. Throws on any error. */
 export async function getIncomeSourcesData(client: Client, userId: string): Promise<IncomeSourcesData> {
-  const [srcRes, bucketRes, accountRes, rentRes, activeRes] = await Promise.all([
+  const [srcRes, bucketRes, accountRes, rentRes, activeRes, lineRes] = await Promise.all([
     client
       .from("income_sources")
       .select("id, name, kind, rule, wholeBucketId, landsInAccountId, isArchived, createdAt")
@@ -45,6 +45,8 @@ export async function getIncomeSourcesData(client: Client, userId: string): Prom
     client.from("accounts").select("id, name").is("deletedAt", null).eq("isArchived", false).order("displayOrder").order("id"),
     client.rpc("engine_rent_bucket", { p_user: userId }),
     client.rpc("active_plan", { p_user: userId }),
+    // Every split line (RLS limits them to this user's sources), so they ride in the first wave.
+    client.from("income_source_split_lines").select("sourceId, bucketId, percentBp").is("deletedAt", null),
   ]);
   for (const r of [srcRes, bucketRes, accountRes, rentRes]) if (r.error) throw new Error(r.error.message);
   // active_plan raises when the user has no Emergency bucket yet; the screen still works without it.
@@ -58,12 +60,7 @@ export async function getIncomeSourcesData(client: Client, userId: string): Prom
   const rows = srcRes.data ?? [];
 
   const ids = rows.map((r) => r.id);
-  const [lineRes, usedRes] = await Promise.all([
-    ids.length
-      ? client.from("income_source_split_lines").select("sourceId, bucketId, percentBp").is("deletedAt", null).in("sourceId", ids)
-      : Promise.resolve({ data: [], error: null }),
-    Promise.all(ids.map((id) => client.from("income_meta").select("id").eq("sourceId", id).limit(1))),
-  ]);
+  const usedRes = await Promise.all(ids.map((id) => client.from("income_meta").select("id").eq("sourceId", id).limit(1)));
   if (lineRes.error) throw new Error(lineRes.error.message);
   for (const u of usedRes) if (u.error) throw new Error(u.error.message);
 
