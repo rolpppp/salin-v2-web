@@ -369,6 +369,29 @@ describe("Getting started (BR §12.6)", () => {
     const v = buildTodayView(first({ profile: { ...g9().profile, onboardedAt: ms(5), planMode: "track" }, plan: { ...mi.plan, planA: [{ bucketId: BUCKET.living, bp: 10_000 }] } }));
     expect(v.week.steps.map((s) => s.label)).toEqual(["Income and accounts set up", "Make a plan", "First pay recorded", "First spending logged", "First week closed"]);
     expect(v.next.kind).toBe("make_plan");
+    // The card's button is a server action (SPEC §7.6), not a link.
+    expect(v.next.cta).toBeNull();
+    expect(v.next.heading).toBe("Give your money more jobs");
+    expect(v.next.body).toMatch(/^Right now everything you get goes to Spending\./);
+    expect(v.week.title).toBe("Getting started");
+    expect(v.week.steps.map((s) => s.done)).toEqual([true, false, false, false, false]);
+  });
+
+  it("just tracking: Make a plan stays first until a plan exists, then First pay recorded and the rest follow", () => {
+    const track = { ...g9().profile, onboardedAt: ms(5), planMode: "track" };
+    const justLiving = { ...mi.plan, planA: [{ bucketId: BUCKET.living, bp: 10_000 }] };
+    // A pay is waiting: the card goes to it, and the step reads done.
+    const waiting = buildTodayView(first({ profile: track, plan: justLiving, incomes: [income("a", "work", 100_000, 9)] }));
+    expect(waiting.next.kind).toBe("assign");
+    expect(waiting.week.steps.find((s) => s.id === "pay")?.done).toBe(true);
+    expect(waiting.week.steps.find((s) => s.id === "make_plan")?.done).toBe(false);
+    // Make a plan saved: planMode is plan again and the step ticks.
+    const planned = buildTodayView(first({ profile: { ...track, planMode: "plan" }, plan: mi.plan }));
+    expect(planned.week.steps.find((s) => s.id === "make_plan")).toBeUndefined();
+    expect(planned.week.steps.map((s) => s.label)).toEqual(["Plan set up", "First pay has a job", "Transfers made", "First spending logged", "First week closed"]);
+    // A track profile whose plan already has a non-Spending share counts the plan as made.
+    const withShares = buildTodayView(first({ profile: track, plan: mi.plan }));
+    expect(withShares.week.steps.find((s) => s.id === "make_plan")?.done).toBe(true);
   });
 
   it("goes back to This week once any week has been closed", () => {

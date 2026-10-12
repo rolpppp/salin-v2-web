@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LiveRegionProvider } from "@/components/live-region/LiveRegion";
 import { emptyDraft, type OnboardingDraft } from "@/lib/onboarding/draft";
 import { appDraft, ctx, facts as phoneFacts } from "@/lib/onboarding/testkit";
+import { buildSources } from "@/lib/onboarding/web-path";
 
 // A tiny router: the pathname is an external store, push/replace update it, so the shell re-renders like it would in Next.
 const nav = vi.hoisted(() => {
@@ -67,6 +68,18 @@ function mount(over: { path?: string; draft?: OnboardingDraft; autoDetected?: bo
   );
 }
 
+/** A web-path draft whose Income and Accounts answers are done, so the shell lets the person walk past them. */
+const webAnswered = (step: OnboardingDraft["step"] = "income"): OnboardingDraft => ({
+  ...emptyDraft(),
+  path: "web",
+  step,
+  firstName: "Rolf",
+  income: { kind: "salary", amountMinor: 2_500_000, frequency: "monthly", nextPayday: "2026-11-07", paidInOtherCurrency: false },
+  accounts: [{ id: "w-bpi", name: "BPI", type: "bank", currency: "PHP", isNew: true }],
+  landingAccountId: "w-bpi",
+  sources: buildSources("salary", [], "w-bpi"),
+});
+
 const lastSaved = (): OnboardingDraft => actions.saveDraft.mock.calls.at(-1)![0] as OnboardingDraft;
 const h1 = () => screen.getByRole("heading", { level: 1 });
 
@@ -116,17 +129,17 @@ describe("Welcome (SPEC 7.1)", () => {
   });
 
   it("a first load resumes at draft.step", async () => {
-    mount({ draft: { ...emptyDraft(), path: "web", step: "accounts" } });
+    mount({ draft: webAnswered("accounts") });
     await waitFor(() => expect(nav.replace).toHaveBeenCalledWith("/welcome/accounts"));
     expect(await screen.findByText("Step 2 of 6 · Accounts")).toBeInTheDocument();
   });
 });
 
 describe("shell (SPEC 7.2)", () => {
-  const web = () => mount({ path: "/welcome/income", draft: { ...emptyDraft(), path: "web", step: "income" } });
+  const web = () => mount({ path: "/welcome/income", draft: webAnswered() });
 
   it("rail: Signed in pre-ticked, one pill per step, current marked, done checked", async () => {
-    mount({ path: "/welcome/accounts", draft: { ...emptyDraft(), path: "web", step: "accounts" } });
+    mount({ path: "/welcome/accounts", draft: webAnswered("accounts") });
     const rail = screen.getByRole("list", { name: "Setup steps" });
     const pills = within(rail).getAllByRole("listitem");
     expect(pills.map((p) => p.textContent)).toEqual(["Signed in", "Income, done", "2Accounts", "3Priorities", "4Your plan", "5Where it lives", "6First pay"]);
@@ -150,6 +163,49 @@ describe("shell (SPEC 7.2)", () => {
     expect(await screen.findByText("Step 2 of 6 · Accounts")).toBeInTheDocument();
   });
 
+  it("Income names the first problem and focuses that field; Accounts needs a landing account", async () => {
+    mount({ path: "/welcome/income", draft: { ...emptyDraft(), path: "web", step: "income" } });
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("Tell us what to call you");
+    expect(screen.getByLabelText("What should we call you?")).toHaveFocus();
+    await userEvent.type(screen.getByLabelText("What should we call you?"), "Rolf");
+    await userEvent.type(screen.getByLabelText("About how much each time?"), "25000");
+    await userEvent.type(screen.getByLabelText("Next one comes on"), "2026-11-07");
+    await userEvent.click(screen.getByText("Gifts"));
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByText("Step 2 of 6 · Accounts")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("Pick at least one place your money sits.");
+    await userEvent.click(screen.getByRole("checkbox", { name: /^GCash/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("Pick where your pay lands.");
+    await userEvent.selectOptions(screen.getByLabelText("Your pay lands in"), "GCash");
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByText("Step 3 of 6 · Priorities")).toBeInTheDocument();
+    await waitFor(() => expect(lastSaved()).toMatchObject({ accounts: [expect.objectContaining({ name: "GCash", isNew: true })], sources: [expect.objectContaining({ key: "main" }), expect.objectContaining({ key: "gift", rule: "ask" })] }));
+  });
+
+  it("Just tracking: First pay follows Priorities as step 4 of 4; Back returns to Priorities and undoes the skip", async () => {
+    mount({ path: "/welcome/prio", draft: webAnswered("prio") });
+    await userEvent.click(await screen.findByRole("button", { name: "Skip the plan, just track for now" }));
+    expect(await screen.findByText("Step 4 of 4 · First pay")).toBeInTheDocument();
+    await waitFor(() => expect(lastSaved()).toMatchObject({ skipped: true, planA: expect.objectContaining({ living: 100 }) }));
+    await userEvent.click(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByText("Step 3 of 6 · Priorities")).toBeInTheDocument();
+    expect(screen.queryByText(/Just tracking for now/)).not.toBeInTheDocument();
+    await waitFor(() => expect(lastSaved()).toMatchObject({ skipped: false, planA: null, homes: null }));
+  });
+
+  it("Make a plan: the last step's primary reads Save my plan and Finish runs", async () => {
+    actions.finishOnboarding.mockResolvedValue({ ok: true, value: { summary: null } });
+    const planned: OnboardingDraft = { ...webAnswered("homes"), planOnly: true, priority: "safety" };
+    mount({ path: "/welcome/homes", draft: planned });
+    expect(await screen.findByText(/Make a plan · 3 of 3/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /Save my plan/ }));
+    await waitFor(() => expect(nav.push).toHaveBeenCalledWith("/today"));
+    expect(actions.finishOnboarding).toHaveBeenCalled();
+  });
+
   it("Back keeps answers, and Back from the first step returns to the question", async () => {
     web();
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
@@ -162,7 +218,7 @@ describe("shell (SPEC 7.2)", () => {
   });
 
   it("the plan slip sits beside the step: a line per answer, 'Fills in as you answer'", () => {
-    web();
+    mount({ path: "/welcome/income", draft: { ...emptyDraft(), path: "web", step: "income" } });
     const slip = screen.getByRole("group", { name: "Plan slip" });
     expect(within(slip).getByText("Comes in")).toBeInTheDocument();
     expect(within(slip).getAllByText("· · ·").length).toBeGreaterThan(5);
@@ -176,7 +232,7 @@ describe("shell (SPEC 7.2)", () => {
   });
 
   it("a step that isn't on this path is sent to where the person was", async () => {
-    mount({ path: "/welcome/cats", draft: { ...emptyDraft(), path: "web", step: "accounts" } });
+    mount({ path: "/welcome/cats", draft: webAnswered("accounts") });
     await waitFor(() => expect(nav.replace).toHaveBeenCalledWith("/welcome/accounts"));
   });
 
@@ -397,6 +453,6 @@ describe("Waiting for your phone (SPEC 7.4 step 1)", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Continue without the app" }));
     expect(nav.push).toHaveBeenCalledWith("/welcome/income");
     expect(await screen.findByText("Step 1 of 6 · Income")).toBeInTheDocument();
-    await waitFor(() => expect(lastSaved()).toMatchObject({ path: "web", step: "income", firstName: null, sources: [], accounts: [] }));
+    await waitFor(() => expect(lastSaved()).toMatchObject({ path: "web", step: "income", firstName: null, sources: [expect.objectContaining({ key: "main", isMain: true })], accounts: [] }));
   });
 });

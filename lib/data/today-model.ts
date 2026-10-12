@@ -653,7 +653,9 @@ function buildNext(input: TodayInput, id: StepId | null, phase: LoopPhase, pendi
         kind: "make_plan",
         heading: "Give your money more jobs",
         body: "Right now everything you get goes to Spending. A plan splits each payday so saving happens first, not with what's left.",
-        cta: { label: "Make a plan", href: "/plans/split" },
+        // Not a link: the card's button is a server action that reopens onboarding at Priorities (SPEC §7.6).
+        cta: null,
+        hint: "Applies to your next paydays. Money already in stays as it is.",
       };
     case "log":
       return {

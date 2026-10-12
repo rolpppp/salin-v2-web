@@ -1,11 +1,13 @@
 import { APP_STEPS, STEP_IDS, WEB_STEPS, planOnlySteps, type OnboardingDraft, type StepId } from "./draft";
 
-/** The step list for a draft's path ([] until a path is chosen). */
-export function stepsFor(draft: Pick<OnboardingDraft, "path" | "planOnly">): readonly StepId[] {
+/** Just tracking has no plan to shape (SPEC §7.6): Your plan, Where it lives and Categories drop out of the list. */
+const JUST_TRACK_SKIPPED: readonly StepId[] = ["plan", "homes", "cats"];
+
+/** The step list for a draft's path ([] until a path is chosen). A skipped draft (just track) leaves out the plan steps. */
+export function stepsFor(draft: Pick<OnboardingDraft, "path" | "planOnly"> & { skipped?: boolean }): readonly StepId[] {
   if (draft.planOnly) return planOnlySteps(draft.path ?? "web");
-  if (draft.path === "app") return APP_STEPS;
-  if (draft.path === "web") return WEB_STEPS;
-  return [];
+  const all = draft.path === "app" ? APP_STEPS : draft.path === "web" ? WEB_STEPS : [];
+  return draft.skipped ? all.filter((id) => !JUST_TRACK_SKIPPED.includes(id)) : all;
 }
 
 /** `/welcome/income` -> `income`, `/welcome` -> null. Anything else under /welcome comes back as-is (invalid). */

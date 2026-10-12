@@ -68,6 +68,15 @@ describe("resolveRoute", () => {
     expect(go("cats", web).view).toEqual({ kind: "redirect", to: "/welcome/accounts" });
   });
 
+  it("just tracking skips Your plan: First pay follows Priorities, and a deep link to the plan goes back to where they were", () => {
+    const d = { ...emptyDraft(), path: "web" as const, step: "prio" as const, skipped: true };
+    expect(nextStepId(stepsFor(d), "prio")).toBe("first");
+    expect(prevStepId(stepsFor(d), "first")).toBe("prio");
+    expect(go("first", d).view).toEqual({ kind: "step", id: "first" });
+    expect(go("plan", d).view).toEqual({ kind: "redirect", to: "/welcome/prio" });
+    expect(go("homes", d).view).toEqual({ kind: "redirect", to: "/welcome/prio" });
+  });
+
   it("Make a plan re-entry only has its own steps", () => {
     const d = appDraft({ planOnly: true, step: "prio" });
     expect(go("prio", d).view).toEqual({ kind: "step", id: "prio" });

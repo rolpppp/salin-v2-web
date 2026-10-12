@@ -1,8 +1,12 @@
+"use client";
+
+import { useActionState } from "react";
 import type { ReactNode } from "react";
 import { Button, ButtonLink } from "@/components/button/Button";
 import { Card } from "@/components/card/Card";
 import { ArrowRightIcon, CheckIcon } from "@/components/icons";
 import { ProgressBar } from "@/components/progress-bar/ProgressBar";
+import { startMakeAPlan } from "@/lib/actions/onboarding";
 import { cn } from "@/lib/cn";
 import type { NextView, WeekView } from "@/lib/data/today-model";
 import { formatPesoWhole } from "@/lib/money";
@@ -21,6 +25,27 @@ export type NextStepCardProps = {
   /** The "Log your first spending" launcher (ticket 19); empty until it exists. */
   logSlot: ReactNode;
 };
+
+/** Just tracking: reopens onboarding at Priorities (SPEC §7.6). The action navigates; it only comes back with an error. */
+function MakePlan({ hint }: { hint: string | null }) {
+  const [state, action, pending] = useActionState(startMakeAPlan, null);
+  return (
+    <>
+      <form action={action} className={styles.nextRow}>
+        <Button variant="primary" type="submit" loading={pending} loadingLabel="Opening" data-testid="next-primary">
+          Make a plan
+          <ArrowRightIcon width={16} height={16} aria-hidden="true" />
+        </Button>
+        {hint ? <span className={styles.hint}>{hint}</span> : null}
+      </form>
+      {state?.error ? (
+        <p className={styles.inlineError} role="alert">
+          {state.error}
+        </p>
+      ) : null}
+    </>
+  );
+}
 
 /** Exactly one primary action (SPEC §1), then the week checklist ("Getting started" in the first week, BR §12.6). */
 export function NextStepCard({ next, week, onCover, coverBusy, coverError, onSeeWhatHappened, logSlot }: NextStepCardProps) {
@@ -60,6 +85,8 @@ export function NextStepCard({ next, week, onCover, coverBusy, coverError, onSee
             See what happened
           </Button>
         </div>
+      ) : next.kind === "make_plan" ? (
+        <MakePlan hint={next.hint} />
       ) : next.cta ? (
         <div className={styles.nextRow}>
           <ButtonLink variant="primary" href={next.cta.href} data-testid="next-primary">

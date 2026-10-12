@@ -13,6 +13,7 @@ import type { PhoneFacts } from "@/lib/onboarding/facts";
 import { enterPatch, firstBlockedBefore, moduleFor, validateStep } from "@/lib/onboarding/registry";
 import { nextStepId, prevStepId, resolveRoute, stepHref, stepParamFrom, stepsFor, type RouteView } from "@/lib/onboarding/route";
 import type { StepContext, StepError } from "@/lib/onboarding/step";
+import { undoSkipOnBack } from "@/lib/onboarding/web-path";
 import { nowMs } from "@/lib/time";
 import { OnboardingEnvContext, type OnboardingEnv } from "./env";
 import styles from "./onboarding.module.css";
@@ -259,8 +260,11 @@ export function OnboardingFlow({ initialDraft, initialCtx, initialFacts, autoDet
       update(stay);
       return;
     }
+    // Back from First pay when just tracking returns to Priorities and undoes the skip (SPEC §7.6).
+    const undo = undoSkipOnBack(draft, stepId);
     const prev = prevStepId(steps, stepId);
     if (prev) {
+      if (undo) update(undo);
       goTo(stepHref(prev));
       return;
     }

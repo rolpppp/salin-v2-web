@@ -1,11 +1,11 @@
 import { appIncomeStep } from "@/components/onboarding/steps/AppIncome";
 import { categoriesStep } from "@/components/onboarding/steps/Categories";
 import { firstPayStep } from "@/components/onboarding/steps/FirstPay";
-// Web-path Income and Accounts are still placeholders (ticket 20).
-import { accountsStep, webIncomeStep } from "@/components/onboarding/steps/placeholders";
+import { accountsStep } from "@/components/onboarding/steps/Accounts";
 import { prioStep } from "@/components/onboarding/steps/Priorities";
 import { planStep } from "@/components/onboarding/steps/YourPlan";
 import { homesStep } from "@/components/onboarding/steps/WhereItLives";
+import { webIncomeStep } from "@/components/onboarding/steps/WebIncome";
 import { yourAppStep } from "@/components/onboarding/steps/YourApp";
 import type { OnboardingDraft, StepId } from "./draft";
 import type { PhoneFacts } from "./facts";
