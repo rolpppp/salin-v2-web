@@ -207,6 +207,8 @@ export interface ShelfSlot {
   hue: string | null;
   keptIn: string | null;
   leftMinor: number;
+  /** What was left before today's confirms (the grow animation's start); equals `leftMinor` when nothing landed today. */
+  prevLeftMinor: number;
   /** > 0 when overspent (coral "Needs ₱X", no ribbon). */
   needsMinor: number;
   /** Ribbon height as basis points of the shared scale (0 when nothing to draw). */
@@ -302,6 +304,16 @@ const toMiBucket = (b: TodayBucket) => ({
   isArchived: b.isArchived,
 });
 
+/** What today's confirms put in each bucket (by local date). Basis for "before" values in the grow animation. */
+function allocatedToday(input: TodayInput): Map<string, number> {
+  const m = new Map<string, number>();
+  for (const a of input.allocations) {
+    if (isoDateIn(a.confirmedAt, input.timeZone) !== input.todayIso) continue;
+    m.set(a.bucketId, (m.get(a.bucketId) ?? 0) + a.amountMinor);
+  }
+  return m;
+}
+
 export function buildShelf(input: TodayInput): ShelfView | null {
   const on = input.buckets.filter((b) => bucketOnShelf(b, flowOf(input.flows, b.id), input.plan, input.sources));
   if (on.length === 0) return null;
@@ -314,6 +326,7 @@ export function buildShelf(input: TodayInput): ShelfView | null {
   }
   const scale = shelfScale(maxV);
   const rent = input.plan.rentRedirect;
+  const todayAlloc = allocatedToday(input);
 
   const slotOf = (b: TodayBucket): ShelfSlot => {
     const l = flowOf(input.flows, b.id).left;
@@ -335,6 +348,7 @@ export function buildShelf(input: TodayInput): ShelfView | null {
       hue: b.hue,
       keptIn,
       leftMinor: l,
+      prevLeftMinor: Math.min(l, l - (todayAlloc.get(b.id) ?? 0)),
       needsMinor: needs,
       ribbonBp,
       tiny: ribbonBp > 0 && ribbonBp < 600,
@@ -375,6 +389,8 @@ export interface StripDay {
 
 export interface SafeView {
   safeMinor: number;
+  /** Safe to spend before today's confirms (the grow animation's start). */
+  prevSafeMinor: number;
   /** "Living and Fun money, until your next payday." */
   caption: string;
   daysUntilPayday: number | null;
@@ -396,6 +412,8 @@ export function buildSafe(input: TodayInput): SafeView | null {
   const shown = spend.filter((b) => bucketOnShelf(b, flowOf(input.flows, b.id), input.plan, input.sources));
   if (spend.length === 0) return null;
   const safe = safeToSpend(spend.map((b) => flowOf(input.flows, b.id).left));
+  const todayAlloc = allocatedToday(input);
+  const prevSafe = safeToSpend(spend.map((b) => Math.min(flowOf(input.flows, b.id).left, flowOf(input.flows, b.id).left - (todayAlloc.get(b.id) ?? 0))));
   const days = daysUntilPayday(input.todayIso, input.profile.nextPaydayDate);
 
   let perDayMinor: number | null = null;
@@ -419,6 +437,7 @@ export function buildSafe(input: TodayInput): SafeView | null {
   const names = joinNames((shown.length ? shown : spend).map((b) => shortName(b).replace(/ money$/i, "")));
   return {
     safeMinor: safe,
+    prevSafeMinor: prevSafe,
     caption: `${names} money${days === null ? "." : ", until your next payday."}`,
     daysUntilPayday: days,
     perDayMinor,

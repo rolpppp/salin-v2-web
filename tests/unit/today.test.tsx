@@ -7,6 +7,7 @@ import { income } from "@/lib/data/money-in-testkit";
 import { buildTodayView, type TodayInput } from "@/lib/data/today-model";
 import { BUCKET, G1, G2, allocsOf, flowsOf, g9, ms } from "@/lib/data/today-testkit";
 
+vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn(), push: vi.fn(), refresh: vi.fn() }) }));
 const cover = vi.fn();
 vi.mock("@/lib/actions/covers", () => ({ coverFromBuffer: (...a: unknown[]) => cover(...a) }));
 

@@ -39,6 +39,8 @@ export function ReviewView({ data }: { data: ReviewData }) {
   const [error, setError] = useState<{ where: "obs" | "close"; message: string } | null>(null);
   const pendingFocus = useRef<string | null>(null);
   const opened = useRef(false);
+  // The burst is for the moment the week closes in this view, never for a later visit to an already-closed week.
+  const [celebrate, setCelebrate] = useState(false);
 
   const spend = useMemo(() => spendSummary(data.buckets), [data.buckets]);
   const obs = useMemo(() => pickObservation(data), [data]);
@@ -97,6 +99,7 @@ export function ReviewView({ data }: { data: ReviewData }) {
     setBusy(null);
     if (!r.ok) return setError({ where: "close", message: r.error });
     pendingFocus.current = CLOSED_HEADING;
+    if (!r.alreadyClosed) setCelebrate(true);
     announce(r.alreadyClosed ? "This week was already closed." : `${closedHeading(data.weekStart)}${r.openItems ? ` ${r.openItems} open ${r.openItems === 1 ? "item carries" : "items carry"} into next week.` : ""}`);
   }
 
@@ -197,7 +200,7 @@ export function ReviewView({ data }: { data: ReviewData }) {
           </Card>
 
           {closed ? (
-            <Card tone="peak" aria-labelledby={CLOSED_HEADING} className={styles.closedCard} data-burst="week" data-testid="week-closed">
+            <Card tone="peak" aria-labelledby={CLOSED_HEADING} className={styles.closedCard} data-burst={celebrate ? "week" : undefined} data-testid="week-closed">
               <CardTitle id={CLOSED_HEADING} tabIndex={-1} className={styles.focusable}>
                 {closed.heading}
               </CardTitle>

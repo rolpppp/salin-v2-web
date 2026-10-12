@@ -5,6 +5,8 @@ import { ProgressBar } from "@/components/progress-bar/ProgressBar";
 import { cn } from "@/lib/cn";
 import type { GoalCardView, GoalsView } from "@/lib/data/today-model";
 import { formatPeso } from "@/lib/money";
+import { growFrom, type GrowMode } from "@/lib/motion/grow";
+import type { CSSProperties } from "react";
 import styles from "./today.module.css";
 
 const TICKS = [25, 50, 75] as const;
@@ -14,7 +16,7 @@ function joinNames(names: readonly string[]): string {
 }
 
 /** Up to three goals, Emergency first (SPEC §1, BR §7). With none: one inviting line. */
-export function Goals({ goals }: { goals: GoalsView }) {
+export function Goals({ goals, grow = null }: { goals: GoalsView; grow?: GrowMode | null }) {
   if (goals.cards.length === 0) {
     return (
       <p className={styles.moreGoals} data-testid="goals-empty">
@@ -27,7 +29,7 @@ export function Goals({ goals }: { goals: GoalsView }) {
     <>
       <section className={cn(styles.goals, n === 1 && styles.n1, n === 2 && styles.n2)} aria-label="Goals" data-testid="goals">
         {goals.cards.map((g) => (
-          <GoalCard key={g.id} g={g} />
+          <GoalCard key={g.id} g={g} grow={grow} />
         ))}
       </section>
       <p className={styles.moreGoals}>
@@ -38,19 +40,21 @@ export function Goals({ goals }: { goals: GoalsView }) {
   );
 }
 
-function GoalCard({ g }: { g: GoalCardView }) {
+function GoalCard({ g, grow }: { g: GoalCardView; grow: GrowMode | null }) {
+  // The bar and ticks hold their final state; the animation (CSS, keyed on data-grow) starts from here.
+  const prevBp = grow ? growFrom(grow, g.prevProgressBp) : g.progressBp;
   return (
-    <Card as="article" className={cn(styles.goal, g.main && styles.goalMain)} data-testid="goal-card" data-goal-id={g.id} data-progress-bp={g.progressBp} data-prev-progress-bp={g.prevProgressBp}>
+    <Card as="article" style={{ "--prev": String(prevBp / 10_000) } as CSSProperties} className={cn(styles.goal, g.main && styles.goalMain)} data-testid="goal-card" data-goal-id={g.id} data-progress-bp={g.progressBp} data-prev-progress-bp={g.prevProgressBp}>
       <div className={styles.goalTop}>
         <h3 className={styles.goalName}>{g.name}</h3>
         <span className={styles.pct} data-testid="goal-percent">
           {g.percent}%
         </span>
       </div>
-      <ProgressBar label={g.name} value={g.progressBp} max={10_000} valueText={`${g.percent}% saved`} size="goal" tone={g.main ? "good" : "accent"} />
+      <ProgressBar label={g.name} value={g.progressBp} max={10_000} valueText={`${g.percent}% saved`} size="goal" tone={g.main ? "good" : "accent"} className={styles.goalBar} />
       <div className={styles.ticks} aria-hidden="true">
         {TICKS.map((m) => (
-          <span key={m} className={cn(styles.tick, g.hitTicks.includes(m) && styles.tickHit)} style={{ left: `${m}%` }} data-tick={m}>
+          <span key={m} className={cn(styles.tick, g.hitTicks.includes(m) && styles.tickHit, g.hitTicks.includes(m) && m * 100 > prevBp && styles.tickNew)} style={{ left: `${m}%` }} data-tick={m}>
             {m}%
           </span>
         ))}
@@ -64,7 +68,7 @@ function GoalCard({ g }: { g: GoalCardView }) {
         {g.tail}
       </p>
       {g.passedToday ? (
-        <Chip tone="milestone" dot={false} data-testid="passed-chip" style={{ justifySelf: "start" }}>
+        <Chip tone="milestone" dot={false} data-testid="passed-chip" className={styles.passed} style={{ justifySelf: "start" }}>
           Passed {g.passedToday}% today
         </Chip>
       ) : null}

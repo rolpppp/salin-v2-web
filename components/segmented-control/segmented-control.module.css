@@ -48,4 +48,12 @@
     padding: 10px 12px;
     font-size: 13.5px;
   }
+  /* Five options don't fit 390px in one row; wrapping keeps every one visible (Plans: "Goals" was cut off). */
+  .wrapNarrow {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+  .wrapNarrow .btn {
+    flex: 1 1 auto;
+  }
 }

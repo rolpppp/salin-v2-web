@@ -1,13 +1,30 @@
+"use client";
+
+import { useRef } from "react";
 import { Card } from "@/components/card/Card";
 import { MINUS, formatPeso, formatPesoWhole } from "@/lib/money";
 import type { SafeView } from "@/lib/data/today-model";
 import { cn } from "@/lib/cn";
+import { growFrom, type GrowMode } from "@/lib/motion/grow";
+import { useCountUp } from "@/lib/motion/useCountUp";
 import styles from "./today.module.css";
 
 export type Flash = { tone: "good" | "warm"; text: string };
 
 /** Safe to spend (BR §4.4): big number, day strip ending in Pay, per-day line, and the two leaders. */
-export function SafeCard({ safe, flash }: { safe: SafeView | null; flash: Flash | null }) {
+export function SafeCard({ safe, flash, grow = null }: { safe: SafeView | null; flash: Flash | null; grow?: GrowMode | null }) {
+  const digitsRef = useRef<HTMLSpanElement>(null);
+  const digits = safe ? formatPeso(Math.abs(safe.safeMinor)).slice(1) : "";
+  // The digits render their final value; the count-up only paints frames over them (off under reduced motion).
+  useCountUp(digitsRef, {
+    active: grow !== null && safe !== null,
+    from: safe && grow ? Math.abs(growFrom(grow, safe.prevSafeMinor)) : 0,
+    to: safe ? Math.abs(safe.safeMinor) : 0,
+    format: (n) => formatPeso(n).slice(1),
+    finalText: digits,
+    durationMs: 900,
+    delayMs: 200,
+  });
   if (!safe) {
     return (
       <Card className={styles.safe} aria-labelledby="safe-h">
@@ -19,7 +36,6 @@ export function SafeCard({ safe, flash }: { safe: SafeView | null; flash: Flash 
     );
   }
   const negative = safe.safeMinor < 0;
-  const digits = formatPeso(Math.abs(safe.safeMinor)).slice(1);
   return (
     <Card className={styles.safe} aria-labelledby="safe-h">
       <h2 className={styles.eyebrow} id="safe-h">
@@ -28,7 +44,7 @@ export function SafeCard({ safe, flash }: { safe: SafeView | null; flash: Flash 
       <p className={cn(styles.big, negative && styles.neg)} data-testid="safe-amount" data-safe-minor={safe.safeMinor}>
         {negative ? MINUS : ""}
         <span className={styles.cur}>₱</span>
-        {digits}
+        <span ref={digitsRef}>{digits}</span>
       </p>
       <p className={styles.safeSub}>{safe.caption}</p>
       {safe.perDayText ? (

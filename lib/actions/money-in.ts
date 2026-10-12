@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { z } from "zod";
 import { track } from "@/lib/analytics";
 import { getCurrentUser } from "@/lib/auth/session";
+import { snapshotGoalsSafe, trackMilestonesAfter } from "@/lib/data/goal-milestones";
 import { getProfile } from "@/lib/data/today";
 import {
   SAVE_FAILED,
@@ -166,6 +167,8 @@ export async function confirmIncomesAction(input: unknown): Promise<ConfirmResul
   const supabase = await createClient();
   if (!supabase || !(await getCurrentUser())) return { ok: false, error: NOT_SIGNED_IN };
 
+  // Goal progress before the confirm, so `goal_milestone_passed` fires only for milestones this action crossed.
+  const goalsBefore = await snapshotGoalsSafe(supabase);
   const { data, error } = await supabase.rpc("confirm_incomes_with_jobs", { entry_ids: parsed.data.ids, p_jobs: parsed.data.jobs as unknown as Json });
   if (error) {
     console.error("[money-in] confirm failed", error.message);
@@ -198,6 +201,8 @@ export async function confirmIncomesAction(input: unknown): Promise<ConfirmResul
       await track("income_confirmed", { source_kind: kind, job: info.job, count: ids.length, hours_since_landed: hoursSince(landed, now) });
     }
   }
+
+  await trackMilestonesAfter(supabase, goalsBefore);
 
   revalidatePath("/money-in");
   revalidatePath("/today");

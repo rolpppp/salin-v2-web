@@ -158,7 +158,8 @@ describe("Review screen", () => {
     );
     expect(screen.getByText("WEEK CLOSED")).toBeInTheDocument();
     const card = screen.getByTestId("week-closed");
-    expect(card).toHaveAttribute("data-burst", "week");
+    // opened already closed: no burst (it plays only when this view closed the week)
+    expect(card).not.toHaveAttribute("data-burst");
     expect(within(card).getByRole("heading", { name: "Week closed. Monday starts fresh." })).toBeInTheDocument();
     expect(within(card).getByText(/Transfers made/).parentElement).toHaveTextContent("(carries into next week)");
     expect(within(card).getByTestId("start-next")).toHaveTextContent("You start next week with ₱345 safe to spend");

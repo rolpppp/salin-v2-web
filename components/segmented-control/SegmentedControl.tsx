@@ -14,13 +14,15 @@ export type SegmentedControlProps<V extends string> = {
   value: V;
   onValueChange: (value: V) => void;
   className?: string;
+  /** Under 720px: `scroll` (default, one row that scrolls sideways) or `wrap` (every option stays visible on extra rows). */
+  narrow?: "scroll" | "wrap";
 };
 
 /**
  * Radio group styled as a segmented control. One tab stop (the checked option);
  * Arrow keys move and select (wrapping), Home/End jump to first/last.
  */
-export function SegmentedControl<V extends string>({ label, options, value, onValueChange, className }: SegmentedControlProps<V>) {
+export function SegmentedControl<V extends string>({ label, options, value, onValueChange, className, narrow = "scroll" }: SegmentedControlProps<V>) {
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
   const enabled = options.map((o, i) => (o.disabled ? -1 : i)).filter((i) => i >= 0);
 
@@ -40,7 +42,7 @@ export function SegmentedControl<V extends string>({ label, options, value, onVa
   }
 
   return (
-    <div role="radiogroup" aria-label={label} className={cn(styles.seg, className)} onKeyDown={onKeyDown}>
+    <div role="radiogroup" aria-label={label} className={cn(styles.seg, narrow === "wrap" && styles.wrapNarrow, className)} onKeyDown={onKeyDown}>
       {options.map((o, i) => {
         const checked = o.value === value;
         return (

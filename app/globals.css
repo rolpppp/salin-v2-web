@@ -83,6 +83,21 @@
   --dur-press: 140ms;
   --dur-view: 160ms;
   --dur-drawer: 320ms;
+  /* Reward motion (DESIGN.md "Motion"): only for real progress. Reduced motion swaps moves for a fade. */
+  --dur-grow: 900ms;
+  --dur-count: 900ms;
+  --dur-fill: 1000ms;
+  --dur-chip: 260ms;
+  --dur-pop: 280ms;
+  --dur-peak: 320ms;
+  --dur-burst: 1500ms;
+  --dur-rise: 240ms;
+  --dur-fade-rm: 200ms;
+  --stagger-grow: 60ms;
+  --delay-fill: 450ms;
+  --delay-delta: 700ms;
+  --delay-tick: 1050ms;
+  --delay-pill: 1300ms;
 
   --shelf-h: 260px;
   color-scheme: light;
@@ -350,10 +365,160 @@ p {
   }
 }
 
+/* ------------------------------------------------------------------
+   Completion burst (DESIGN.md "Real Completion Peak Rule"). Any element with data-burst plays it once on mount:
+   data-burst="payday" (Money in), "week" (Review), "onboarding" (Done card). CSS only; no import needed.
+   ------------------------------------------------------------------ */
+[data-burst] {
+  position: relative;
+}
+/* generated: 28 pieces */
+[data-burst]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: inherit;
+  background-repeat: no-repeat;
+  background-image:
+    linear-gradient(var(--b-living), var(--b-living)),
+    radial-gradient(circle at center, var(--b-fun) 0 3.6px, transparent 4px),
+    linear-gradient(var(--b-emergency), var(--b-emergency)),
+    radial-gradient(circle at center, var(--b-invest) 0 3.6px, transparent 4px),
+    linear-gradient(var(--b-sinking), var(--b-sinking)),
+    radial-gradient(circle at center, var(--sun) 0 3.6px, transparent 4px),
+    linear-gradient(var(--b-tax), var(--b-tax)),
+    radial-gradient(circle at center, var(--b-buffer) 0 3.6px, transparent 4px),
+    linear-gradient(var(--b-living), var(--b-living)),
+    radial-gradient(circle at center, var(--b-fun) 0 3.6px, transparent 4px),
+    linear-gradient(var(--b-emergency), var(--b-emergency)),
+    radial-gradient(circle at center, var(--b-invest) 0 3.6px, transparent 4px),
+    linear-gradient(var(--b-sinking), var(--b-sinking)),
+    radial-gradient(circle at center, var(--sun) 0 3.6px, transparent 4px),
+    linear-gradient(var(--b-tax), var(--b-tax)),
+    radial-gradient(circle at center, var(--b-buffer) 0 3.6px, transparent 4px),
+    linear-gradient(var(--b-living), var(--b-living)),
+    radial-gradient(circle at center, var(--b-fun) 0 3.6px, transparent 4px),
+    linear-gradient(var(--b-emergency), var(--b-emergency)),
+    radial-gradient(circle at center, var(--b-invest) 0 3.6px, transparent 4px),
+    linear-gradient(var(--b-sinking), var(--b-sinking)),
+    radial-gradient(circle at center, var(--sun) 0 3.6px, transparent 4px),
+    linear-gradient(var(--b-tax), var(--b-tax)),
+    radial-gradient(circle at center, var(--b-buffer) 0 3.6px, transparent 4px),
+    linear-gradient(var(--b-living), var(--b-living)),
+    radial-gradient(circle at center, var(--b-fun) 0 3.6px, transparent 4px),
+    linear-gradient(var(--b-emergency), var(--b-emergency)),
+    radial-gradient(circle at center, var(--b-invest) 0 3.6px, transparent 4px);
+  background-size:
+    7px 11px,
+    8px 8px,
+    7px 11px,
+    8px 8px,
+    7px 11px,
+    8px 8px,
+    7px 11px,
+    8px 8px,
+    7px 11px,
+    8px 8px,
+    7px 11px,
+    8px 8px,
+    7px 11px,
+    8px 8px,
+    7px 11px,
+    8px 8px,
+    7px 11px,
+    8px 8px,
+    7px 11px,
+    8px 8px,
+    7px 11px,
+    8px 8px,
+    7px 11px,
+    8px 8px,
+    7px 11px,
+    8px 8px,
+    7px 11px,
+    8px 8px;
+  background-position:
+    66% 11%,
+    61% 19%,
+    44% 20%,
+    30% 22%,
+    79% 22%,
+    68% 21%,
+    39% 16%,
+    32% 21%,
+    16% 26%,
+    58% 25%,
+    31% 16%,
+    64% 12%,
+    53% 17%,
+    77% 21%,
+    85% 22%,
+    42% 21%,
+    73% 17%,
+    34% 26%,
+    45% 29%,
+    31% 17%,
+    71% 17%,
+    17% 29%,
+    33% 25%,
+    58% 28%,
+    58% 28%,
+    32% 13%,
+    90% 19%,
+    16% 17%;
+  animation: burst-play var(--dur-burst) var(--ease-out) both;
+}
+@keyframes burst-play {
+  0% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    background-position:
+    54% 98%,
+    71% 106%,
+    47% 73%,
+    30% 78%,
+    65% 110%,
+    66% 79%,
+    45% 73%,
+    29% 111%,
+    16% 74%,
+    76% 65%,
+    43% 69%,
+    74% 90%,
+    36% 62%,
+    60% 77%,
+    77% 83%,
+    57% 93%,
+    87% 76%,
+    30% 75%,
+    35% 91%,
+    31% 94%,
+    57% 100%,
+    17% 86%,
+    40% 77%,
+    47% 81%,
+    48% 106%,
+    18% 61%,
+    98% 70%,
+    4% 103%;
+  }
+}
+
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     scroll-behavior: auto !important;
+  }
+  [data-burst]::before {
+    display: none;
   }
 }

@@ -149,10 +149,10 @@ describe("Step 2: Move the money", () => {
     expect(card).toHaveTextContent("₱26,500.00 from 2 sources now has a job");
     expect(card).toHaveTextContent("Your accounts match your buckets");
     const link = within(card).getByRole("link", { name: /See your buckets grow/ });
-    expect(link).toHaveAttribute("href", "/today");
+    expect(link).toHaveAttribute("href", "/today?grow=confirm");
     expect(link).toHaveAttribute("id", MOVE_MONEY_FOCUS_ID);
     // opened already complete: no burst, no stealing focus
-    expect(screen.queryByTestId("burst")).not.toBeInTheDocument();
+    expect(card).not.toHaveAttribute("data-burst");
     expect(link).not.toHaveFocus();
   });
 
@@ -161,7 +161,7 @@ describe("Step 2: Move the money", () => {
     update({ phase: "all_done", cycle: { id: "c1", closedAt: NOW }, transferPlan: planRows(G7) });
     const link = await screen.findByRole("link", { name: /See your buckets grow/ });
     expect(link).toHaveFocus();
-    expect(screen.getByTestId("burst")).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByTestId("completion-card")).toHaveAttribute("data-burst", "payday");
     await waitFor(() => expect(screen.getByTestId("live-region")).toHaveTextContent("All money in has a home."));
   });
 });

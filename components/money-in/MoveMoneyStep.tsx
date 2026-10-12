@@ -36,16 +36,6 @@ export type MoveMoneyStepProps = {
   buckets: ReadonlyArray<MiBucket>;
 };
 
-const BURST = ["var(--sun)", "var(--good-fill)", "var(--accent)", "var(--warm)"];
-// Fixed positions so the render stays pure: 16 pieces falling from the top edge.
-const PIECES = Array.from({ length: 16 }, (_, i) => ({
-  left: `${6 + ((i * 37) % 88)}%`,
-  c: BURST[i % BURST.length],
-  d: `${(i % 5) * 60}ms`,
-  x: `${((i * 53) % 90) - 45}px`,
-  r: `${((i * 97) % 540) - 270}deg`,
-}));
-
 export function MoveMoneyStep({ phase, confirmed, cycle, transferPlan, accounts, buckets }: MoveMoneyStepProps) {
   const announce = useAnnounce();
   const [error, setError] = useState<string | null>(null);
@@ -93,7 +83,7 @@ export function MoveMoneyStep({ phase, confirmed, cycle, transferPlan, accounts,
   if (phase === "all_done") {
     const { headline, lines } = completionLines(confirmed);
     return (
-      <Card as="section" aria-labelledby="money-in-peak" className={`${styles.peak}${celebrate ? ` ${styles.peakEnter}` : ""}`} data-testid="completion-card" data-celebrate={celebrate || undefined}>
+      <Card as="section" aria-labelledby="money-in-peak" className={`${styles.peak}${celebrate ? ` ${styles.peakEnter}` : ""}`} data-testid="completion-card" data-celebrate={celebrate || undefined} data-burst={celebrate ? "payday" : undefined}>
         <h2 id="money-in-peak">{headline}</h2>
         <ul>
           {lines.map((l) => (
@@ -106,17 +96,10 @@ export function MoveMoneyStep({ phase, confirmed, cycle, transferPlan, accounts,
           ))}
         </ul>
         <div className={styles.row}>
-          <ButtonLink variant="primary" href="/today" id={MOVE_MONEY_FOCUS_ID} data-testid="see-buckets">
+          <ButtonLink variant="primary" href="/today?grow=confirm" id={MOVE_MONEY_FOCUS_ID} data-testid="see-buckets">
             See your buckets grow <ArrowRightIcon />
           </ButtonLink>
         </div>
-        {celebrate ? (
-          <div className={styles.burst} aria-hidden="true" data-testid="burst">
-            {PIECES.map((p, i) => (
-              <i key={i} style={{ left: p.left, "--c": p.c, "--d": p.d, "--x": p.x, "--r": p.r } as React.CSSProperties} />
-            ))}
-          </div>
-        ) : null}
       </Card>
     );
   }

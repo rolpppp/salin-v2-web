@@ -14,6 +14,7 @@ export function PlansNav() {
       options={PLAN_SECTIONS}
       value={current}
       onValueChange={(v) => router.push(`/plans/${v}`)}
+      narrow="wrap"
     />
   );
 }

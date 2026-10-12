@@ -252,7 +252,7 @@
   color: var(--done-ink);
 }
 .peakEnter {
-  animation: peak-in 320ms var(--ease-out) both;
+  animation: peak-in var(--dur-peak) var(--ease-out) both;
 }
 @keyframes peak-in {
   from {
@@ -264,32 +264,7 @@
     transform: none;
   }
 }
-.burst {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-.burst i {
-  position: absolute;
-  top: -12px;
-  width: 8px;
-  height: 12px;
-  border-radius: 2px;
-  opacity: 0;
-  background: var(--c);
-  animation: burst-fall 1500ms var(--ease-out) var(--d) both;
-}
-@keyframes burst-fall {
-  0% {
-    opacity: 1;
-    transform: translate(0, 0) rotate(0);
-  }
-  100% {
-    opacity: 0;
-    transform: translate(var(--x), 220px) rotate(var(--r));
-  }
-}
+/* The completion burst is global CSS keyed on the card's data-burst attribute (app/globals.css). */
 @media (max-width: 720px) {
   .move {
     grid-template-columns: 28px minmax(0, 1fr) auto;
@@ -317,9 +292,6 @@
   .stamp,
   .peakEnter {
     animation: none;
-  }
-  .burst {
-    display: none;
   }
 }
 

@@ -8,6 +8,7 @@ import { TimezoneSync } from "@/components/today/TimezoneSync";
 import { TodayView } from "@/components/today/TodayView";
 import styles from "@/components/today/today.module.css";
 import { requireUser, displayFirstName } from "@/lib/auth/session";
+import { parseGrow } from "@/lib/motion/grow";
 import { getProfile, getTodayInput } from "@/lib/data/today";
 import { buildTodayView, daysUntilPayday, daysUntilText, type TodayView as TodayViewModel } from "@/lib/data/today-model";
 import { createClient } from "@/lib/supabase/server";
@@ -15,7 +16,8 @@ import { TZ_COOKIE, nowMs, validTimeZone } from "@/lib/time";
 
 export const metadata: Metadata = { title: "Today" };
 
-export default async function TodayPage() {
+export default async function TodayPage({ searchParams }: { searchParams: Promise<{ grow?: string | string[] }> }) {
+  const grow = parseGrow((await searchParams).grow);
   const user = await requireUser("/today");
   const supabase = await createClient();
   const tzCookie = (await cookies()).get(TZ_COOKIE)?.value ?? null;
@@ -55,7 +57,7 @@ export default async function TodayPage() {
               Spending from your phone shows here when sync is on in the Salin app.
             </p>
           ) : null}
-          <TodayView view={view} logSlot={<LogSpendingSlot variant="primary" />} />
+          <TodayView view={view} grow={grow} logSlot={<LogSpendingSlot variant="primary" />} />
         </>
       )}
     </>

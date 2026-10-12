@@ -102,10 +102,10 @@ test("G7: confirming G2 and G5 together nets the pair, and ticking writes mobile
   // survives a reload (a later visit the same day shows the card, no burst)
   await page.reload();
   await expect(page.getByTestId("completion-card")).toBeVisible();
-  await expect(page.getByTestId("burst")).toHaveCount(0);
+  await expect(page.getByTestId("completion-card")).not.toHaveAttribute("data-burst");
 
   await page.getByRole("link", { name: /See your buckets grow/ }).click();
-  await page.waitForURL("**/today");
+  await page.waitForURL(/\/today(\?|$)/);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   expect(errors).toEqual([]);
 });

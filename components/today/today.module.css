@@ -786,8 +786,98 @@
     font-size: 12.5px;
   }
 }
+/* ---- Reward motion (ticket 15). `data-grow` is on TodayView's wrapper for one play after a confirm / onboarding.
+   Everything here is a one-shot animation that starts from a "backwards" state, so the DOM and layout always
+   hold the final values. Tokens live in globals.css. */
+.delta {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font: 650 12px/1 var(--sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  background: var(--surface);
+  border-radius: var(--r-pill);
+  padding: 4px 7px;
+  white-space: nowrap;
+  box-shadow: var(--shadow-1);
+}
+[data-grow] .ribbon {
+  animation: ribbon-grow var(--dur-grow) var(--ease-out) var(--grow-delay, 0ms) backwards;
+}
+[data-grow] .delta {
+  animation: delta-rise var(--dur-chip) var(--ease-out) calc(var(--grow-delay, 0ms) + var(--delay-delta)) backwards;
+}
+[data-grow] .goalBar i {
+  animation: bar-fill var(--dur-fill) var(--ease-out) var(--delay-fill) backwards;
+}
+[data-grow] .tickNew {
+  animation: tick-turn var(--dur-state) ease var(--delay-tick) backwards;
+}
+[data-grow] .tickNew::before {
+  animation: tick-turn-bar var(--dur-state) ease var(--delay-tick) backwards;
+}
+[data-grow] .passed {
+  animation: pill-pop var(--dur-pop) var(--ease-out) var(--delay-pill) backwards;
+}
+@keyframes ribbon-grow {
+  from {
+    clip-path: inset(0 0 var(--clip, 100%) 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes delta-rise {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+@keyframes bar-fill {
+  from {
+    transform: scaleX(var(--prev, 0));
+  }
+}
+@keyframes tick-turn {
+  from {
+    color: var(--ink-3);
+  }
+}
+@keyframes tick-turn-bar {
+  from {
+    background: var(--line-2);
+  }
+}
+@keyframes pill-pop {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .ribbon {
     transition: none;
+  }
+  /* Reduced motion shows the end state at once (SPEC §1, §7.7). */
+  [data-grow] .ribbon,
+  [data-grow] .delta,
+  [data-grow] .goalBar i,
+  [data-grow] .tickNew,
+  [data-grow] .tickNew::before,
+  [data-grow] .passed {
+    animation: none;
+  }
+  [data-grow] .delta {
+    display: none;
   }
 }

@@ -1,10 +1,14 @@
+"use client";
+
 import Link from "next/link";
-import type { CSSProperties } from "react";
+import { useRef, type CSSProperties } from "react";
 import { Card, CardTitle } from "@/components/card/Card";
 import { cn } from "@/lib/cn";
 import { hueVar } from "@/lib/data/money-in-model";
 import type { ShelfSlot, ShelfView } from "@/lib/data/today-model";
 import { formatPeso, formatPesoWhole } from "@/lib/money";
+import { GROW_STAGGER_MS, clipStartPercent, growFrom, type GrowMode } from "@/lib/motion/grow";
+import { useCountUp } from "@/lib/motion/useCountUp";
 import styles from "./today.module.css";
 
 const css = (v: Record<string, string>) => v as CSSProperties;
@@ -15,7 +19,7 @@ const pct = (bp: number) => `calc(var(--shelf-h) * ${bp / 10_000})`;
  * overspent bucket. Each slot is a button that opens the drawer. After a confirm the grow animation (ticket 15)
  * starts from `data-left-minor` / `data-pending-minor`; this component only draws the end state.
  */
-export function Shelf({ shelf, onOpen }: { shelf: ShelfView | null; onOpen: (bucketId: string, el: HTMLElement) => void }) {
+export function Shelf({ shelf, onOpen, grow = null }: { shelf: ShelfView | null; onOpen: (bucketId: string, el: HTMLElement) => void; grow?: GrowMode | null }) {
   if (!shelf) {
     return (
       <Card className={styles.shelfCard} aria-labelledby="shelf-h">
@@ -49,14 +53,14 @@ export function Shelf({ shelf, onOpen }: { shelf: ShelfView | null; onOpen: (buc
       </div>
       <div className={styles.shelfScroll} data-testid="shelf-scroll">
         <div className={styles.shelf} style={css({ "--cols": shelf.groups.map((g) => `${Math.max(2, g.slots.length)}fr`).join(" ") })}>
-          {shelf.groups.map((g) => (
+          {shelf.groups.map((g, gi) => (
             <div key={g.key} className={styles.group} data-group={g.key}>
               <div className={styles.gLabel}>
                 {g.title} <small>{g.hint}</small>
               </div>
               <div className={styles.gCols} style={css({ "--gc": String(Math.max(2, g.slots.length)) })}>
-                {g.slots.map((s) => (
-                  <Slot key={s.id} slot={s} onOpen={onOpen} />
+                {g.slots.map((s, i) => (
+                  <Slot key={s.id} slot={s} onOpen={onOpen} grow={grow} order={shelf.groups.slice(0, gi).reduce((n, x) => n + x.slots.length, 0) + i} />
                 ))}
               </div>
             </div>
@@ -73,7 +77,14 @@ export function Shelf({ shelf, onOpen }: { shelf: ShelfView | null; onOpen: (buc
   );
 }
 
-function Slot({ slot: s, onOpen }: { slot: ShelfSlot; onOpen: (id: string, el: HTMLElement) => void }) {
+function Slot({ slot: s, onOpen, grow, order }: { slot: ShelfSlot; onOpen: (id: string, el: HTMLElement) => void; grow: GrowMode | null; order: number }) {
+  // The amount renders its final value; the count-up only paints frames over it (and not at all under reduced motion).
+  const amt = useRef<HTMLSpanElement>(null);
+  const from = grow ? growFrom(grow, s.prevLeftMinor) : s.leftMinor;
+  const finalText = formatPeso(s.leftMinor);
+  useCountUp(amt, { active: grow !== null, from, to: s.leftMinor, format: formatPeso, finalText, durationMs: 900, delayMs: order * GROW_STAGGER_MS });
+  const delta = grow === "confirm" ? s.leftMinor - from : 0;
+  const delay = `${order * GROW_STAGGER_MS}ms`;
   const tagClass = s.tag?.kind === "needs" ? styles.tagWarm : styles.tagGhost;
   const pending =
     s.pendingBp > 0 ? (
@@ -89,7 +100,7 @@ function Slot({ slot: s, onOpen }: { slot: ShelfSlot; onOpen: (id: string, el: H
     <button
       type="button"
       className={styles.slot}
-      style={css({ "--c": hueVar(s.hue) })}
+      style={css({ "--c": hueVar(s.hue), "--grow-delay": delay, "--clip": `${grow ? clipStartPercent(from, s.leftMinor) : 0}%` })}
       aria-label={s.ariaLabel}
       onClick={(e) => onOpen(s.id, e.currentTarget)}
       data-testid={`slot-${s.hue ?? s.id}`}
@@ -102,8 +113,8 @@ function Slot({ slot: s, onOpen }: { slot: ShelfSlot; onOpen: (id: string, el: H
           <i aria-hidden="true" />
           <span>{s.shortName}</span>
         </span>
-        <span className={cn(styles.sAmt, s.leftMinor === 0 && styles.sAmtZero)} data-testid="slot-amount">
-          {formatPeso(s.leftMinor)}
+        <span className={cn(styles.sAmt, s.leftMinor === 0 && styles.sAmtZero)} data-testid="slot-amount" ref={amt}>
+          {finalText}
         </span>
         <span className={styles.sAcct}>{s.keptIn ?? ""}</span>
       </span>
@@ -112,6 +123,11 @@ function Slot({ slot: s, onOpen }: { slot: ShelfSlot; onOpen: (id: string, el: H
         {s.ribbonBp > 0 ? <span className={cn(styles.ribbon, s.tiny && styles.ribbonTiny)} style={{ height: pct(s.ribbonBp) }} data-testid="ribbon" /> : null}
         {tag}
         {pending}
+        {delta > 0 && s.ribbonBp >= 1400 ? (
+          <span className={styles.delta} data-testid="delta">
+            +{formatPeso(delta).slice(1)}
+          </span>
+        ) : null}
       </span>
     </button>
   );

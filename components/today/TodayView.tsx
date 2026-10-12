@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { Drawer } from "@/components/drawer/Drawer";
 import { useAnnounce } from "@/components/live-region/LiveRegion";
 import { coverFromBuffer } from "@/lib/actions/covers";
 import { hueVar } from "@/lib/data/money-in-model";
 import { coverMessage, type CoverInfo, type TodayView as TodayViewModel } from "@/lib/data/today-model";
+import { GROW_CLEAR_MS, growAnnouncement, type GrowMode } from "@/lib/motion/grow";
 import { BucketDrawerBody } from "./BucketDrawerBody";
 import { Goals } from "./Goals";
 import { NextStepCard } from "./NextStepCard";
@@ -22,8 +24,29 @@ type CoverError = { scope: "card" | "drawer"; text: string };
  * the drawer and the Safe to spend card all take part in one cover. Nothing here is persisted: leaving Today
  * clears the flag (SPEC §1).
  */
-export function TodayView({ view, logSlot }: { view: TodayViewModel; logSlot: ReactNode }) {
+export function TodayView({ view, logSlot, grow = null }: { view: TodayViewModel; logSlot: ReactNode; grow?: GrowMode | null }) {
   const announce = useAnnounce();
+  const router = useRouter();
+  // The grow plays once. `mode` keeps it on after the param is stripped (so a refresh doesn't replay) and clears
+  // it when the animations are over. All the motion is CSS keyed on `data-grow` (+ count-ups in Shelf/SafeCard).
+  const [mode, setMode] = useState<GrowMode | null>(grow);
+  const [seenGrow, setSeenGrow] = useState<GrowMode | null>(grow);
+  if (grow !== seenGrow) {
+    setSeenGrow(grow);
+    if (grow) setMode(grow);
+  }
+  useEffect(() => {
+    if (!grow) return;
+    announce(growAnnouncement(grow, { totalMinor: view.shelf?.totalMinor ?? null, passed: view.goals.cards.flatMap((g) => (g.passedToday ? [{ name: g.name, milestone: g.passedToday }] : [])) }));
+    router.replace("/today", { scroll: false });
+    // Once per arrival with the param; later view updates must not re-announce.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [grow]);
+  useEffect(() => {
+    if (!mode) return;
+    const t = setTimeout(() => setMode(null), GROW_CLEAR_MS);
+    return () => clearTimeout(t);
+  }, [mode]);
   // `openId` stays set while the drawer slides out, so its content doesn't blank mid-animation.
   const [openId, setOpenId] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -68,9 +91,9 @@ export function TodayView({ view, logSlot }: { view: TodayViewModel; logSlot: Re
   };
 
   return (
-    <>
+    <div data-grow={mode ?? undefined} style={{ display: "contents" }}>
       <div className={styles.row2}>
-        <SafeCard safe={view.safe} flash={flash} />
+        <SafeCard safe={view.safe} flash={flash} grow={mode} />
         <NextStepCard
           next={view.next}
           week={view.week}
@@ -81,8 +104,8 @@ export function TodayView({ view, logSlot }: { view: TodayViewModel; logSlot: Re
           logSlot={logSlot}
         />
       </div>
-      <Shelf shelf={view.shelf} onOpen={openBucket} />
-      <Goals goals={view.goals} />
+      <Shelf shelf={view.shelf} onOpen={openBucket} grow={mode} />
+      <Goals goals={view.goals} grow={mode} />
       <Drawer
         open={isOpen && open !== null}
         onOpenChange={setIsOpen}
@@ -94,6 +117,6 @@ export function TodayView({ view, logSlot }: { view: TodayViewModel; logSlot: Re
           <BucketDrawerBody view={open} onCover={() => cover(open.cover, "drawer")} coverBusy={busy} coverError={coverError?.scope === "drawer" ? coverError.text : null} />
         ) : null}
       </Drawer>
-    </>
+    </div>
   );
 }
