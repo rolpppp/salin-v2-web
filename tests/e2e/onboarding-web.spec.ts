@@ -20,6 +20,11 @@ const primary = (page: Page) => page.locator("#ob-primary");
 const noHorizontalScroll = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
 const inDays = (n: number) => isoDateIn(Date.now() + n * DAY, TEST_TIME_ZONE);
 
+async function storedDraft(userId: string): Promise<Record<string, unknown> & { accounts?: unknown[]; step?: string }> {
+  const { data } = await adminClient().from("user_profiles").select("onboardingDraft").eq("user_id", userId).single();
+  return (data?.onboardingDraft ?? {}) as Record<string, unknown> & { accounts?: unknown[]; step?: string };
+}
+
 /** Welcome question, "I'm new to Salin", then Income and Accounts filled in. Leaves the user on Priorities. */
 async function throughIncomeAndAccounts(page: Page) {
   await page.getByRole("button", { name: /I'm new to Salin/ }).click();
@@ -82,8 +87,9 @@ test("web path: Income, Accounts, then the shared steps, and the draft carries s
   await signIn(page, user, "/welcome");
   await throughIncomeAndAccounts(page);
 
-  const { data } = await adminClient().from("user_profiles").select("onboardingDraft").eq("user_id", user.id).single();
-  const draft = data?.onboardingDraft as {
+  // Autosave is debounced and runs in the background, so wait for the Accounts answers to land.
+  await expect.poll(async () => (await storedDraft(user.id)).accounts?.length ?? 0).toBe(3);
+  const draft = (await storedDraft(user.id)) as unknown as {
     path: string;
     firstName: string;
     income: { kind: string; amountMinor: number; frequency: string };
@@ -105,8 +111,8 @@ test("web path: Income, Accounts, then the shared steps, and the draft carries s
   await page.getByRole("checkbox", { name: /^GCash/ }).check();
   await primary(page).click();
   await expect(page).toHaveURL(/\/welcome\/prio$/);
-  const again = await adminClient().from("user_profiles").select("onboardingDraft").eq("user_id", user.id).single();
-  const accounts = (again.data?.onboardingDraft as { accounts: { id: string; name: string }[] }).accounts;
+  await expect.poll(async () => (await storedDraft(user.id)).step).toBe("prio");
+  const accounts = (await storedDraft(user.id)).accounts as { id: string; name: string }[];
   expect(accounts.find((a) => a.name === "GCash")?.id).toBe(draft.accounts.find((a) => a.name === "GCash")?.id);
 
   // Priorities, Your plan and Where it lives, then First pay and "Not yet" finishes.
@@ -118,6 +124,8 @@ test("web path: Income, Accounts, then the shared steps, and the draft carries s
   await primary(page).click();
   await expect(page.getByText("Step 6 of 6 · First pay")).toBeVisible();
   await page.getByRole("button", { name: "Not yet" }).click();
+  await expect(heading(page)).toHaveText("That's fine. Payday is the moment.");
+  await primary(page).click(); // Open Today
   await page.waitForURL("**/today");
 
   const db = adminClient();
@@ -150,6 +158,8 @@ test("Just track for now: First pay follows Priorities, Back undoes the skip, To
   await page.getByRole("button", { name: "Skip the plan, just track for now" }).click();
   await expect(page).toHaveURL(/\/welcome\/first$/);
   await page.getByRole("button", { name: "Not yet" }).click();
+  await expect(heading(page)).toHaveText("That's fine. Payday is the moment.");
+  await primary(page).click(); // Open Today
   await page.waitForURL("**/today");
 
   const db = adminClient();

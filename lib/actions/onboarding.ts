@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -46,6 +45,9 @@ export async function saveDraft(input: unknown): Promise<ActionResult> {
  * something else), validates it, and hands it to the one SQL transaction. "Make a plan" re-entry (`planOnly`) calls
  * `apply_plan_only` instead. Returns the summary jsonb from `finish_onboarding` (null for plan-only).
  */
+// No revalidatePath here on purpose: an action that revalidates also refreshes the page it was called from, the welcome
+// layout then sees `onboardedAt` and redirects to Today, and the Done card vanishes. Today and Money in are dynamic
+// (no cached render), so they read fresh data when opened.
 export async function finishOnboarding(): Promise<ActionResult<{ summary: Json | null }>> {
   const user = await requireUser(PATH);
   const client = await createClient();
@@ -60,13 +62,10 @@ export async function finishOnboarding(): Promise<ActionResult<{ summary: Json |
     if (parsed.data.planOnly) {
       const r = await client.rpc("apply_plan_only", { p_draft: draft });
       if (r.error) return { ok: false, error: sqlFailure(r.error) };
-      revalidatePath("/today");
       return { ok: true, value: { summary: null } };
     }
     const r = await client.rpc("finish_onboarding", { p_draft: draft });
     if (r.error) return { ok: false, error: sqlFailure(r.error) };
-    revalidatePath("/today");
-    revalidatePath("/money-in");
     return { ok: true, value: { summary: r.data ?? null } };
   } catch (err) {
     console.error("[onboarding] finish failed", err);

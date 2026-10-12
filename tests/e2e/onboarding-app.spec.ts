@@ -128,7 +128,10 @@ test("First pay: Give it a job opens the split (nothing finished); Do it later a
   await signIn(page, user, "/welcome/app");
   await primary(page).click();
   await throughSharedSteps(page);
-  while (!/waiting for a job/.test((await heading(page).textContent()) ?? "")) await primary(page).click();
+  if (/sorted your|spending categories/i.test((await heading(page).textContent()) ?? "")) {
+    await expect(page.getByText("Step 6 of 7 · Categories")).toBeVisible();
+    await primary(page).click();
+  }
   await expect(heading(page)).toHaveText(`Your ${shortDate(phone.latestIso)} pay is waiting for a job`);
 
   await page.getByRole("button", { name: "Give it a job" }).click();
