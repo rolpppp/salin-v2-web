@@ -32,7 +32,7 @@ Last paused Oct 12, 2026: Phase 0 + Phase 1 build complete and verified (e2e gre
 
 Build complete (Oct 12). Tickets 1–20 merged (4 is web half only); e2e 388 pass / 4 viewport skips / 0 fail; types regenerated. Every golden case (G1–G12, O1–O6) is covered. See `docs/pm/BOARD.md` for commits and follow-ups.
 
-Checks on main: `npm run lint`, `npm run typecheck`, `npm test` (867), `npm run build`, `npm run db:reset && npm run db:test` (1107 pgTAP), `npm run test:parity` (8 suites; run it with the same `SALIN_DB` you just reset), `npm run test:mobile-compat` (83; set `SALIN_MOBILE_PATH=/Volumes/RolfStuffs/Developer/salin-v2` when run from a worktree).
+Checks on main: `npm run lint`, `npm run typecheck`, `npm test` (890), `npm run build`, `npm run db:reset && npm run db:test` (1107 pgTAP), `npm run test:parity` (8 suites; run it with the same `SALIN_DB` you just reset), `npm run test:mobile-compat` (83; set `SALIN_MOBILE_PATH=/Volumes/RolfStuffs/Developer/salin-v2` when run from a worktree).
 
 ## Running e2e
 
@@ -45,6 +45,7 @@ Checks on main: `npm run lint`, `npm run typecheck`, `npm test` (867), `npm run 
 
 - **Waves 3, 4, 5a and 5b:** done. Wave 5b: 15 (6e5b05f), 20 (9a9ea9b), 18 UI (1a73ec9).
 - **E2E wave:** done (see BOARD.md "E2E + verification").
+- **Ticket 21 (forgot/reset password, owner request):** done; needs live dashboard config (BOARD row 21).
 - **Next (owner-side):** deploy, migrations-to-live plan (D-16, P-5, Realtime), real-device sync, 4 weeks of owner-only use (Phase 1 gate).
 - **Contracts:** `lib/onboarding/draft.ts` and `step.ts` (P-8); the shell extends them with `lib/onboarding/shell-types.ts`.
 - **Known follow-ups:**
@@ -73,9 +74,9 @@ Checks on main: `npm run lint`, `npm run typecheck`, `npm test` (867), `npm run 
 
 | Item | Amount |
 |---|---|
-| Finished agents, reported | ~4.42M tokens (Wave 1 ~537K, Waves 2–3 ~1.21M, Wave 4 ~813K, Wave 5a ~817K, Wave 5b ~627K, e2e ~407K) |
+| Finished agents, reported | ~4.54M tokens (ticket 21 ~123K; Wave 1 ~537K, Waves 2–3 ~1.21M, Wave 4 ~813K, Wave 5a ~817K, Wave 5b ~627K, e2e ~407K) |
 | Stopped agents (2), from transcripts | ~275K fresh input, ~5.4M cache reads |
 | Cache reads, all 6 agents | ~13M |
-| Agents | 24 Sonnet agents finished (+3 stopped at launch) |
+| Agents | 25 Sonnet agents finished (+3 stopped at launch) |
 
 Opus PM usage is not reported per turn. Per-agent detail is in `docs/pm/USAGE.md`.

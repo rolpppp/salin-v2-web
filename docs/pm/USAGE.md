@@ -71,3 +71,9 @@
 | ~20:00 | e2e-money-in-today | sonnet | Money in, Today, transfers, motion, Log spending | 182,318 | — | 156 | 27.1 min |
 
 **E2E wave done:** 3 agents, ~407K reported. PM fixed the scholarship SQL bug directly (one line + pgTAP). Running total of finished agents: ~4.42M reported, 24 agents.
+
+| When (Oct 12) | Agent | Model | Ticket | Reported | Cache reads | Tool calls | Duration |
+|---|---|---|---|---|---|---|---|
+| ~20:50 | forgot-password | sonnet | 21 (+ recovery-session fix after PM review) | 122,556 | — | 80 | 11.2 min |
+
+Running total of finished agents: ~4.54M reported, 25 agents.

@@ -31,7 +31,7 @@ jobs:
       - name: Start local Supabase
         run: |
           mkdir -p supabase/.temp && echo 17.6.1.147 > supabase/.temp/postgres-version
-          supabase start -x edge-runtime,logflare,vector,imgproxy,studio,mailpit,storage-api,postgres-meta,realtime
+          supabase start -x edge-runtime,logflare,vector,imgproxy,studio,storage-api,postgres-meta,realtime
       - name: Point e2e at the local stack
         run: |
           supabase status -o env | sed -n 's/^API_URL="\(.*\)"$/NEXT_PUBLIC_SUPABASE_URL=\1/p; s/^ANON_KEY="\(.*\)"$/NEXT_PUBLIC_SUPABASE_ANON_KEY=\1/p; s/^SERVICE_ROLE_KEY="\(.*\)"$/SUPABASE_SERVICE_ROLE_KEY=\1/p' >> "$GITHUB_ENV"

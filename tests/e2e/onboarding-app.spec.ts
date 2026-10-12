@@ -101,8 +101,10 @@ test("app path: Found your Salin data, Income, shared steps, Categories, then Fi
   await page.goForward();
   await page.reload();
   await expect(page).toHaveURL(/\/welcome\/prio$/);
-  const { data } = await adminClient().from("user_profiles").select("onboardingDraft").eq("user_id", user.id).single();
-  expect(data?.onboardingDraft).toMatchObject({ path: "app", step: "prio", landingAccountId: phone.bdoId, firstPay: { entryId: phone.latestId, amountMinor: 2_500_000 } });
+  // Autosave is debounced: the reloaded page records `step: "prio"` shortly after it renders.
+  const storedDraft = async () => (await adminClient().from("user_profiles").select("onboardingDraft").eq("user_id", user.id).single()).data?.onboardingDraft as { step?: string } | null;
+  await expect.poll(async () => (await storedDraft())?.step).toBe("prio");
+  expect(await storedDraft()).toMatchObject({ path: "app", step: "prio", landingAccountId: phone.bdoId, firstPay: { entryId: phone.latestId, amountMinor: 2_500_000 } });
 
   await throughSharedSteps(page);
   if (/sorted your|spending categories/i.test((await heading(page).textContent()) ?? "")) {
