@@ -6,7 +6,7 @@ export function safeNext(raw: unknown, fallback = "/today"): string {
   if (!raw.startsWith("/") || raw.startsWith("//") || raw.includes("\\")) return fallback;
   // Browsers drop tabs/newlines in URLs, so "/\t/evil.com" would become "//evil.com".
   if (/[\u0000-\u001f\u007f]/.test(raw)) return fallback;
-  if (/^\/(sign-in|sign-up|auth)(\/|\?|$)/.test(raw)) return fallback;
+  if (/^\/(sign-in|sign-up|forgot-password|auth)(\/|\?|$)/.test(raw)) return fallback;
   return raw;
 }
 
@@ -25,13 +25,17 @@ export const signInSchema = z.object({
 
 export const PASSWORD_MIN = 8;
 
-export const signUpSchema = z.object({
-  email,
-  password: z
-    .string()
-    .min(PASSWORD_MIN, `Use at least ${PASSWORD_MIN} characters for your password.`)
-    .max(256, "That password is too long."),
-});
+/** The rules for a password the user chooses (sign-up and reset). */
+const newPassword = z
+  .string()
+  .min(PASSWORD_MIN, `Use at least ${PASSWORD_MIN} characters for your password.`)
+  .max(256, "That password is too long.");
+
+export const signUpSchema = z.object({ email, password: newPassword });
+
+export const forgotPasswordSchema = z.object({ email });
+
+export const resetPasswordSchema = z.object({ password: newPassword });
 
 export type FieldErrors = { email?: string; password?: string };
 

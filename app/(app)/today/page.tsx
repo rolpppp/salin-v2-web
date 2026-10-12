@@ -4,6 +4,7 @@ import { ButtonLink } from "@/components/button/Button";
 import { EmptyState } from "@/components/empty-state/EmptyState";
 import { Greeting } from "@/components/today/Greeting";
 import { LogSpendingSlot } from "@/components/today/LogSpendingSlot";
+import { PasswordUpdatedNotice } from "@/components/today/PasswordUpdatedNotice";
 import { TimezoneSync } from "@/components/today/TimezoneSync";
 import { TodayView } from "@/components/today/TodayView";
 import styles from "@/components/today/today.module.css";
@@ -41,6 +42,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   return (
     <>
       <TimezoneSync serverZone={tzCookie ? timeZone : null} />
+      <PasswordUpdatedNotice />
       <Greeting firstName={firstName} daysText={daysText}>
         {/* Ticket 19 fills this slot with the Log spending launcher. */}
         <LogSpendingSlot variant="soft" />

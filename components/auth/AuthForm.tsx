@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Button } from "@/components/button/Button";
 import { Card } from "@/components/card/Card";
 import { Field, Input } from "@/components/field/Field";
@@ -24,6 +24,7 @@ type Props = {
 export function AuthForm({ mode, next, linkError }: Props) {
   const signIn = mode === "sign-in";
   const [state, action, pending] = useActionState(signIn ? signInAction : signUpAction, initial);
+  const [typedEmail, setTypedEmail] = useState("");
   const other = next && next !== "/today" ? `?next=${encodeURIComponent(next)}` : "";
   const formError = state.error ?? (linkError ? "That link didn't work or has expired. Sign in, or create your account again." : undefined);
 
@@ -52,7 +53,7 @@ export function AuthForm({ mode, next, linkError }: Props) {
             </div>
             <Field label="Email" required error={state.fieldErrors?.email}>
               {(c) => (
-                <Input {...c} name="email" type="email" autoComplete="email" inputMode="email" defaultValue={state.email} />
+                <Input {...c} name="email" type="email" autoComplete="email" inputMode="email" defaultValue={state.email} onChange={(e) => setTypedEmail(e.target.value)} />
               )}
             </Field>
             <Field
@@ -63,6 +64,11 @@ export function AuthForm({ mode, next, linkError }: Props) {
             >
               {(c) => <Input {...c} name="password" type="password" autoComplete={signIn ? "current-password" : "new-password"} />}
             </Field>
+            {signIn ? (
+              <p className={styles.forgot}>
+                <Link href={typedEmail.trim() ? `/forgot-password?email=${encodeURIComponent(typedEmail.trim())}` : "/forgot-password"}>Forgot password?</Link>
+              </p>
+            ) : null}
             <Button type="submit" variant="primary" loading={pending} loadingLabel={signIn ? "Signing in" : "Creating account"}>
               {signIn ? "Sign in" : "Create account"}
             </Button>

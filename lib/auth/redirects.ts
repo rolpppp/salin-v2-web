@@ -11,6 +11,13 @@ export type RouteInput = {
 
 const AUTH_PAGES = ["/sign-in", "/sign-up"];
 
+/**
+ * Reachable signed in or out, never bounced. `/forgot-password` works for anyone; `/reset-password` needs the
+ * recovery session, but the page itself shows the "expired link" state when there is none, so the proxy must not
+ * send signed-out visitors to sign-in, and must not send not-yet-onboarded users to /welcome.
+ */
+const RECOVERY_PAGES = ["/forgot-password", "/reset-password"];
+
 const isUnder = (pathname: string, base: string) => pathname === base || pathname.startsWith(`${base}/`);
 
 /** Where a request should be sent instead, or null to let it through. Pure so it can be unit tested. */
@@ -18,6 +25,8 @@ export function decideRedirect(i: RouteInput): string | null {
   const { pathname, signedIn } = i;
   // OAuth / email-link code exchange must always run.
   if (isUnder(pathname, "/auth")) return null;
+
+  if (RECOVERY_PAGES.some((p) => isUnder(pathname, p))) return null;
 
   if (AUTH_PAGES.some((p) => isUnder(pathname, p))) {
     if (!signedIn) return null;
