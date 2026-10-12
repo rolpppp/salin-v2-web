@@ -51,3 +51,13 @@
 
 **Wave 5b** (Oct 12): 3 agents (first-pay, web-path, motion) launched and stopped within a minute at the owner's request; negligible usage, no changes.
 
+
+**Session 4 (Oct 12, resumed): Wave 5b relaunched.** 3 Sonnet agents in worktrees (first-pay 18 UI, web-path 20, motion 15).
+
+| When (Oct 12) | Agent | Model | Ticket(s) | Reported | Cache reads | Tool calls | Duration |
+|---|---|---|---|---|---|---|---|
+| ~19:00 | motion | sonnet | 15 | 182,978 | — | 72 | 8.9 min |
+| ~19:00 | web-path | sonnet | 20 | 235,485 | — | 67 | 9.8 min |
+| ~19:05 | first-pay | sonnet | 18 UI | 208,646 | — | 52 | 10.3 min |
+
+**Wave 5b done** (Oct 12): 3 agents in parallel, ~627K reported, ~10 min wall clock. All three cherry-picked onto main without conflicts. Running total of finished agents: ~4.01M reported, 21 agents.
