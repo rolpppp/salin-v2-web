@@ -38,6 +38,7 @@ jobs:
       - run: npm run e2e
         env:
           CI: "true"
+          NEXT_PUBLIC_REALTIME: "off" # this stack excludes realtime; skip the socket so it can't log connection errors
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

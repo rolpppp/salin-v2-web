@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { AppHeader } from "@/components/app-shell/AppHeader";
 import { Page } from "@/components/app-shell/Page";
+import { LiveRefresh } from "@/components/live/LiveRefresh";
 import { SkipLink } from "@/components/app-shell/SkipLink";
 import { requireUser } from "@/lib/auth/session";
 import { getTabBadges } from "@/lib/data/badges";
@@ -12,6 +13,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   return (
     <>
       <SkipLink />
+      <LiveRefresh userId={user.id} />
       <AppHeader email={user.email} badges={badges} />
       <Page>{children}</Page>
     </>

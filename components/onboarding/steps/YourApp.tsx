@@ -8,11 +8,13 @@ import { initAccounts, protectedAccountId, toggleAccount, validateApp } from "@/
 import type { PhoneFacts } from "@/lib/onboarding/facts";
 import type { ShellStepModule } from "@/lib/onboarding/shell-types";
 import type { StepBodyProps } from "@/lib/onboarding/step";
+import { realtimeEnabled } from "@/lib/live/refresh-scheduler";
 import { createClient } from "@/lib/supabase/browser";
 import { useOnboardingEnv } from "../env";
 import styles from "./app-steps.module.css";
 
-const POLL_MS = 10_000;
+const POLL_MS = 10_000; // until realtime is connected
+const POLL_CONNECTED_MS = 60_000; // safety net once it is
 const NUDGE_MS = 1_500;
 
 /**
@@ -31,13 +33,21 @@ function usePhoneWatch() {
         void refreshPhone();
       }, NUDGE_MS);
     };
-    const client = createClient();
+    const client = realtimeEnabled() ? createClient() : null;
+    let connected = false;
     const channel = client
       ?.channel(`onboarding-phone-${userId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "accounts", filter: `user_id=eq.${userId}` }, onChange)
       .on("postgres_changes", { event: "*", schema: "public", table: "ledger_entries", filter: `user_id=eq.${userId}` }, onChange)
-      .subscribe();
-    const poll = setInterval(() => void refreshPhone(), POLL_MS);
+      .subscribe((status) => {
+        connected = status === "SUBSCRIBED";
+      });
+    // Ticks every POLL_MS; once realtime is connected only every sixth tick re-reads.
+    let tick = 0;
+    const poll = setInterval(() => {
+      tick += 1;
+      if (!connected || tick % (POLL_CONNECTED_MS / POLL_MS) === 0) void refreshPhone();
+    }, POLL_MS);
     return () => {
       clearInterval(poll);
       if (nudge !== null) clearTimeout(nudge);
