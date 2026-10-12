@@ -24,6 +24,17 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npx playwright install --with-deps chromium
+      # E2E needs Auth + PostgREST: a throwaway local Supabase in the runner, never the live project.
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.116.0
+      - name: Start local Supabase
+        run: |
+          mkdir -p supabase/.temp && echo 17.6.1.147 > supabase/.temp/postgres-version
+          supabase start -x edge-runtime,logflare,vector,imgproxy,studio,mailpit,storage-api,postgres-meta,realtime
+      - name: Point e2e at the local stack
+        run: |
+          supabase status -o env | sed -n 's/^API_URL="\(.*\)"$/NEXT_PUBLIC_SUPABASE_URL=\1/p; s/^ANON_KEY="\(.*\)"$/NEXT_PUBLIC_SUPABASE_ANON_KEY=\1/p; s/^SERVICE_ROLE_KEY="\(.*\)"$/SUPABASE_SERVICE_ROLE_KEY=\1/p' >> "$GITHUB_ENV"
       - run: npm run e2e
         env:
           CI: "true"
@@ -38,12 +49,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # hashFiles only works at step level; steps are skipped until the DB ticket adds supabase/config.toml.
       - uses: supabase/setup-cli@v1
-        if: hashFiles('supabase/config.toml') != ''
         with:
-          version: latest
-      - run: supabase start
-        if: hashFiles('supabase/config.toml') != ''
+          version: 2.116.0
+      - name: Start local Supabase (database only)
+        run: |
+          mkdir -p supabase/.temp && echo 17.6.1.147 > supabase/.temp/postgres-version
+          supabase start -x gotrue,kong,postgrest,edge-runtime,logflare,vector,imgproxy,studio,mailpit,storage-api,postgres-meta,realtime
       - run: supabase test db
-        if: hashFiles('supabase/config.toml') != ''
