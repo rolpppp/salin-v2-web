@@ -154,3 +154,24 @@ test("avatar menu opens with Account and Sign out", async ({ page }) => {
   await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: "Account menu" })).toBeFocused();
 });
+
+test("the site has its icon: favicon, tab icon, Apple touch icon and an install manifest, also when signed out", async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ baseURL, storageState: { cookies: [], origins: [] } });
+  const page = await context.newPage();
+  await page.goto("/");
+  const hrefs = await page.evaluate(() =>
+    Object.fromEntries(["icon", "apple-touch-icon", "manifest"].map((rel) => [rel, document.querySelector(`link[rel="${rel}"]`)?.getAttribute("href") ?? null])),
+  );
+  expect(hrefs.icon).toBeTruthy();
+  expect(hrefs["apple-touch-icon"]).toBeTruthy();
+  expect(hrefs.manifest).toBe("/manifest.webmanifest");
+  for (const href of [hrefs.icon!, hrefs["apple-touch-icon"]!, "/favicon.ico", "/icon-192.png", "/icon-512.png"]) {
+    const res = await page.request.get(href);
+    expect(res.status(), href).toBe(200);
+    expect(res.headers()["content-type"], href).toMatch(/^image\//);
+  }
+  const manifest = await (await page.request.get("/manifest.webmanifest")).json();
+  expect(manifest.name).toBe("Salin");
+  expect(manifest.icons.length).toBeGreaterThan(0);
+  await context.close();
+});
