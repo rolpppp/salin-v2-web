@@ -1,6 +1,6 @@
 # Resume: Salin Web build
 
-Last updated Oct 16, 2026: tickets 21–34 built (see `docs/pm/BOARD.md` rows 21–34). Owner to-dos: push, and OK + `db push` for migrations `20261015000100`–`0400` and `20261016000100_sort_money`. Earlier: Phase 0 + Phase 1 complete Oct 12. Start a new session by reading this file, then `docs/pm/BOARD.md`.
+Last updated Oct 16, 2026 (~02:30): tickets 21–35 built and **deployed**: owner pushed migrations `20261012000400`–`20261016000100` to live (verified from `~/salin-live-deploy/live_now_oct16.sql`) and pushed `main` (eeb3d87, incl. the site icon) to Vercel. Next: check the live site (landing, sign-up → Welcome, tour, sort card), `NEXT_PUBLIC_ONBOARDING_ENABLED=true` on Vercel, one real-phone sync + Postgres WARNING check. Start a new session by reading this file, then `docs/pm/BOARD.md`.
 
 ## How we work
 
