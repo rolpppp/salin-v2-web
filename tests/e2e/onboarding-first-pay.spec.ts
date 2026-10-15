@@ -21,6 +21,9 @@ function o1Draft(prefix: string): OnboardingDraft {
     step: "first",
     skipped: false,
     planOnly: false,
+    pattern: null,
+    rhythm: { amountMinor: null, frequency: null, nextDate: null },
+    firstMoney: { amountMinor: null, extra: {}, keepMinor: 0 },
     firstName: "Rolf",
     income: { kind: "salary", amountMinor: 2_500_000, frequency: "twice", nextPayday: isoDateIn(Date.now() + 9 * 86_400_000, TEST_TIME_ZONE), paidInOtherCurrency: false },
     sources: [{ key: "main", name: "Salary", kind: "salary", rule: "plan", wholeBucket: null, ownSplit: null, landsInAccountId: id("bpi"), categoryId: null, isMain: true }],
@@ -128,7 +131,7 @@ test("web path First pay: yes, split, move the money, Done", async ({ page }) =>
   expect(data?.onboardedAt).not.toBeNull();
 
   await done.getByRole("link", { name: /Open Today/ }).click();
-  await page.waitForURL("**/today?grow=onboarding");
+  await page.waitForURL(/\/today\?grow=onboarding&tour=1$/);
 });
 
 test("web path First pay: Back walks the stages; I'll send them later finishes with transfers open", async ({ page }) => {
@@ -146,7 +149,7 @@ test("web path First pay: Back walks the stages; I'll send them later finishes w
   await page.getByRole("button", { name: "Confirm split" }).click();
   await page.getByRole("checkbox").first().check();
   await page.getByRole("button", { name: "I'll send them later" }).click();
-  await page.waitForURL("**/today");
+  await page.waitForURL(/\/today(\?|$)/);
 
   const { data } = await adminClient().from("user_profiles").select("onboardedAt").eq("user_id", user.id).single();
   expect(data?.onboardedAt).not.toBeNull();
@@ -164,7 +167,7 @@ test("web path First pay: Not yet asks for a reminder, then Open Today", async (
   await expect(page.getByRole("radio", { name: "Email me on payday" })).toBeChecked();
   await page.getByRole("radio", { name: "No reminder" }).check();
   await page.getByRole("button", { name: "Open Today" }).click();
-  await page.waitForURL("**/today");
+  await page.waitForURL(/\/today(\?|$)/);
 
   const { data } = await adminClient().from("user_profiles").select("onboardedAt, paydayReminder").eq("user_id", user.id).single();
   expect(data?.onboardedAt).not.toBeNull();

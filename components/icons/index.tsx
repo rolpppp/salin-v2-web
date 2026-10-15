@@ -82,3 +82,30 @@ export function SproutIcon(props: IconProps) {
     </Base>
   );
 }
+
+export function HelpIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.6 9.3a2.5 2.5 0 0 1 4.8.9c0 1.6-2.4 2-2.4 3.5M12 17h.01" />
+    </Base>
+  );
+}
+
+export function BellIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M6 16.5V11a6 6 0 1 1 12 0v5.5l1.5 2h-15z" />
+      <path d="M10 20.5a2 2 0 0 0 4 0" />
+    </Base>
+  );
+}
+
+export function LockIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <rect x="5" y="11" width="14" height="9" rx="2" />
+      <path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3" />
+    </Base>
+  );
+}

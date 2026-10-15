@@ -240,6 +240,8 @@ export interface ShelfView {
   totalMinor: number;
   /** Waiting income previewed on the ribbons. */
   preview: { totalMinor: number; /** "Gift shown as Plan A" */ note: string | null } | null;
+  /** Just tracking (no split plan): a one-bucket shelf offers "Make a plan" instead of drawing one ribbon. */
+  tracking: boolean;
 }
 
 /**
@@ -378,6 +380,7 @@ export function buildShelf(input: TodayInput): ShelfView | null {
     preview: input.incomes.length
       ? { totalMinor: previewTotal, note: asPlan.length ? `${joinNames(asPlan)} shown as ${planName}` : null }
       : null,
+    tracking: input.profile.planMode === "track",
   };
 }
 
@@ -616,7 +619,8 @@ function buildNext(input: TodayInput, id: StepId | null, phase: LoopPhase, pendi
       };
     }
     case "move": {
-      const amount = pending.reduce((t, r) => t + r.sendMore, 0);
+      // What's still to send: the whole amount for an unsent row, the rest for a partly sent one (`sendMore` is 0 unless partial).
+      const amount = pending.reduce((t, r) => t + Math.max(0, r.amount - r.sent), 0);
       const accounts = new Set(pending.map((r) => r.toAccountId)).size;
       return {
         ...base,

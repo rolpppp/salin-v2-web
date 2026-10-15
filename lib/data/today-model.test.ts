@@ -283,7 +283,8 @@ describe("next step (SPEC §1, BR §8, §12.6)", () => {
     const v = buildTodayView(clean({ transferPlan: rows }));
     expect(v.next.kind).toBe("move");
     expect(v.next.cta).toEqual({ label: "Make transfers", href: "/money-in" });
-    const total = rows.reduce((t, r) => t + r.sendMore, 0);
+    const total = rows.reduce((t, r) => t + r.amount - r.sent, 0);
+    expect(total).toBeGreaterThan(0); // nothing is sent yet, so it's the whole amount (was "Send ₱0.00")
     expect(v.next.heading).toBe(`Send ₱${(total / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })} to ${new Set(rows.map((r) => r.toAccountId)).size} accounts`);
     expect(v.week.steps.find((s) => s.id === "move")?.done).toBe(false);
   });

@@ -10,10 +10,10 @@ export default function PlansLayout({ children }: { children: ReactNode }) {
   return (
     <>
       <PageHeader title="Plans" lede="How your money is split, and where it lives." />
-      <div style={{ marginBottom: 20, maxWidth: "100%" }}>
+      <div style={{ marginBottom: 20, maxWidth: "100%" }} data-tour="plans-nav">
         <PlansNav />
       </div>
-      {children}
+      <div data-tour="plans-body">{children}</div>
     </>
   );
 }

@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, type CSSProperties } from "react";
+import { useActionState, useRef, type CSSProperties } from "react";
+import { Button } from "@/components/button/Button";
 import { Card, CardTitle } from "@/components/card/Card";
+import { ArrowRightIcon } from "@/components/icons";
+import { startMakeAPlan } from "@/lib/actions/onboarding";
 import { cn } from "@/lib/cn";
 import { hueVar } from "@/lib/data/money-in-model";
 import type { ShelfSlot, ShelfView } from "@/lib/data/today-model";
@@ -22,7 +25,7 @@ const pct = (bp: number) => `calc(var(--shelf-h) * ${bp / 10_000})`;
 export function Shelf({ shelf, onOpen, grow = null }: { shelf: ShelfView | null; onOpen: (bucketId: string, el: HTMLElement) => void; grow?: GrowMode | null }) {
   if (!shelf) {
     return (
-      <Card className={styles.shelfCard} aria-labelledby="shelf-h">
+      <Card className={styles.shelfCard} aria-labelledby="shelf-h" data-tour="shelf">
         <CardTitle id="shelf-h" className={styles.shelfTitle}>
           Your buckets
         </CardTitle>
@@ -32,8 +35,10 @@ export function Shelf({ shelf, onOpen, grow = null }: { shelf: ShelfView | null;
       </Card>
     );
   }
+  const slots = shelf.groups.flatMap((g) => g.slots);
+  if (slots.length === 1) return <SoloShelf slot={slots[0]!} tracking={shelf.tracking} onOpen={onOpen} />;
   return (
-    <Card className={styles.shelfCard} aria-labelledby="shelf-h" data-testid="shelf">
+    <Card className={styles.shelfCard} aria-labelledby="shelf-h" data-testid="shelf" data-tour="shelf">
       <div className={styles.shelfTop}>
         <CardTitle id="shelf-h" className={styles.shelfTitle}>
           Your buckets
@@ -74,6 +79,63 @@ export function Shelf({ shelf, onOpen, grow = null }: { shelf: ShelfView | null;
         </span>
       </div>
     </Card>
+  );
+}
+
+/**
+ * One bucket on show (usually Just tracking): a ribbon against a shelf scaled for several buckets is a sliver in an
+ * empty card, so it becomes one line, plus the way to split money into buckets.
+ */
+function SoloShelf({ slot: s, tracking, onOpen }: { slot: ShelfSlot; tracking: boolean; onOpen: (id: string, el: HTMLElement) => void }) {
+  return (
+    <Card className={styles.shelfCard} aria-labelledby="shelf-h" data-testid="shelf" data-tour="shelf" data-solo="">
+      <div className={styles.shelfTop}>
+        <CardTitle id="shelf-h" className={styles.shelfTitle}>
+          Your buckets
+        </CardTitle>
+      </div>
+      <button
+        type="button"
+        className={styles.solo}
+        style={css({ "--c": hueVar(s.hue) })}
+        aria-label={s.ariaLabel}
+        onClick={(e) => onOpen(s.id, e.currentTarget)}
+        data-testid={`slot-${s.hue ?? s.id}`}
+        data-bucket-id={s.id}
+        data-left-minor={s.leftMinor}
+      >
+        <span className={styles.sName}>
+          <i aria-hidden="true" />
+          <span>{s.name}</span>
+        </span>
+        <span className={cn(styles.soloAmt, s.leftMinor === 0 && styles.sAmtZero)} data-testid="slot-amount">
+          {s.needsMinor > 0 ? `Needs ${formatPeso(s.needsMinor)}` : formatPeso(s.leftMinor)}
+        </span>
+        <span className={styles.soloMeta}>
+          {s.keptIn ? `in ${s.keptIn}` : ""}
+          {s.pendingAddMinor > 0 ? `${s.keptIn ? " · " : ""}+${formatPeso(s.pendingAddMinor)} waiting in Money in` : ""}
+        </span>
+      </button>
+      {tracking ? <SoloPlan /> : null}
+    </Card>
+  );
+}
+
+function SoloPlan() {
+  const [state, action, pending] = useActionState(startMakeAPlan, null);
+  return (
+    <form action={action} className={styles.soloPlan}>
+      <span>All your money sits in one bucket. A plan splits each payday into buckets like Emergency fund and Fun money.</span>
+      <Button variant="quiet" type="submit" loading={pending} loadingLabel="Opening">
+        Make a plan
+        <ArrowRightIcon width={16} height={16} aria-hidden="true" />
+      </Button>
+      {state?.error ? (
+        <p className={styles.inlineError} role="alert">
+          {state.error}
+        </p>
+      ) : null}
+    </form>
   );
 }
 

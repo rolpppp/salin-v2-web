@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/button/Button";
+import { BankMark } from "@/components/brand/BankMark";
 import { Select } from "@/components/field/Field";
 import type { DraftAccount } from "@/lib/onboarding/draft";
 import type { ShellStepModule } from "@/lib/onboarding/shell-types";
@@ -17,6 +18,7 @@ import {
   toggleAccount,
   validateWebAccounts,
 } from "@/lib/onboarding/web-path";
+import { isSimple } from "@/lib/onboarding/simple-path";
 import { useOnboardingEnv } from "../env";
 import { StepTextField } from "./fields";
 import styles from "./steps.module.css";
@@ -62,7 +64,8 @@ function AccountsBody({ draft, update, errorField, announce }: StepBodyProps) {
                     if (!e.target.checked && c.custom) announce(`${c.name} removed.`);
                   }}
                 />
-                <span>
+                <span className={styles.chipBank}>
+                  <BankMark name={c.name} size="sm" />
                   {c.name} <small>{c.label}</small>
                 </span>
               </label>
@@ -123,7 +126,7 @@ function AccountsBody({ draft, update, errorField, announce }: StepBodyProps) {
 
       <div className={styles.fld}>
         <label htmlFor={WEB_FIELDS.landing} className={styles.fldLabel}>
-          Your pay lands in
+          {isSimple(draft) ? "Money usually lands in" : "Your pay lands in"}
         </label>
         <Select
           id={WEB_FIELDS.landing}

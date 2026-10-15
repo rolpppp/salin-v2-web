@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { BankMark } from "@/components/brand/BankMark";
 import { Button } from "@/components/button/Button";
 import { Card, CardTitle } from "@/components/card/Card";
 import { Chip } from "@/components/chip/Chip";
@@ -59,14 +60,16 @@ function AccountRow({ account: a, onArchived }: { account: AccountView; onArchiv
 
   return (
     <li className={`${styles.row} ${styles.acctRow}`}>
-      <div className={styles.stack}>
+      <div className={styles.acctId}>
+        <BankMark name={a.name} />
+        <div className={styles.stack}>
         <InlineName
           label={`Account name for ${a.name}`}
           value={a.name}
           onCommit={(name) => renameAccountAction({ id: a.id, name })}
           saved={(name) => `Renamed to ${name}. Everything that used it still does.`}
         />
-        <div className={styles.inline}>
+        <div className={styles.acctMeta}>
           <Select
             className={styles.mini}
             aria-label={`Type of ${a.name}`}
@@ -90,9 +93,10 @@ function AccountRow({ account: a, onArchived }: { account: AccountView; onArchiv
         <p role="alert" className={styles.err}>
           {retype.error}
         </p>
+        </div>
       </div>
       <div>
-        <span className={styles.num} data-testid="holds">
+        <span className={`${styles.num} ${styles.holds}`} data-testid="holds">
           {formatMoney(a.shouldHoldMinor ?? a.retainedMinor ?? 0, a.currency)}
         </span>
         <small className={styles.small}>{a.caption}</small>

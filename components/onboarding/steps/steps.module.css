@@ -586,3 +586,11 @@
     transition: none;
   }
 }
+
+/* Account chips carry the bank's mark (lib/brands.ts). */
+.chipOpt > span.chipBank {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 6px;
+}

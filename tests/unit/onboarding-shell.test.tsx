@@ -94,27 +94,36 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe("Welcome (SPEC 7.1)", () => {
-  it("asks the question, with the example shelf hidden from assistive tech", () => {
+  it("asks what describes your money, with the example day hidden from assistive tech", () => {
     mount();
-    expect(screen.getByRole("heading", { level: 1, name: "Let's give every peso a job." })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Have you used the Salin app on your phone?" })).toBeInTheDocument();
-    const example = screen.getByText("Example payday").closest("[aria-hidden='true']");
+    expect(screen.getByRole("heading", { level: 1, name: "Know what's fine to spend today." })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "What describes your money?" })).toBeInTheDocument();
+    const example = screen.getByText("Left to spend today").closest("[aria-hidden='true']");
     expect(example).not.toBeNull();
-    expect(within(example as HTMLElement).getByText("₱25,000")).toBeInTheDocument();
+    expect(within(example as HTMLElement).getByText("₱320")).toBeInTheDocument();
   });
 
-  it("'I'm new to Salin' starts the web path at Income and records the start", async () => {
+  it("'Salary or regular pay' starts the web path at Income and records the start", async () => {
     mount();
-    await userEvent.click(screen.getByRole("button", { name: /I'm new to Salin/ }));
+    await userEvent.click(screen.getByRole("button", { name: /Salary or regular pay/ }));
     expect(nav.push).toHaveBeenCalledWith("/welcome/income");
     expect(await screen.findByText("Step 1 of 6 · Income")).toBeInTheDocument();
     expect(actions.trackOnboarding).toHaveBeenCalledWith({ event: "onboarding_started", props: { path: "web", auto_detected: false } });
-    await waitFor(() => expect(lastSaved()).toMatchObject({ path: "web", step: "income" }));
+    await waitFor(() => expect(lastSaved()).toMatchObject({ path: "web", step: "income", pattern: "salary" }));
+  });
+
+  it("'Allowance or stipend' starts the short path at Accounts with Cash ticked, just tracking", async () => {
+    mount();
+    await userEvent.click(screen.getByRole("button", { name: /Allowance or stipend/ }));
+    expect(nav.push).toHaveBeenCalledWith("/welcome/accounts");
+    expect(await screen.findByText("Step 1 of 3 · Accounts")).toBeInTheDocument();
+    await waitFor(() => expect(lastSaved()).toMatchObject({ path: "web", step: "accounts", pattern: "allowance", skipped: true }));
+    expect(lastSaved().accounts.map((a: { name: string }) => a.name)).toEqual(["Cash"]);
   });
 
   it("'I use the Salin app' starts the app path at Your app", async () => {
     mount();
-    await userEvent.click(screen.getByRole("button", { name: /I use the Salin app/ }));
+    await userEvent.click(screen.getByRole("button", { name: /I already use the Salin app/ }));
     expect(nav.push).toHaveBeenCalledWith("/welcome/app");
     expect(await screen.findByText("Step 1 of 7 · Your app")).toBeInTheDocument();
   });
@@ -213,7 +222,7 @@ describe("shell (SPEC 7.2)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Back" }));
     expect(await screen.findByText("Step 1 of 6 · Income")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Back" }));
-    expect(await screen.findByRole("heading", { level: 1, name: "Let's give every peso a job." })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "Know what's fine to spend today." })).toBeInTheDocument();
     await waitFor(() => expect(lastSaved()).toMatchObject({ path: null, step: "welcome" }));
   });
 
@@ -424,9 +433,9 @@ describe("app path to First pay", () => {
     expect(within(card).getByRole("heading", { name: "Every peso has a home." })).toHaveFocus();
     expect(card).toHaveTextContent("Safe to spend until");
     expect(card).toHaveTextContent("₱11,500.00, after what you've already spent");
-    expect(within(card).getByRole("link", { name: /Open Today/ })).toHaveAttribute("href", "/today?grow=onboarding");
+    expect(within(card).getByRole("link", { name: /Open Today/ })).toHaveAttribute("href", "/today?grow=onboarding&tour=1");
     expect(screen.getByRole("group", { name: "Plan slip" })).toHaveTextContent("PLAN SET");
-    expect(nav.push).not.toHaveBeenCalledWith("/today");
+    expect(nav.push).not.toHaveBeenCalledWith(expect.stringMatching(/^\/today/));
     expect(lastSaved().firstPay).toMatchObject({ choice: "yes", splitConfirmed: true });
     expect(lastSaved().firstPay.ticked).toHaveLength(boxes.length);
     expect(actions.trackOnboarding).toHaveBeenCalledWith({ event: "onboarding_completed", props: expect.objectContaining({ path: "app", first_pay: "confirmed", transfers_ticked: boxes.length }) });
@@ -439,7 +448,7 @@ describe("app path to First pay", () => {
     await userEvent.click(screen.getByRole("button", { name: "Give it a job" }));
     await userEvent.click(await screen.findByRole("button", { name: "Confirm split" }));
     await userEvent.click(await screen.findByRole("button", { name: "I'll send them later" }));
-    await waitFor(() => expect(nav.push).toHaveBeenCalledWith("/today"));
+    await waitFor(() => expect(nav.push).toHaveBeenCalledWith("/today?tour=1"));
     expect(lastSaved().firstPay).toMatchObject({ choice: "yes", splitConfirmed: true, ticked: [] });
     expect(screen.queryByTestId("onboarding-done")).not.toBeInTheDocument();
   });
@@ -453,7 +462,7 @@ describe("app path to First pay", () => {
     expect(actions.finishOnboarding).not.toHaveBeenCalled();
     await userEvent.click(screen.getByRole("radio", { name: "No reminder" }));
     await userEvent.click(screen.getByRole("button", { name: "Open Today" }));
-    await waitFor(() => expect(nav.push).toHaveBeenCalledWith("/today"));
+    await waitFor(() => expect(nav.push).toHaveBeenCalledWith("/today?tour=1"));
     // The stored draft the SQL reads has the choice and reminder, and it was saved before finishing was called.
     expect(lastSaved().firstPay).toMatchObject({ choice: "later", reminder: "none" });
     expect(actions.saveDraft.mock.invocationCallOrder.at(-1)!).toBeLessThan(actions.finishOnboarding.mock.invocationCallOrder[0]!);
@@ -466,7 +475,7 @@ describe("app path to First pay", () => {
     await userEvent.click(screen.getByRole("button", { name: "Do it later" }));
     await userEvent.click(await screen.findByRole("button", { name: "Open Today" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Pick one main pay.");
-    expect(nav.push).not.toHaveBeenCalledWith("/today");
+    expect(nav.push).not.toHaveBeenCalledWith(expect.stringMatching(/^\/today/));
     expect(screen.getByRole("button", { name: "Open Today" })).toBeInTheDocument();
     expect(actions.trackOnboarding).not.toHaveBeenCalledWith(expect.objectContaining({ event: "onboarding_completed" }));
   });

@@ -27,6 +27,9 @@ describe("decideRedirect", () => {
       "/sign-in?next=%2Fplans%2Fsplit%3Fa%3D1",
     );
   });
+  it("lets signed-out visitors see the landing page at /", () => {
+    expect(decideRedirect({ ...base, pathname: "/", signedIn: false })).toBeNull();
+  });
   it("lets the auth callback through", () => {
     expect(decideRedirect({ ...base, pathname: "/auth/callback", signedIn: false })).toBeNull();
   });

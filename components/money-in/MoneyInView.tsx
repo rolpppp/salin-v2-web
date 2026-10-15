@@ -125,7 +125,7 @@ export function MoneyInView({ data, initialAddOpen = false, nowMs }: MoneyInView
         lede={copy.lede}
         actions={
           addOpen ? null : (
-            <div ref={addButtonRef}>
+            <div ref={addButtonRef} data-tour="moneyin-add">
               <Button variant="soft" onClick={() => setAddOpen(true)} data-testid="add-income-button">
                 + Add income
               </Button>
@@ -133,7 +133,7 @@ export function MoneyInView({ data, initialAddOpen = false, nowMs }: MoneyInView
           )
         }
       />
-      <div className={styles.two}>
+      <div className={styles.two} data-tour="moneyin-steps">
         <div className={styles.steps}>
           {addOpen ? <AddIncomeForm data={data} onCancel={closeForm} onAdded={added} /> : null}
 

@@ -303,6 +303,7 @@ export type Database = {
       bucket_covers: {
         Row: {
           amountMinor: number
+          atAccountId: string | null
           createdAt: number
           deletedAt: number | null
           fromBucketId: string
@@ -315,6 +316,7 @@ export type Database = {
         }
         Insert: {
           amountMinor: number
+          atAccountId?: string | null
           createdAt?: number
           deletedAt?: number | null
           fromBucketId: string
@@ -327,6 +329,7 @@ export type Database = {
         }
         Update: {
           amountMinor?: number
+          atAccountId?: string | null
           createdAt?: number
           deletedAt?: number | null
           fromBucketId?: string
@@ -338,6 +341,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "bucket_covers_atAccountId_fkey"
+            columns: ["atAccountId"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bucket_covers_fromBucketId_fkey"
             columns: ["fromBucketId"]
@@ -1914,6 +1924,14 @@ export type Database = {
           to_account_id: string
         }[]
       }
+      engine_unsorted_money: {
+        Args: { p_user: string }
+        Returns: {
+          account_id: string
+          amount_minor: number
+          bucket_id: string
+        }[]
+      }
       engine_waiting_income: {
         Args: { p_user: string }
         Returns: {
@@ -2077,6 +2095,7 @@ export type Database = {
         Args: { p_mode: string }
         Returns: undefined
       }
+      sort_money: { Args: { p_lines: Json }; Returns: number }
       split_by_plan: {
         Args: { p_amount: number; p_on_date: string; p_plan_key: string }
         Returns: {
@@ -2119,6 +2138,14 @@ export type Database = {
           sent: number
           status: string
           to_account_id: string
+        }[]
+      }
+      unsorted_money: {
+        Args: { p_user?: string }
+        Returns: {
+          account_id: string
+          amount_minor: number
+          bucket_id: string
         }[]
       }
       untick_transfer: {

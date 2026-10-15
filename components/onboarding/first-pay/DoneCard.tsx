@@ -6,6 +6,7 @@ import { Card } from "@/components/card/Card";
 import { ArrowRightIcon, CheckIcon } from "@/components/icons";
 import type { OnboardingDraft } from "@/lib/onboarding/draft";
 import { doneLines, type FinishSummary } from "@/lib/onboarding/first-pay";
+import { AppTile, ViewsTile } from "../Tour";
 import styles from "./first-pay.module.css";
 
 function SparkIcon() {
@@ -40,8 +41,10 @@ export function DoneCard({ draft, summary }: { draft: OnboardingDraft; summary: 
           </li>
         ))}
       </ul>
+      <ViewsTile />
+      <AppTile name={draft.firstName} />
       <div className={styles.row}>
-        <ButtonLink variant="primary" href="/today?grow=onboarding">
+        <ButtonLink variant="primary" href="/today?grow=onboarding&tour=1">
           Open Today <ArrowRightIcon />
         </ButtonLink>
       </div>

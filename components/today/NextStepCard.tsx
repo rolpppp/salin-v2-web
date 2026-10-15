@@ -51,7 +51,7 @@ function MakePlan({ hint }: { hint: string | null }) {
 export function NextStepCard({ next, week, onCover, coverBusy, coverError, onSeeWhatHappened, logSlot }: NextStepCardProps) {
   const done = next.kind === "done";
   return (
-    <Card tone={done ? "peak" : "next"} id="next-card" tabIndex={-1} aria-labelledby="next-h" className={cn(styles.next, done && styles.nextDone)} data-testid="next-card" data-next={next.kind}>
+    <Card tone={done ? "peak" : "next"} id="next-card" tabIndex={-1} aria-labelledby="next-h" className={cn(styles.next, done && styles.nextDone)} data-testid="next-card" data-tour="next" data-next={next.kind}>
       <p className={styles.kicker} id="next-h">
         <i aria-hidden="true" />
         Next step

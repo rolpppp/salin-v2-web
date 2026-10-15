@@ -1,3 +1,4 @@
+import { BankMark } from "@/components/brand/BankMark";
 import Link from "next/link";
 import { Card } from "@/components/card/Card";
 import { formatPeso } from "@/lib/money";
@@ -7,7 +8,7 @@ import type { SimpleTodayModel } from "./types";
 /** Where your money is: real balances, and a quiet line for money that still has to be moved (opens the transfer checklist). */
 export function AccountsCard({ model }: { model: SimpleTodayModel }) {
   return (
-    <Card as="section" aria-labelledby="simple-accounts-h" data-testid="accounts-card">
+    <Card as="section" aria-labelledby="simple-accounts-h" data-testid="accounts-card" data-tour="accounts">
       <div className={styles.cardHead}>
         <h2 id="simple-accounts-h">Where your money is</h2>
       </div>
@@ -19,6 +20,7 @@ export function AccountsCard({ model }: { model: SimpleTodayModel }) {
         <ul className={styles.list}>
           {model.accounts.map((a) => (
             <li key={a.id} className={styles.row} data-testid="account-row">
+              <BankMark name={a.name} />
               <span className={styles.rowMain}>
                 <b>{a.name}</b>
                 {a.pendingOutMinor > 0 ? (

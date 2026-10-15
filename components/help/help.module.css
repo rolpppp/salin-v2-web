@@ -1,0 +1,211 @@
+/* The help button and its guide. Tokens only. Motion: transform + opacity, ease-out; the panel opens with grid rows (an accordion has no transform equivalent). */
+.btn {
+  appearance: none;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--r-control);
+  border: 0;
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex: none;
+  transition: transform var(--dur-press) var(--ease-out);
+}
+.btn:active {
+  transform: scale(0.97);
+}
+.btn:focus-visible {
+  outline: 2.5px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.intro {
+  margin: 0 0 14px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.item {
+  background: var(--surface-2);
+  border-radius: var(--r-card-mobile);
+  animation: rise 300ms var(--ease-out) both;
+  animation-delay: calc(80ms + min(var(--i), 8) * 35ms);
+}
+.here {
+  background: var(--accent-soft);
+}
+.h {
+  margin: 0;
+  font: inherit;
+}
+.trigger {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: 650 15.5px/1.3 var(--sans);
+  text-align: left;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  border-radius: var(--r-card-mobile);
+}
+.trigger:focus-visible {
+  outline: 2.5px solid var(--accent);
+  outline-offset: -2px;
+}
+.badge {
+  font: 650 11px/1 var(--sans);
+  font-style: normal;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  margin-left: 10px;
+  padding: 4px 8px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
+  vertical-align: 2px;
+}
+.chev {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  border-right: 2px solid var(--ink-2);
+  border-bottom: 2px solid var(--ink-2);
+  transform: rotate(45deg);
+  transition: transform var(--dur-chip) var(--ease-out);
+}
+[aria-expanded="true"] .chev {
+  transform: rotate(-135deg);
+}
+
+.panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 220ms var(--ease-out),
+    opacity 180ms ease;
+}
+[data-open] > .panel {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.inner {
+  min-height: 0;
+  overflow: hidden;
+  padding-inline: 14px;
+  display: grid;
+  gap: 12px;
+}
+[data-open] .inner {
+  padding-bottom: 16px;
+}
+.summary {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+.how {
+  margin: 0;
+  padding-left: 22px;
+  list-style: decimal;
+  display: grid;
+  gap: 8px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.how li::marker {
+  color: var(--accent-strong);
+  font-weight: 650;
+}
+.tip {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 10px 12px;
+  border-radius: var(--r-field);
+  background: var(--surface);
+  color: var(--ink-2);
+}
+.tip b {
+  color: var(--ink);
+}
+.go {
+  justify-self: start;
+  font: 650 14.5px/1.2 var(--sans);
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 8px 0;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn:active {
+    transform: none;
+  }
+  .item {
+    animation: fade var(--dur-fade-rm) ease both;
+    animation-delay: 0s;
+  }
+  .panel,
+  .chev {
+    transition: none;
+  }
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+  }
+}
+
+/* "Take the tour of Today": replays the first-visit tour (ticket 33). */
+.tourBtn {
+  appearance: none;
+  border: 0;
+  width: 100%;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: var(--r-panel);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font: 600 14px/1.2 var(--sans);
+  text-align: left;
+  cursor: pointer;
+}
+.tourBtn::after {
+  content: " →";
+}
+.tourBtn:hover {
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+}
+.tourBtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

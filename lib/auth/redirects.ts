@@ -35,7 +35,8 @@ export function decideRedirect(i: RouteInput): string | null {
   }
 
   if (!signedIn) {
-    if (pathname === "/") return "/sign-in";
+    // The landing page is public. (Signed-in visitors to "/" are sent to Today by the page itself.)
+    if (pathname === "/") return null;
     const target = `${pathname}${i.search ?? ""}`;
     return `/sign-in?next=${encodeURIComponent(target)}`;
   }

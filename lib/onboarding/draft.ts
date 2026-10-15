@@ -31,16 +31,29 @@ export const planBucket = z.enum(PLAN_BUCKET_KEYS);
 export const draftBucket = z.enum(DRAFT_BUCKET_KEYS);
 export type DraftBucket = z.infer<typeof draftBucket>;
 
-export const STEP_IDS = ["welcome", "app", "income", "accounts", "prio", "plan", "homes", "cats", "first"] as const;
+export const STEP_IDS = ["welcome", "app", "income", "accounts", "prio", "plan", "homes", "cats", "first", "rhythm", "money"] as const;
 export const stepId = z.enum(STEP_IDS);
 export type StepId = z.infer<typeof stepId>;
 
 /** Web path: Income · Accounts · Priorities · Your plan · Where it lives · First pay (SPEC §7.3). */
 export const WEB_STEPS: readonly StepId[] = ["income", "accounts", "prio", "plan", "homes", "first"];
+/**
+ * Allowance / stipend / mix (Onboarding v2, P-12): Accounts · Your rhythm · First money. No priorities or plan: the draft is
+ * "just tracking" (`skipped`) and Finish sets Simple view and the "make it last until" date.
+ */
+export const SIMPLE_STEPS: readonly StepId[] = ["accounts", "rhythm", "money"];
 /** App path: Your app · Income · Priorities · Your plan · Where it lives · Categories · First pay (SPEC §7.4). */
 export const APP_STEPS: readonly StepId[] = ["app", "income", "prio", "plan", "homes", "cats", "first"];
 /** "Make a plan" after just tracking (SPEC §7.6): Priorities · Your plan · Where it lives (· Categories on the app path). */
 export const planOnlySteps = (path: "web" | "app"): readonly StepId[] => (path === "app" ? ["prio", "plan", "homes", "cats"] : ["prio", "plan", "homes"]);
+
+/** What describes the user's money (Onboarding v2). Null on drafts from before it existed: treated as salary. */
+export const PATTERNS = ["allowance", "salary", "mix"] as const;
+export const pattern = z.enum(PATTERNS);
+export type Pattern = z.infer<typeof pattern>;
+
+/** How often the money arrives. `quarterly` and `semester` are stored here only; `income.frequency` gets `varies` for them. */
+export const RHYTHM_FREQUENCIES = ["weekly", "biweekly", "monthly", "quarterly", "semester", "varies"] as const;
 
 const percents = z.object({
   living: pct, rent: pct, fun: pct, emergency: pct, invest: pct, sinking: pct, tax: pct, buffer: pct,
@@ -86,6 +99,27 @@ export const draftSchema = z.object({
   planOnly: z.boolean(),
 
   firstName: z.string().trim().max(40).nullable(),
+
+  /** Onboarding v2. Additive (defaults), so stored drafts and the SQL's `v: 1` check stay valid. */
+  pattern: pattern.nullable().default(null),
+  /** Allowance / mix: how much, how often, and when the next one arrives (null = not sure). */
+  rhythm: z
+    .object({
+      amountMinor: minor.nullable(),
+      frequency: z.enum(RHYTHM_FREQUENCIES).nullable(),
+      nextDate: isoDate.nullable(),
+    })
+    .default({ amountMinor: null, frequency: null, nextDate: null }),
+  /** Allowance / mix: the money in hand now, split across accounts. Finish records it with `receive_money`. */
+  firstMoney: z
+    .object({
+      amountMinor: minor.nullable(),
+      /** Amount per account id (other than the landing account, which holds the remainder). */
+      extra: z.record(id, minor).default({}),
+      /** Set aside in the landing account (to Emergency), taken out of what is spendable. */
+      keepMinor: minor,
+    })
+    .default({ amountMinor: null, extra: {}, keepMinor: 0 }),
 
   /** Main pay. App path: copied from the main detected source (amount = its latest entry). */
   income: z.object({
@@ -158,6 +192,9 @@ export function emptyDraft(): OnboardingDraft {
     skipped: false,
     planOnly: false,
     firstName: null,
+    pattern: null,
+    rhythm: { amountMinor: null, frequency: null, nextDate: null },
+    firstMoney: { amountMinor: null, extra: {}, keepMinor: 0 },
     income: { kind: "salary", amountMinor: null, frequency: null, nextPayday: null, paidInOtherCurrency: false },
     sources: [],
     accounts: [],

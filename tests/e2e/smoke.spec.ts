@@ -11,8 +11,8 @@ const ROUTES: Array<{ path: string; heading: string | RegExp }> = [
   { path: "/plans/categories", heading: "Plans" },
   { path: "/plans/goals", heading: "Plans" },
   // A user with no onboarding draft lands on the Welcome step wherever they enter (/welcome/accounts resumes by draft).
-  { path: "/welcome", heading: "Let's give every peso a job." },
-  { path: "/welcome/accounts", heading: "Let's give every peso a job." },
+  { path: "/welcome", heading: "Know what's fine to spend today." },
+  { path: "/welcome/accounts", heading: "Know what's fine to spend today." },
 ];
 
 function trackConsole(page: Page) {

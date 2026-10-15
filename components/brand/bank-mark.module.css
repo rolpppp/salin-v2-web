@@ -1,0 +1,65 @@
+/* App-icon tile: squircle, brand gradient, a glassy top highlight, a hairline inner edge and a shadow tinted by the brand. */
+.mark {
+  --s: 44px;
+  position: relative;
+  flex: none;
+  width: var(--s);
+  height: var(--s);
+  border-radius: calc(var(--s) * 0.28);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  isolation: isolate;
+}
+.sm {
+  --s: 22px;
+}
+.md {
+  --s: 44px;
+}
+.lg {
+  --s: 60px;
+}
+.brand {
+  background: linear-gradient(145deg, var(--from), var(--to));
+  color: var(--ink);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 calc(var(--s) * 0.12) calc(var(--s) * 0.3) calc(var(--s) * -0.1) color-mix(in srgb, var(--to) 70%, transparent);
+}
+/* glass highlight on the top half */
+.brand::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 52% 0;
+  z-index: -1;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0));
+  border-radius: inherit;
+}
+.plain {
+  background: var(--surface-3);
+  color: var(--ink-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.glyph {
+  font: 850 calc(var(--s) * 0.5) / 1 var(--sans);
+  letter-spacing: -0.04em;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.18);
+  translate: 0 -0.02em;
+}
+.mark[data-len="2"] .glyph {
+  font-size: calc(var(--s) * 0.38);
+}
+.mark[data-len="3"] .glyph {
+  font-size: calc(var(--s) * 0.29);
+  letter-spacing: -0.02em;
+}
+.sm .glyph {
+  text-shadow: none;
+}
+.mark img {
+  width: 72%;
+  height: 72%;
+  object-fit: contain;
+}

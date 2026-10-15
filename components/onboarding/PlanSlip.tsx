@@ -5,6 +5,7 @@ import { Slip, SlipFoot, SlipLine, SlipMeta, SlipRule, SlipTitle } from "@/compo
 import { stampDate } from "@/lib/data/money-in-model";
 import type { OnboardingDraft } from "@/lib/onboarding/draft";
 import { buildSlip } from "@/lib/onboarding/slip";
+import { isSimple, moneySlipRows } from "@/lib/onboarding/simple-path";
 import type { StepContext } from "@/lib/onboarding/step";
 import { cn } from "@/lib/cn";
 import styles from "./onboarding.module.css";
@@ -41,6 +42,22 @@ const EMPTY = "· · ·";
  */
 export function PlanSlip({ draft, ctx, done }: { draft: OnboardingDraft; ctx: Pick<StepContext, "todayIso">; done: boolean }) {
   const live = useLive();
+  if (isSimple(draft)) {
+    const rows = moneySlipRows(draft, ctx.todayIso);
+    return (
+      <Slip label="Money slip" stamp={done ? "READY" : undefined} stampSub={done ? stampDate(ctx.todayIso) : undefined}>
+        <SlipTitle>Your money</SlipTitle>
+        <SlipMeta>{ctx.todayIso} · {done ? "set" : "being set up"}</SlipMeta>
+        <SlipRule />
+        {rows.map((r) => (
+          <PrintedLine key={r.key} live={live} filled={r.value !== null}>
+            <SlipLine label={r.label} value={r.value ?? EMPTY} dim={r.value === null} />
+          </PrintedLine>
+        ))}
+        <SlipFoot className={styles.slipFoot}>{done ? "Set. Your number is on Today." : "Fills in as you answer. Nothing is saved until you finish."}</SlipFoot>
+      </Slip>
+    );
+  }
   const m = buildSlip(draft, ctx);
   return (
     <Slip label="Plan slip" stamp={done ? "PLAN SET" : undefined} stampSub={done ? stampDate(ctx.todayIso) : undefined}>

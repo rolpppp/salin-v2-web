@@ -148,7 +148,7 @@ test("First pay: Give it a job opens the split (nothing finished); Do it later a
   await expect(heading(page)).toHaveText("That's fine. Payday is the moment.");
   await expect(page.getByText(/Your pay waits in Money in/)).toBeVisible();
   await page.getByRole("button", { name: "Open Today" }).click();
-  await page.waitForURL("**/today");
+  await page.waitForURL(/\/today(\?|$)/);
   const { data } = await adminClient().from("user_profiles").select("onboardedAt").eq("user_id", user.id).single();
   expect(data?.onboardedAt).not.toBeNull();
 });
@@ -156,10 +156,10 @@ test("First pay: Give it a job opens the split (nothing finished); Do it later a
 test("no synced rows: the question, then Waiting for your phone with a way out to the web path", async ({ page }) => {
   const user = await createTestUser("ob-none");
   await signIn(page, user, "/welcome");
-  await expect(page.getByRole("heading", { level: 1, name: "Let's give every peso a job." })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Know what's fine to spend today." })).toBeVisible();
   expect(await noHorizontalScroll(page)).toBe(true);
 
-  await page.getByRole("button", { name: /I use the Salin app/ }).click();
+  await page.getByRole("button", { name: /I already use the Salin app/ }).click();
   await expect(page).toHaveURL(/\/welcome\/app$/);
   await expect(heading(page)).toHaveText("Turn on sync in the Salin app");
   await expect(page.getByText("Waiting for your phone…")).toBeVisible();

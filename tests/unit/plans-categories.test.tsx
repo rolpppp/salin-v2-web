@@ -87,6 +87,7 @@ describe("CategoriesPanel", () => {
   it("adds a category inside a bucket, clearing the field on success", async () => {
     actions.addCategoryAction.mockResolvedValueOnce({ ok: true, value: { id: "n" } });
     render(<CategoriesPanel data={data} />);
+    await userEvent.click(screen.getByRole("button", { name: "New category in Fun: open" }));
     const input = screen.getByRole("textbox", { name: "New category in Fun" });
     await userEvent.type(input, "Streaming");
     await userEvent.click(screen.getByRole("button", { name: "Add category to Fun" }));

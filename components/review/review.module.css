@@ -9,12 +9,18 @@
   gap: 18px;
   min-width: 0;
 }
+/* The week slip stays in view while the steps on the right scroll: it's the receipt you're reviewing. */
 .slipCol {
   min-width: 0;
+  position: sticky;
+  top: 88px;
 }
 @media (max-width: 860px) {
   .review {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .slipCol {
+    position: static;
   }
 }
 

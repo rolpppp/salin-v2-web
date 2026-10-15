@@ -8,17 +8,20 @@ import { Button } from "@/components/button/Button";
 import { useAnnounce } from "@/components/live-region/LiveRegion";
 import { finishOnboarding, loadPhoneData, saveDraft, trackOnboarding, type OnboardingEvent } from "@/lib/actions/onboarding";
 import { createAutosaver } from "@/lib/onboarding/autosave";
-import { emptyDraft, type OnboardingDraft, type StepId } from "@/lib/onboarding/draft";
+import { emptyDraft, type OnboardingDraft, type Pattern, type StepId } from "@/lib/onboarding/draft";
 import type { PhoneFacts } from "@/lib/onboarding/facts";
 import { completedProps, finalDraft, parseSummary, type FinishSummary } from "@/lib/onboarding/first-pay";
 import { enterPatch, firstBlockedBefore, moduleFor, validateStep } from "@/lib/onboarding/registry";
 import { nextStepId, prevStepId, resolveRoute, stepHref, stepParamFrom, stepsFor, type RouteView } from "@/lib/onboarding/route";
 import type { StepContext, StepError } from "@/lib/onboarding/step";
+import { isSimple, startPattern } from "@/lib/onboarding/simple-path";
 import { undoSkipOnBack } from "@/lib/onboarding/web-path";
 import { nowMs } from "@/lib/time";
 import { OnboardingEnvContext, type OnboardingEnv } from "./env";
 import styles from "./onboarding.module.css";
 import { DoneCard } from "./first-pay/DoneCard";
+import { SimpleDone } from "./SimpleDone";
+import { AppNote } from "./AppNote";
 import { PlanSlip } from "./PlanSlip";
 import { Rail } from "./Rail";
 import { Welcome } from "./Welcome";
@@ -158,12 +161,19 @@ export function OnboardingFlow({ initialDraft, initialCtx, initialFacts, autoDet
     [router],
   );
 
-  const choose = (path: "web" | "app") => {
-    const first = path === "web" ? "income" : "app";
-    const base = previousPath === path ? stored : emptyDraft();
-    setStored({ ...base, path, step: first });
-    track({ event: "onboarding_started", props: { path, auto_detected: false } });
-    goTo(stepHref(first));
+  const choose = (pattern: Pattern) => {
+    const patch = startPattern(pattern, userId);
+    const base = previousPath === "web" && stored.pattern === pattern ? stored : emptyDraft();
+    setStored({ ...base, ...patch });
+    track({ event: "onboarding_started", props: { path: "web", auto_detected: false } });
+    goTo(stepHref(patch.step as StepId));
+  };
+
+  const chooseApp = () => {
+    const base = previousPath === "app" ? stored : emptyDraft();
+    setStored({ ...base, path: "app", step: "app" });
+    track({ event: "onboarding_started", props: { path: "app", auto_detected: false } });
+    goTo(stepHref("app"));
   };
 
   const switchToWeb = useCallback(() => {
@@ -230,11 +240,12 @@ export function OnboardingFlow({ initialDraft, initialCtx, initialFacts, autoDet
       if (after === "done") {
         setFinishing(false);
         setDone({ draft: final, summary: parseSummary(r.value?.summary ?? null) });
-        announce("Every peso has a home.");
+        announce(isSimple(final) ? "You're set." : "Every peso has a home.");
         return;
       }
       announce("Your plan is set. Opening Today.");
-      router.push("/today");
+      // First time through: Today opens with the tour. Make a plan from Today (planOnly) has seen it already.
+      router.push(final.planOnly ? "/today" : "/today?tour=1");
     },
     [saver, announce, router, track],
   );
@@ -302,7 +313,7 @@ export function OnboardingFlow({ initialDraft, initialCtx, initialFacts, autoDet
   // ------------------------------------------------------------ render
   if (view.kind === "redirect") return null;
   if (view.kind === "welcome" || !mod || !stepId) {
-    return <Welcome onChoose={choose} />;
+    return <Welcome onChoose={choose} onApp={chooseApp} />;
   }
 
   const bodyProps = { draft, ctx, update, errorField: error?.field ?? null, announce };
@@ -319,7 +330,7 @@ export function OnboardingFlow({ initialDraft, initialCtx, initialFacts, autoDet
       <div className={styles.grid}>
         <div>
           {done ? (
-            <DoneCard draft={done.draft} summary={done.summary} />
+            isSimple(done.draft) ? <SimpleDone draft={done.draft} todayIso={ctx.todayIso} /> : <DoneCard draft={done.draft} summary={done.summary} />
           ) : (
           <form className={styles.card} onSubmit={onSubmit} noValidate aria-labelledby="ob-question">
             <header className={styles.head}>
@@ -356,6 +367,9 @@ export function OnboardingFlow({ initialDraft, initialCtx, initialFacts, autoDet
         <aside className={styles.side} aria-label="Your plan so far">
           <PlanSlip draft={draft} ctx={ctx} done={planSet} />
         </aside>
+        <div className={styles.footNote}>
+          <AppNote name={draft.firstName} />
+        </div>
       </div>
     </OnboardingEnvContext.Provider>
   );

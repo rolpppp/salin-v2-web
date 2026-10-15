@@ -1,0 +1,209 @@
+/* The end-of-onboarding tour (buckets, Simple / Full, the phone app). Tokens only. Motion: transform + opacity, ease-out. */
+.done {
+  display: grid;
+  gap: 16px;
+}
+.done h2 {
+  margin: 0;
+  font: 700 28px/1.15 var(--sans);
+  letter-spacing: -0.025em;
+}
+.done h2:focus {
+  outline: none;
+}
+.number {
+  margin: 0;
+  font-size: 17px;
+  color: var(--ink-2);
+  animation: rise 360ms var(--ease-out) both;
+}
+.number b {
+  font: 750 30px/1 var(--sans);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.tile {
+  display: grid;
+  gap: 10px;
+  background: var(--surface);
+  border-radius: var(--r-card-mobile);
+  padding: 18px;
+  animation: rise 380ms var(--ease-out) both;
+  animation-delay: calc(120ms + var(--n, 0) * 90ms);
+}
+.tile h3 {
+  margin: 0;
+  font: 650 16px/1.25 var(--sans);
+}
+.tile p {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.tile .hint {
+  font-size: 13.5px;
+}
+.row {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+/* ---- buckets */
+.buckets {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+.buckets li {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  align-items: baseline;
+}
+.buckets b {
+  display: block;
+  font: 650 15px/1.2 var(--sans);
+  color: var(--ink);
+}
+.buckets small {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.buckets em {
+  font: 650 15px/1 var(--sans);
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+}
+.buckets i {
+  grid-column: 1 / -1;
+  display: block;
+  height: 8px;
+  width: 100%;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--c) 18%, var(--surface-2));
+  position: relative;
+  overflow: hidden;
+}
+.buckets i::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--c);
+  border-radius: inherit;
+  transform-origin: left;
+  transform: scaleX(var(--w));
+  animation: fillx 800ms var(--ease-out) 500ms both;
+}
+
+/* ---- the Simple / Full demo switch */
+.toggle {
+  position: relative;
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  justify-self: start;
+  background: var(--surface-2);
+  border-radius: var(--r-pill);
+  padding: 4px;
+  font: 650 13.5px/1 var(--sans);
+}
+.toggle span {
+  position: relative;
+  z-index: 1;
+  padding: 8px 18px;
+  text-align: center;
+  color: var(--ink-2);
+}
+.toggle .thumb {
+  position: absolute;
+  z-index: 0;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  padding: 0;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  animation: slide 2200ms var(--ease-out) 900ms both;
+}
+.toggle span:nth-child(2) {
+  color: var(--accent-ink);
+  animation: ink 2200ms ease 900ms both;
+}
+.toggle span:nth-child(3) {
+  animation: inkoff 2200ms ease 900ms both;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes fillx {
+  from {
+    transform: scaleX(0);
+  }
+}
+/* Starts on Simple, glides to Full, pauses, glides back: "this is the switch". Ends where it began (the user is on Simple). */
+@keyframes slide {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  35%,
+  65% {
+    transform: translateX(100%);
+  }
+}
+@keyframes ink {
+  0%,
+  100% {
+    color: var(--accent-ink);
+  }
+  35%,
+  65% {
+    color: var(--ink-2);
+  }
+}
+@keyframes inkoff {
+  0%,
+  100% {
+    color: var(--ink-2);
+  }
+  35%,
+  65% {
+    color: var(--accent-ink);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .number,
+  .tile {
+    animation: fade var(--dur-fade-rm) ease both;
+    animation-delay: 0s;
+  }
+  .buckets i::after,
+  .toggle .thumb,
+  .toggle span:nth-child(2),
+  .toggle span:nth-child(3) {
+    animation: none;
+  }
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+  }
+}
+@media (max-width: 720px) {
+  .done h2 {
+    font-size: 24px;
+  }
+}

@@ -1,0 +1,281 @@
+/* The bell, its inbox and the reminder switches. Tokens only. Motion: transform/opacity, ease-out; reduced motion = none. */
+.bell {
+  position: relative;
+  appearance: none;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--r-control);
+  border: 0;
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex: none;
+  transition: transform var(--dur-press) var(--ease-out);
+}
+.bell:active {
+  transform: scale(0.97);
+}
+.bell:focus-visible {
+  outline: 2.5px solid var(--accent);
+  outline-offset: 2px;
+}
+.badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 99px;
+  background: var(--warm-fill);
+  color: #2a0f06;
+  font: 750 11px/18px var(--sans);
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--bg);
+  animation: pop 320ms var(--ease-out) both;
+}
+.streak {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: var(--r-card-mobile);
+  background: var(--sun-soft);
+  margin-bottom: 18px;
+}
+.streak b {
+  display: block;
+  font: 700 16px/1.2 var(--sans);
+  color: var(--ink);
+}
+.streak small {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.streakIcon {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  color: var(--sun-ink);
+}
+.streakIcon svg {
+  width: 20px;
+  height: 20px;
+}
+.sec + .sec {
+  margin-top: 22px;
+}
+.h {
+  margin: 0 0 10px;
+  font: 650 12.5px/1.2 var(--sans);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.empty {
+  margin: 0;
+  padding: 16px;
+  border-radius: var(--r-card-mobile);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 14.5px;
+}
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.list li {
+  animation: rise 280ms var(--ease-out) both;
+  animation-delay: calc(min(var(--i), 6) * 40ms);
+}
+.item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  padding: 13px 14px;
+  border-radius: var(--r-card-mobile);
+  background: var(--surface-2);
+  color: var(--ink);
+  text-decoration: none;
+  min-height: 44px;
+  transition: background-color var(--dur-state) ease;
+}
+[data-new] > .item {
+  background: var(--accent-soft);
+}
+.item:focus-visible {
+  outline: 2.5px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .item:hover {
+    background: var(--surface-3);
+  }
+}
+.item i {
+  width: 10px;
+  height: 10px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--c);
+}
+.item b {
+  display: block;
+  font: 650 15px/1.3 var(--sans);
+}
+.item small {
+  display: block;
+  margin-top: 3px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.item time {
+  font-size: 12px;
+  color: var(--ink-3);
+  white-space: nowrap;
+  margin-top: 2px;
+}
+.toggles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.tog {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 2px;
+  min-height: 48px;
+  cursor: pointer;
+}
+.tog b {
+  display: block;
+  font: 600 15px/1.3 var(--sans);
+}
+.tog small {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+.tog input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.tog i {
+  flex: none;
+  position: relative;
+  width: 44px;
+  height: 26px;
+  border-radius: 99px;
+  background: var(--surface-3);
+  box-shadow: inset 0 0 0 1px var(--line-2);
+  transition: background-color 180ms ease;
+}
+.tog i::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 200ms var(--ease-out);
+}
+.tog input:checked + i {
+  background: var(--accent);
+  box-shadow: none;
+}
+.tog input:checked + i::after {
+  transform: translateX(18px);
+}
+.tog input:focus-visible + i {
+  outline: 2.5px solid var(--accent);
+  outline-offset: 2px;
+}
+.tog input:disabled + i {
+  opacity: 0.5;
+}
+.time {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 2px 8px;
+  padding: 10px 12px;
+  border-radius: var(--r-field);
+  background: var(--surface-2);
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.time input {
+  font: 600 15px/1 var(--sans);
+  color: var(--ink);
+  background: var(--surface);
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  box-shadow: inset 0 0 0 1.5px var(--line-2);
+  min-height: 40px;
+}
+.time input:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.err {
+  margin: 8px 0 0;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--warm);
+}
+.err:empty {
+  display: none;
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bell:active {
+    transform: none;
+  }
+  .badge,
+  .list li {
+    animation: none;
+  }
+  .tog i,
+  .tog i::after {
+    transition: none;
+  }
+}

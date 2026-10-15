@@ -27,7 +27,7 @@ export function SafeCard({ safe, flash, grow = null }: { safe: SafeView | null; 
   });
   if (!safe) {
     return (
-      <Card className={styles.safe} aria-labelledby="safe-h">
+      <Card className={styles.safe} aria-labelledby="safe-h" data-tour="safe">
         <h2 className={styles.eyebrow} id="safe-h">
           Safe to spend
         </h2>
@@ -37,7 +37,7 @@ export function SafeCard({ safe, flash, grow = null }: { safe: SafeView | null; 
   }
   const negative = safe.safeMinor < 0;
   return (
-    <Card className={styles.safe} aria-labelledby="safe-h">
+    <Card className={styles.safe} aria-labelledby="safe-h" data-tour="safe">
       <h2 className={styles.eyebrow} id="safe-h">
         Safe to spend
       </h2>

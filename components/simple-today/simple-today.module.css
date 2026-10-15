@@ -318,6 +318,7 @@
   display: grid;
   gap: 3px;
   min-width: 0;
+  flex: 1;
 }
 .rowMain b {
   font-weight: 650;
@@ -548,5 +549,86 @@
   .linkBtn,
   .hero {
     transition: none;
+  }
+}
+
+/* ---- hero stats: two numbers side by side instead of four centred lines */
+.heroStats {
+  margin: 18px 0 2px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(100%, 380px);
+  border-radius: var(--r-panel);
+  background: color-mix(in srgb, var(--surface) 75%, transparent);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.heroStats > div {
+  padding: 12px 14px;
+  display: grid;
+  gap: 4px;
+}
+.heroStats > div + div {
+  box-shadow: inset 1px 0 0 var(--line);
+}
+.heroStats dt {
+  font: 600 12.5px/1.2 var(--sans);
+  color: var(--ink-2);
+}
+.heroStats dd {
+  margin: 0;
+  font: 700 19px/1.1 var(--sans);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.untilBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+.untilEdit {
+  font: 650 12px/1 var(--sans);
+  padding: 5px 9px;
+  border-radius: var(--r-pill);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+/* ---- one primary per screen: logging is the daily action; money arriving is the occasional one */
+.actions button.gotMoney {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  box-shadow: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .actions button.gotMoney:hover {
+    background: color-mix(in srgb, var(--accent) 22%, var(--surface));
+  }
+}
+
+/* ---- habit as one quiet bar */
+.habit {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 2px 8px;
+  padding: 4px 6px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+  justify-self: center;
+}
+.habit > div {
+  display: contents;
+}
+.habitNote {
+  margin: 0;
+  padding-right: 10px;
+}
+@media (max-width: 720px) {
+  .habit {
+    border-radius: var(--r-card-mobile);
   }
 }

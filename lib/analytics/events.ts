@@ -35,6 +35,8 @@ export type EventMap = {
   no_spend_marked: { marked: boolean };
   streak_milestone: { days: 3 | 7 | 14 | 30 };
   view_mode_changed: { mode: "simple" | "full" };
+  notify_prefs_changed: { keys: string };
+  notice_opened: { kind: string; via: "inbox" | "browser" };
 };
 
 export type EventName = keyof EventMap;

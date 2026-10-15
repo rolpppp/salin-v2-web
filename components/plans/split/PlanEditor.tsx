@@ -216,7 +216,7 @@ export function PlanEditor({ mode, buckets, draft, saved, onDraft, compareOption
         </div>
       ) : null}
 
-      <div role="table" aria-label={isNew ? "New plan percentages" : `${mode.name} percentages`} className={styles.table} style={{ "--extra": extra } as CSSProperties}>
+      <div role="table" aria-label={isNew ? "New plan percentages" : `${mode.name} percentages`} className={styles.table} style={{ "--cols": extra > 0 ? `repeat(${extra}, minmax(70px, 110px))` : "" } as CSSProperties}>
         <div role="row" className={styles.headRow2}>
           <span role="columnheader" className={styles.th}>
             Bucket
@@ -239,7 +239,7 @@ export function PlanEditor({ mode, buckets, draft, saved, onDraft, compareOption
           const pct = Number.parseInt(draft[b.id] ?? "", 10);
           const bad = check.invalid.includes(b.id);
           return (
-            <div role="row" key={b.id} className={styles.row2} style={{ "--c": hueColor(b.hue) } as CSSProperties}>
+            <div role="row" key={b.id} className={styles.row2} style={{ "--c": hueColor(b.hue), "--p": Number.isNaN(pct) ? 0 : Math.min(100, Math.max(0, pct)) / 100 } as CSSProperties}>
               <span role="rowheader" className={styles.bucket}>
                 <i aria-hidden="true" />
                 <span>

@@ -4,6 +4,7 @@ import * as Menu from "@radix-ui/react-dropdown-menu";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PersonIcon } from "@/components/icons";
+import { appRequestHref } from "@/lib/app-request";
 import { signOutAction } from "@/lib/auth/actions";
 import styles from "./header.module.css";
 
@@ -31,7 +32,7 @@ export function AvatarMenu({ email, view }: { email?: string | null; view?: View
 
   return (
     <Menu.Root>
-      <Menu.Trigger className={styles.avatar} aria-label="Account menu">
+      <Menu.Trigger className={styles.avatar} aria-label="Account menu" data-tour="avatar">
         <PersonIcon width={18} height={18} />
       </Menu.Trigger>
       <Menu.Portal>
@@ -44,6 +45,11 @@ export function AvatarMenu({ email, view }: { email?: string | null; view?: View
               {view.mode === "simple" ? "Full view" : "Simple view"}
             </Menu.Item>
           ) : null}
+          <Menu.Item asChild>
+            <a className={styles.menuItem} href={appRequestHref({ accountEmail: email })} data-testid="app-request">
+              Get the phone app
+            </a>
+          </Menu.Item>
           {switchError ? (
             <div className={styles.menuEmail} role="alert">
               {switchError}

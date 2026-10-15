@@ -106,3 +106,10 @@
     opacity: 0.7;
   }
 }
+
+/* Text and icon stay on one line ("Give them a job →"), so the arrow never drops under the label. */
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}

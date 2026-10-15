@@ -22,7 +22,7 @@ async function seed(userId: string) {
   const must = (label: string, error: { message: string } | null) => {
     if (error) throw new Error(`seed ${label}: ${error.message}`);
   };
-  must("profile", (await db.from("user_profiles").upsert({ user_id: userId, firstName: "Plans", homeCurrency: "PHP", weekStartsOn: 1 })).error);
+  must("profile", (await db.from("user_profiles").upsert({ user_id: userId, firstName: "Plans", homeCurrency: "PHP", weekStartsOn: 1, onboardedAt: now })).error);
   const acct = (key: string, name: string, type: number, order: number) => ({
     ...mobile,
     id: ids(key),
@@ -164,6 +164,7 @@ test("categories: grouped by bucket, 'Has entries' blocks Remove, an empty one c
   await expect(living.getByRole("button", { name: "Remove Groceries" })).toHaveCount(0);
 
   const fun = page.getByTestId("cat-group-Fun");
+  await fun.getByRole("button", { name: "New category in Fun: open" }).click();
   await fun.getByRole("textbox", { name: "New category in Fun" }).fill("Games");
   await fun.getByRole("button", { name: "Add category to Fun" }).click();
   await expect(fun.getByRole("textbox", { name: "Category name for Games" })).toBeVisible();

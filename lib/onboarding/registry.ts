@@ -5,6 +5,8 @@ import { accountsStep } from "@/components/onboarding/steps/Accounts";
 import { prioStep } from "@/components/onboarding/steps/Priorities";
 import { planStep } from "@/components/onboarding/steps/YourPlan";
 import { homesStep } from "@/components/onboarding/steps/WhereItLives";
+import { firstMoneyStep } from "@/components/onboarding/steps/FirstMoney";
+import { rhythmStep } from "@/components/onboarding/steps/Rhythm";
 import { webIncomeStep } from "@/components/onboarding/steps/WebIncome";
 import { yourAppStep } from "@/components/onboarding/steps/YourApp";
 import type { OnboardingDraft, StepId } from "./draft";
@@ -32,13 +34,17 @@ export function moduleFor(id: StepId, path: "web" | "app" | null): ShellStepModu
       return categoriesStep;
     case "first":
       return firstPayStep;
+    case "rhythm":
+      return rhythmStep;
+    case "money":
+      return firstMoneyStep;
     default:
       return null;
   }
 }
 
 /** The step modules for the draft's path, in order. */
-export function modulesFor(draft: Pick<OnboardingDraft, "path" | "planOnly">): ShellStepModule[] {
+export function modulesFor(draft: Pick<OnboardingDraft, "path" | "planOnly" | "pattern">): ShellStepModule[] {
   return stepsFor(draft)
     .map((id) => moduleFor(id, draft.path))
     .filter((m): m is ShellStepModule => m !== null);

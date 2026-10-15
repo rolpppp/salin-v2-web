@@ -21,7 +21,7 @@ const MILESTONE_KEY = "salin.simple.milestone";
  * The calm daily view: one big number, the week, two actions, a quiet habit, and where your money is.
  * Presentational: it takes the model and the actions as props. `logSlot` is the existing Log spending launcher.
  */
-export function SimpleToday({ model, actions, logSlot }: { model: SimpleTodayModel; actions: SimpleActions; logSlot: ReactNode }) {
+export function SimpleToday({ model, actions, logSlot, sortSlot = null }: { model: SimpleTodayModel; actions: SimpleActions; logSlot: ReactNode; sortSlot?: ReactNode }) {
   const router = useRouter();
   const [receiveOpen, setReceiveOpen] = useState(false);
   const [opening, setOpening] = useState(0);
@@ -47,6 +47,7 @@ export function SimpleToday({ model, actions, logSlot }: { model: SimpleTodayMod
 
   const today = model.week.find((d) => d.state === "today")?.day ?? "";
   const { streak } = model;
+  const spentToday = streak.todayDone && !streak.noSpendToday;
 
   async function toFull() {
     if (switching) return;
@@ -74,13 +75,16 @@ export function SimpleToday({ model, actions, logSlot }: { model: SimpleTodayMod
 
       <Hero model={model} actions={actions} burst={burst} />
 
+      {sortSlot}
+
       {moves.length > 0 ? <MovesCard moves={moves} tick={actions.tickTransfer} /> : null}
 
       <WeekStrip week={model.week} />
 
-      <div className={styles.actions}>
+      <div className={styles.actions} data-tour="actions">
         <Button
-          variant="primary"
+          variant="soft"
+          className={styles.gotMoney}
           aria-haspopup="dialog"
           data-testid="i-got-money"
           onClick={(e) => {
@@ -94,10 +98,11 @@ export function SimpleToday({ model, actions, logSlot }: { model: SimpleTodayMod
         <div className={styles.logCell}>{logSlot}</div>
       </div>
 
-      <div className={styles.habit}>
-        <NoSpendButton key={`${today}-${streak.noSpendToday}`} day={today} on={streak.noSpendToday} setNoSpend={actions.setNoSpend} />
+      <div className={styles.habit} data-tour="habit">
+        {/* "No spend today" only makes sense before anything is logged; once spending is logged, today already counts. */}
+        {spentToday ? null : <NoSpendButton key={`${today}-${streak.noSpendToday}`} day={today} on={streak.noSpendToday} setNoSpend={actions.setNoSpend} />}
         <p className={styles.habitNote} data-testid="habit-note">
-          {streak.todayDone ? "Today is counted." : "Nothing yet today. Log it or mark a no-spend day."}
+          {spentToday ? "You logged spending today, so today counts." : streak.todayDone ? "Today is counted." : "Nothing yet today. Log it or mark a no-spend day."}
         </p>
       </div>
 

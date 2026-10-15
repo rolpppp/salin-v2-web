@@ -1,0 +1,130 @@
+/* Onboarding v2 steps (Your rhythm, First money). Tokens only. Motion: transform + opacity, ease-out, reduced motion = fade. */
+
+.unsure {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.unsure input {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+}
+
+.where {
+  animation: rise var(--dur-rise) var(--ease-out) both;
+}
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: end;
+}
+.row > span {
+  font-weight: 600;
+  align-self: center;
+}
+.remainder {
+  font: 650 17px/1 var(--sans);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  align-self: center;
+}
+
+/* ---------- the per-day payoff ---------- */
+.perDay {
+  display: grid;
+  gap: 4px;
+  padding: 22px 22px 20px;
+  border-radius: var(--r-card-mobile);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  animation: pop var(--dur-pop) var(--ease-out) both;
+}
+.perDayLine {
+  margin: 0;
+  font: 600 16px/1.2 var(--sans);
+}
+.perDayNum {
+  display: inline-block;
+  font: 750 44px/1 var(--sans);
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  margin-inline: 4px;
+}
+.perDayFoot {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 12px;
+}
+.dots i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.85;
+  animation: dot 320ms var(--ease-out) both;
+  animation-delay: calc(var(--i) * 18ms);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+}
+@keyframes dot {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .where,
+  .perDay,
+  .dots i {
+    animation: fade var(--dur-fade-rm) ease both;
+    animation-delay: 0s;
+  }
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+  }
+}
+@media (max-width: 720px) {
+  .row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+  .remainder {
+    text-align: left;
+  }
+  .perDayNum {
+    font-size: 38px;
+  }
+}

@@ -1,0 +1,371 @@
+/* Plans → Categories: a month summary, bucket cards in a grid, and one strip for empty buckets. */
+
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--c, var(--ink-3));
+  flex: none;
+}
+
+/* ---- This month at a glance ---- */
+.glance {
+  background: var(--surface-2);
+  border-radius: var(--r-panel);
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  display: grid;
+  gap: 12px;
+}
+.glanceHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+}
+.glanceLabel {
+  font: 600 13.5px/1.2 var(--sans);
+  color: var(--ink-2);
+}
+.total {
+  font: 700 24px/1.1 var(--sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.bar {
+  display: flex;
+  gap: 2px;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.bar span {
+  flex-basis: 0;
+  min-width: 4px;
+  background: var(--c, var(--ink-3));
+}
+.legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  font-size: 13.5px;
+  color: var(--ink);
+}
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.legendAmt {
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 18px;
+  font-size: 13.5px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.topLabel {
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-right: -6px;
+}
+.glanceEmpty {
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+
+/* ---- Bucket cards ---- */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr));
+  gap: 12px;
+  align-items: start;
+}
+.card {
+  container-type: inline-size;
+  border-radius: var(--r-panel);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+  padding: 4px 16px 8px;
+  min-width: 0;
+}
+.card[data-unsorted] {
+  box-shadow: inset 0 0 0 1.5px var(--line-2);
+  background: var(--surface-2);
+}
+.cardHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 12px;
+  padding: 12px 0 8px;
+  border-bottom: 1px solid var(--line);
+}
+.cardName {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: 650 15px/1.2 var(--sans);
+}
+.cardSpent {
+  font-size: 13px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* name | amount | tools on one line; narrow cards drop the tools under the name. */
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas: "name amt tools" "err err err";
+  align-items: center;
+  gap: 0 12px;
+  padding: 6px 0;
+  border-top: 1px solid var(--line);
+}
+.row:first-child {
+  border-top: 0;
+}
+.name {
+  grid-area: name;
+  min-width: 0;
+}
+.amt {
+  grid-area: amt;
+  text-align: right;
+  display: grid;
+  line-height: 1.25;
+}
+.amt small {
+  font-size: 12px;
+  color: var(--ink-3);
+  font-weight: 500;
+}
+.num {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  font-size: 14.5px;
+}
+.tools {
+  grid-area: tools;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+.rowErr {
+  grid-area: err;
+  margin: 2px 0 4px;
+}
+@container (max-width: 360px) {
+  .row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "name amt" "tools tools" "err err";
+    padding: 8px 0;
+  }
+  .tools {
+    justify-content: space-between;
+  }
+}
+
+/* The move picker reads as a small chip, not a form field. */
+select.pick {
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--ink-2);
+  width: auto;
+  max-width: 170px;
+  padding: 6px 28px 6px 10px;
+  background-color: var(--surface-2);
+  box-shadow: none;
+  border-radius: 999px;
+  background-position:
+    calc(100% - 15px) 55%,
+    calc(100% - 10px) 55%;
+}
+select.pick:hover {
+  box-shadow: inset 0 0 0 1.5px var(--line-2);
+}
+select.pick:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+/* Same footprint as the remove button, so rows line up whether or not they can be removed. */
+.locked {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: var(--ink-3);
+  opacity: 0.7;
+  cursor: help;
+}
+.remove {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--ink-3);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-state) ease,
+    color var(--dur-state) ease;
+}
+.remove:hover {
+  background: var(--warm-soft);
+  color: var(--warm);
+}
+.remove:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.remove:disabled {
+  opacity: 0.45;
+  cursor: progress;
+}
+.moved {
+  font-size: 12.5px;
+  color: var(--ink-2);
+  padding: 8px 0 2px;
+  border-top: 1px dashed var(--line-2);
+}
+.addBtn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font: 600 13.5px/1 var(--sans);
+  color: var(--accent-strong);
+  padding: 10px 0 8px;
+  cursor: pointer;
+}
+.addBtn:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.addBtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 0 6px;
+  animation: addIn 220ms var(--ease-out) both;
+}
+.add input {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+.add p {
+  flex-basis: 100%;
+  margin: 0;
+}
+.addTo {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font: 650 14px/1.2 var(--sans);
+  flex-basis: 100%;
+}
+@keyframes addIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .add {
+    animation: none;
+  }
+}
+
+/* ---- Empty buckets ---- */
+.empty {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: var(--r-panel);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+  background: repeating-linear-gradient(-45deg, transparent 0 8px, var(--surface-2) 8px 9px);
+}
+.emptyHead {
+  font: 600 13.5px/1.2 var(--sans);
+  color: var(--ink-2);
+  margin-bottom: 10px;
+}
+.chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chipItem[data-open] {
+  flex-basis: 100%;
+  background: var(--surface);
+  border-radius: var(--r-field);
+  box-shadow: inset 0 0 0 1px var(--line);
+  padding: 4px 12px;
+}
+.chip {
+  appearance: none;
+  border: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: 550 13.5px/1 var(--sans);
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line-2);
+  border-radius: 999px;
+  padding: 8px 10px 8px 12px;
+  cursor: pointer;
+  transition: box-shadow var(--dur-state) ease;
+}
+.chip:hover {
+  box-shadow: inset 0 0 0 1.5px var(--c, var(--line-2));
+}
+.chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.plus {
+  color: var(--accent-strong);
+  font-weight: 700;
+  font-size: 15px;
+  margin-left: 2px;
+}
+
+.foot {
+  margin-top: 16px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+.foot b {
+  color: var(--ink-2);
+}

@@ -1,80 +1,73 @@
 import { useEffect, useRef } from "react";
-import { ArrowRightIcon, CheckIcon } from "@/components/icons";
-import { bpShare, formatPeso } from "@/lib/money";
+import { ArrowRightIcon } from "@/components/icons";
+import type { Pattern } from "@/lib/onboarding/draft";
+import { PATTERN_OPTIONS } from "@/lib/onboarding/simple-path";
+import { AppNote } from "./AppNote";
 import styles from "./onboarding.module.css";
 
-const EXAMPLE_PAY_MINOR = 2_500_000;
-// The same example split the prototype shows (BR §10 O1). Decorative only: it never reads the user's data.
-const EXAMPLE: ReadonlyArray<{ key: string; label: string; pct: number }> = [
-  { key: "living", label: "Living", pct: 38 },
-  { key: "rent", label: "Bills", pct: 12 },
-  { key: "fun", label: "Fun", pct: 10 },
-  { key: "emergency", label: "Emergency", pct: 25 },
-  { key: "invest", label: "Invest", pct: 5 },
-  { key: "sinking", label: "Sinking", pct: 10 },
+// Decorative only: it never reads the user's data. Heights are shares of the tallest bar.
+const DAYS: ReadonlyArray<{ d: string; h: number; today?: boolean }> = [
+  { d: "M", h: 0.8 },
+  { d: "T", h: 0.55 },
+  { d: "W", h: 0.7 },
+  { d: "T", h: 1, today: true },
+  { d: "F", h: 0.62 },
+  { d: "S", h: 0.62 },
+  { d: "S", h: 0.62 },
 ];
 
-/** SPEC §7.1. Presentational: the shell decides what choosing a path does. */
-export function Welcome({ onChoose }: { onChoose: (path: "web" | "app") => void }) {
+/** SPEC §7.1, Onboarding v2: one question about the user's money, then the way in for people who already use the phone app. */
+export function Welcome({ onChoose, onApp }: { onChoose: (pattern: Pattern) => void; onApp: () => void }) {
   const h1 = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     h1.current?.focus();
   }, []);
   return (
     <div className={styles.hero}>
-      <div>
+      <div className={styles.rise} style={{ "--n": 0 } as React.CSSProperties}>
         <p className={styles.heroKicker}>Welcome to Salin</p>
         <h1 ref={h1} tabIndex={-1}>
-          Let&apos;s give every peso a job.
+          Know what&apos;s fine to spend today.
         </h1>
         <p className={styles.lede}>
-          In about three minutes you&apos;ll have a plan for your pay, built from your own numbers. Each payday after that, Salin shows you where every peso goes. It never moves money for you: it tells you, you
-          decide.
+          Tell Salin what you have and when more is coming. It gives you one number a day, and it never moves your money: it tells you, you decide. Takes about two minutes.
         </p>
-        <ul className={styles.gets}>
-          {["A split for every payday, in buckets you name", "A short list of what to send where", "One number each day: what's safe to spend"].map((t) => (
-            <li key={t}>
-              <span className={styles.ck} aria-hidden="true">
-                <CheckIcon />
+        <h2 className={styles.q}>What describes your money?</h2>
+        <div className={styles.patterns}>
+          {PATTERN_OPTIONS.map((o, i) => (
+            <button key={o.value} type="button" className={styles.pattern} style={{ "--n": i + 1 } as React.CSSProperties} onClick={() => onChoose(o.value)}>
+              <span>
+                <b>{o.title}</b>
+                <small>{o.help}</small>
               </span>
-              {t}
-            </li>
+              <ArrowRightIcon />
+            </button>
           ))}
-        </ul>
-        <h2 className={styles.q}>Have you used the Salin app on your phone?</h2>
-        <div className={styles.paths}>
-          <button type="button" className={styles.path} onClick={() => onChoose("web")}>
-            <span>
-              <b>I&apos;m new to Salin</b>
-              <small>Start here on the web. You can log spending here too.</small>
-            </span>
-            <ArrowRightIcon />
-          </button>
-          <button type="button" className={styles.path} onClick={() => onChoose("app")}>
-            <span>
-              <b>I use the Salin app</b>
-              <small>Bring in your accounts, categories and income. Same account, kept in sync.</small>
-            </span>
-            <ArrowRightIcon />
-          </button>
         </div>
+        <button type="button" className={styles.appLink} onClick={onApp}>
+          I already use the Salin app
+        </button>
+        <AppNote />
       </div>
-      <div aria-hidden="true">
+      <div aria-hidden="true" className={styles.rise} style={{ "--n": 2 } as React.CSSProperties}>
         <div className={styles.example}>
           <div className={styles.exampleHead}>
-            <span>Example payday</span>
-            <b>{formatPeso(EXAMPLE_PAY_MINOR).replace(".00", "")}</b>
+            <span>Left to spend today</span>
+            <span className={styles.streakChip}>5 days</span>
           </div>
-          <div className={styles.shelf}>
-            {EXAMPLE.map((e, i) => (
-              <div key={e.key} className={styles.col} style={{ "--c": `var(--b-${e.key})`, "--h": e.pct / 38, "--d": `${i * 70}ms` } as React.CSSProperties}>
-                <span className={styles.colV}>{formatPeso(bpShare(EXAMPLE_PAY_MINOR, e.pct * 100)).replace(".00", "")}</span>
+          <p className={styles.exampleBig}>
+            <span className={styles.exampleNum}>₱320</span>
+          </p>
+          <p className={styles.exampleSub}>₱1,940 left this week · lasts until Sunday</p>
+          <div className={styles.week}>
+            {DAYS.map((x, i) => (
+              <div key={i} className={styles.day} data-today={x.today ? "" : undefined} style={{ "--h": x.h, "--d": `${300 + i * 60}ms` } as React.CSSProperties}>
                 <i />
-                <span className={styles.colN}>{e.label}</span>
+                <span>{x.d}</span>
               </div>
             ))}
           </div>
-          <p className={styles.exampleFoot}>Every peso has a job before you spend it.</p>
+          <p className={styles.exampleFoot}>One number a day, whatever your money looks like.</p>
         </div>
       </div>
     </div>

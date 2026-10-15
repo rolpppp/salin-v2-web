@@ -52,7 +52,7 @@ export function Hero({ model, actions, burst }: { model: SimpleTodayModel; actio
   const days = model.daysUntil;
 
   return (
-    <Card as="section" aria-labelledby="simple-hero-h" className={cn(styles.hero, negative && styles.heroNeg)} data-testid="hero" data-spendable-left-minor={model.spendableLeftMinor} data-days-until={model.daysUntil} data-burst={burst ? "week" : undefined}>
+    <Card as="section" aria-labelledby="simple-hero-h" className={cn(styles.hero, negative && styles.heroNeg)} data-testid="hero" data-tour="hero" data-spendable-left-minor={model.spendableLeftMinor} data-days-until={model.daysUntil} data-burst={burst ? "week" : undefined}>
       <h2 className={styles.eyebrow} id="simple-hero-h">
         Left to spend today
       </h2>
@@ -63,15 +63,26 @@ export function Hero({ model, actions, burst }: { model: SimpleTodayModel; actio
         <span className={styles.cents}>{cents}</span>
       </p>
       {negative ? <p className={styles.heroNote}>{formatPeso(Math.abs(value))} over. Tomorrow adjusts.</p> : null}
-      <p className={styles.sub} data-testid="week-left" data-week-left-minor={model.weekLeftMinor}>
-        <b>{formatPeso(model.weekLeftMinor)}</b> left this week
-      </p>
+      <dl className={styles.heroStats}>
+        <div>
+          <dt>Left this week</dt>
+          <dd data-testid="week-left" data-week-left-minor={model.weekLeftMinor}>
+            {formatPeso(model.weekLeftMinor)}
+          </dd>
+        </div>
+        <div>
+          <dt>About a day</dt>
+          <dd data-testid="pace" data-pace-minor={model.paceMinor}>
+            {formatPesoWhole(model.paceMinor)}
+          </dd>
+        </div>
+      </dl>
       <button ref={untilBtn} type="button" className={styles.untilBtn} aria-haspopup="dialog" onClick={() => setOpen(true)} data-testid="until-button">
         {days} {days === 1 ? "day" : "days"} until {model.until.label}
+        <span aria-hidden="true" className={styles.untilEdit}>
+          Change
+        </span>
       </button>
-      <p className={styles.sub} style={{ marginTop: 0 }} data-testid="pace" data-pace-minor={model.paceMinor}>
-        About <b>{formatPesoWhole(model.paceMinor)}</b> a day
-      </p>
       <UntilSheet open={open} onOpenChange={setOpen} model={model} actions={actions} returnTo={() => untilBtn.current} />
     </Card>
   );

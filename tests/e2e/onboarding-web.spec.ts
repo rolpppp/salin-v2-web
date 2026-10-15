@@ -25,9 +25,9 @@ async function storedDraft(userId: string): Promise<Record<string, unknown> & { 
   return (data?.onboardingDraft ?? {}) as Record<string, unknown> & { accounts?: unknown[]; step?: string };
 }
 
-/** Welcome question, "I'm new to Salin", then Income and Accounts filled in. Leaves the user on Priorities. */
+/** Welcome question, "Salary or regular pay", then Income and Accounts filled in. Leaves the user on Priorities. */
 async function throughIncomeAndAccounts(page: Page) {
-  await page.getByRole("button", { name: /I'm new to Salin/ }).click();
+  await page.getByRole("button", { name: /Salary or regular pay/ }).click();
   await expect(page).toHaveURL(/\/welcome\/income$/);
   await expect(page.getByText("Step 1 of 6 · Income")).toBeVisible();
   await expect(heading(page)).toHaveText("What money comes in?");
@@ -126,7 +126,7 @@ test("web path: Income, Accounts, then the shared steps, and the draft carries s
   await page.getByRole("button", { name: "Not yet" }).click();
   await expect(heading(page)).toHaveText("That's fine. Payday is the moment.");
   await primary(page).click(); // Open Today
-  await page.waitForURL("**/today");
+  await page.waitForURL(/\/today(\?|$)/);
 
   const db = adminClient();
   const acc = await db.from("accounts").select("id, name").eq("user_id", user.id);
@@ -160,7 +160,7 @@ test("Just track for now: First pay follows Priorities, Back undoes the skip, To
   await page.getByRole("button", { name: "Not yet" }).click();
   await expect(heading(page)).toHaveText("That's fine. Payday is the moment.");
   await primary(page).click(); // Open Today
-  await page.waitForURL("**/today");
+  await page.waitForURL(/\/today(\?|$)/);
 
   const db = adminClient();
   const profile = await db.from("user_profiles").select("planMode, priority").eq("user_id", user.id).single();
@@ -169,6 +169,11 @@ test("Just track for now: First pay follows Priorities, Back undoes the skip, To
   expect(buckets.data?.find((b) => b.hue === "living")?.name).toBe("Spending");
   const goals = await db.from("goals").select("id").eq("user_id", user.id);
   expect(goals.data).toHaveLength(0);
+
+  // First visit after finishing: the tour starts on Full Today; Escape ends it.
+  await page.getByTestId("tour-card").waitFor();
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("tour")).toHaveCount(0);
 
   // Today: the checklist and the card for someone just tracking.
   const card = page.getByTestId("next-card");
@@ -192,7 +197,7 @@ test("Just track for now: First pay follows Priorities, Back undoes the skip, To
   await expect(page.getByText(/Make a plan · 3 of 3/)).toBeVisible();
   await expect(primary(page)).toContainText("Save my plan");
   await primary(page).click();
-  await page.waitForURL("**/today");
+  await page.waitForURL(/\/today(\?|$)/);
 
   const after = await db.from("user_profiles").select("planMode, priority, onboardingDraft").eq("user_id", user.id).single();
   expect(after.data).toMatchObject({ planMode: "plan", priority: "safety", onboardingDraft: {} });

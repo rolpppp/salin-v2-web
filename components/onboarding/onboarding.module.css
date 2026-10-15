@@ -431,3 +431,212 @@
     transform: none;
   }
 }
+
+/* ---------- welcome v2 ---------- */
+.rise {
+  animation: rise 420ms var(--ease-out) both;
+  animation-delay: calc(var(--n, 0) * 70ms);
+}
+.patterns {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+.pattern {
+  appearance: none;
+  border: 0;
+  text-align: left;
+  font: inherit;
+  color: var(--ink);
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 16px 18px;
+  border-radius: var(--r-card-mobile);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+  transition:
+    box-shadow var(--dur-state) ease,
+    transform var(--dur-press) var(--ease-out);
+  animation: rise 360ms var(--ease-out) both;
+  animation-delay: calc(180ms + var(--n) * 60ms);
+}
+.pattern b {
+  display: block;
+  font: 650 16px/1.25 var(--sans);
+}
+.pattern small {
+  display: block;
+  font-size: 13.5px;
+  color: var(--ink-2);
+  margin-top: 3px;
+  line-height: 1.4;
+}
+.pattern > svg {
+  width: 16px;
+  height: 16px;
+  color: var(--ink-3);
+  transition: transform var(--dur-state) var(--ease-out);
+}
+.pattern:active {
+  transform: scale(0.98);
+}
+.pattern:focus-visible,
+.appLink:focus-visible {
+  outline: 2.5px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .pattern:hover {
+    box-shadow: var(--shadow-2);
+  }
+  .pattern:hover > svg {
+    transform: translateX(3px);
+  }
+}
+.appLink {
+  appearance: none;
+  border: 0;
+  background: none;
+  font: 500 14px/1.2 var(--sans);
+  color: var(--ink-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  margin-top: 16px;
+  padding: 6px 0;
+  cursor: pointer;
+}
+.exampleBig {
+  margin: 14px 0 0;
+}
+.exampleNum {
+  display: inline-block;
+  font: 750 64px/1 var(--sans);
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+  animation: pop 520ms var(--ease-out) 260ms both;
+}
+.exampleSub {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.streakChip {
+  font: 650 12px/1 var(--sans);
+  padding: 5px 10px;
+  border-radius: var(--r-pill);
+  background: var(--sun-soft);
+  color: var(--ink);
+}
+.week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  height: 140px;
+  margin-top: 22px;
+  align-items: end;
+}
+.day {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  height: 100%;
+  gap: 6px;
+  justify-items: center;
+}
+.day i {
+  align-self: end;
+  width: 100%;
+  height: calc(100% * var(--h));
+  border-radius: 8px;
+  background: var(--accent-soft);
+  transform-origin: bottom;
+  animation: fill 700ms var(--ease-out) both;
+  animation-delay: var(--d);
+}
+.day[data-today] i {
+  background: var(--accent);
+}
+.day span {
+  font: 600 12px/1 var(--sans);
+  color: var(--ink-2);
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+}
+@keyframes fill {
+  from {
+    transform: scaleY(0);
+  }
+}
+@media (max-width: 860px) {
+  .week {
+    height: 110px;
+  }
+}
+@media (max-width: 720px) {
+  .exampleNum {
+    font-size: 52px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .pattern,
+  .exampleNum {
+    animation: fadeRm var(--dur-fade-rm) ease both;
+    animation-delay: 0s;
+  }
+  .day i {
+    animation: none;
+  }
+  .pattern,
+  .pattern:active {
+    transition: none;
+    transform: none;
+  }
+  @keyframes fadeRm {
+    from {
+      opacity: 0;
+    }
+  }
+}
+
+/* The primary's label keeps its arrow on the same line ("Show me my day →"). */
+.primary > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.hero .q {
+  margin-top: 28px;
+}
+
+.appNote {
+  margin: 18px 0 0;
+  font-size: 13.5px;
+  color: var(--ink-3);
+}
+.appNote a {
+  color: var(--ink-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.appNote a:hover,
+.appNote a:focus-visible {
+  color: var(--accent-strong);
+}
+.footNote {
+  grid-column: 1 / -1;
+  margin: 0;
+}

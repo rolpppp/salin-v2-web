@@ -41,8 +41,7 @@
   flex: none;
 }
 .mini {
-  font-size: 13px;
-  padding-block: 6px;
+  font-size: 14.5px;
 }
 .pct {
   text-align: right;
@@ -204,6 +203,7 @@
   flex-wrap: wrap;
 }
 .compare {
+  max-width: 420px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -213,11 +213,30 @@
 .headRow2,
 .footRow2 {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto repeat(var(--extra, 0), minmax(70px, 110px));
-  gap: 0 12px;
+  /* --cols adds the compare / per-pay columns; empty when there are none (repeat(0, …) would void the whole template). */
+  grid-template-columns: minmax(0, 1fr) auto var(--cols, );
+  gap: 0 16px;
   align-items: center;
-  padding: 10px 6px;
+  padding: 12px 6px;
   border-bottom: 1px solid var(--line);
+}
+/* Each share drawn to scale under its row: the plan reads at a glance, and nudging a share visibly moves it. */
+.row2 {
+  position: relative;
+}
+.row2::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: -1px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--c);
+  opacity: 0.75;
+  transform-origin: left;
+  transform: scaleX(var(--p, 0));
+  transition: transform 260ms var(--ease-out);
 }
 .headRow2 {
   border-bottom-color: var(--line-2);
@@ -250,8 +269,33 @@
   font: 600 18px/1 var(--sans);
   cursor: pointer;
 }
-.stepBtn:hover {
-  background: var(--surface-2);
+.stepBtn {
+  display: grid;
+  place-items: center;
+  transition:
+    background-color var(--dur-state) ease,
+    transform var(--dur-press) var(--ease-out);
+}
+.stepBtn:active {
+  transform: scale(0.94);
+}
+@media (hover: hover) and (pointer: fine) {
+  .stepBtn:hover {
+    background: var(--surface-2);
+  }
+}
+.stepBtn:focus-visible {
+  outline: 2.5px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .row2::after,
+  .stepBtn {
+    transition: none;
+  }
+  .stepBtn:active {
+    transform: none;
+  }
 }
 .muted {
   color: var(--ink-2);

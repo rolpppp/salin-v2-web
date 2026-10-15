@@ -111,7 +111,7 @@ export function ReviewView({ data }: { data: ReviewData }) {
         title={`Week of ${formatWeekRange(data.weekStart, data.weekEnd)}`}
         lede="Five minutes: look back, fix one thing, then close the week."
       />
-      <ol className={styles.stepper} aria-label="Review progress">
+      <ol className={styles.stepper} aria-label="Review progress" data-tour="review-steps">
         {steps.map((s, i) => (
           <li key={s.label} className={s.done ? styles.on : undefined}>
             <i aria-hidden="true">{s.done ? <CheckIcon /> : i + 1}</i>
@@ -121,7 +121,7 @@ export function ReviewView({ data }: { data: ReviewData }) {
         ))}
       </ol>
       <div className={styles.review} data-week-closed={data.closed ? "true" : "false"}>
-        <div className={styles.slipCol}>
+        <div className={styles.slipCol} data-tour="review-slip">
           <WeekSlipCard data={data} />
         </div>
 

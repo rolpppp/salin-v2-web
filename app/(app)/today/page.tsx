@@ -15,7 +15,12 @@ import { parseGrow } from "@/lib/motion/grow";
 import { getRequestProfile } from "@/lib/data/request-profile";
 import { getTodayInput } from "@/lib/data/today";
 import { buildTodayView, daysUntilPayday, daysUntilText, type TodayView as TodayViewModel } from "@/lib/data/today-model";
+import { StreakRow } from "@/components/today/StreakRow";
+import { SwitchToSimple } from "@/components/today/SwitchToSimple";
+import { getNotifications } from "@/lib/data/notify";
 import { SimpleToday } from "@/components/simple-today/SimpleToday";
+import { SortMoneyCard } from "@/components/sort-money/SortMoneyCard";
+import { getSortGroups } from "@/lib/data/sort-money";
 import { getViewMode, loadSimpleToday, simpleActions, type SimpleTodayModel } from "@/components/simple-today/seam";
 import { isoDateIn } from "@/lib/data/money-in-model";
 import { createClient } from "@/lib/supabase/server";
@@ -31,6 +36,17 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   const supabase = await createClient();
   const tzCookie = (await cookies()).get(TZ_COOKIE)?.value ?? null;
   const timeZone = validTimeZone(tzCookie ? decodeURIComponent(tzCookie) : null);
+
+  // Money from before the plan that still sits in one bucket (ticket 34). Never blocks Today if it can't load.
+  const sortGroups = supabase
+    ? await getRequestProfile(user.id)
+        .then((profile) => getSortGroups(supabase, { planMode: profile?.planMode }))
+        .catch((err) => {
+          console.error("[today] sort money could not load", err);
+          return [];
+        })
+    : [];
+  const sortCard = sortGroups.length > 0 ? <SortMoneyCard groups={sortGroups} /> : null;
 
   // Simple view (ticket 28): a second Today on the same data. Anyone not on "simple" gets the full Today below.
   if ((await getViewMode(user.id)) === "simple") {
@@ -51,6 +67,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
           <SimpleToday
             model={model}
             actions={simpleActions}
+            sortSlot={sortCard}
             logSlot={
               <Suspense fallback={<Skeleton width={170} height={52} radius={12} />}>
                 <LogSpendingSlot variant="primary" />
@@ -64,6 +81,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
     );
   }
 
+  const notify = await getNotifications();
   let view: TodayViewModel | null = null;
   let firstName: string | null = displayFirstName(null, user);
   let daysText: string | null = null;
@@ -92,6 +110,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
           + Add income
         </ButtonLink>
       </Greeting>
+      {notify ? <StreakRow streak={notify.streak} today={notify.todayIso} setNoSpend={simpleActions.setNoSpend} /> : null}
       {!view ? (
         <EmptyState title="Couldn't load your numbers">Check your connection and reload the page. Nothing was changed.</EmptyState>
       ) : (
@@ -101,11 +120,13 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
               Spending from your phone shows here when sync is on in the Salin app.
             </p>
           ) : null}
+          {sortCard}
           <TodayView view={view} grow={grow} logSlot={
               <Suspense fallback={<Skeleton width={170} height={44} radius={12} />}>
                 <LogSpendingSlot variant="primary" />
               </Suspense>
             } />
+          <SwitchToSimple setViewMode={simpleActions.setViewMode} />
         </>
       )}
     </>

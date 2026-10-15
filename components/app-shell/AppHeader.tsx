@@ -4,6 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
 import type { ComponentProps } from "react";
+import { HelpButton } from "@/components/help/HelpButton";
+import { NotificationBell } from "@/components/notify/NotificationBell";
+import type { NotifyBundle } from "@/lib/data/notify";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { cn } from "@/lib/cn";
 import { AvatarMenu } from "./AvatarMenu";
@@ -22,7 +25,7 @@ export type TabBadge = { tone: "needs" | "due"; label: string; count?: number };
  * Sticky top bar. `badges` maps a tab href to a status dot (Money in: coral dot + count while income
  * waits, Review: a dot on the review day while the week is open). The layout loads them (SPEC §0).
  */
-export function AppHeader({ badges = {}, email, view }: { badges?: Partial<Record<string, TabBadge>>; email?: string | null; view?: ComponentProps<typeof AvatarMenu>["view"] }) {
+export function AppHeader({ badges = {}, email, view, notify = null }: { badges?: Partial<Record<string, TabBadge>>; email?: string | null; view?: ComponentProps<typeof AvatarMenu>["view"]; notify?: NotifyBundle | null }) {
   const pathname = usePathname();
   // Empty on the server and during hydration, today's date afterwards (avoids a mismatch).
   const today = useSyncExternalStore(subscribeNever, todayLabel, serverLabel);
@@ -56,6 +59,8 @@ export function AppHeader({ badges = {}, email, view }: { badges?: Partial<Recor
           <span className={styles.when} suppressHydrationWarning>
             {today}
           </span>
+          <HelpButton viewMode={view?.mode} />
+          {notify ? <NotificationBell bundle={notify} /> : null}
           <ThemeToggle />
           <AvatarMenu email={email} view={view} />
         </div>
@@ -66,11 +71,13 @@ export function AppHeader({ badges = {}, email, view }: { badges?: Partial<Recor
 
 /** Header for onboarding and sign-in: logo and theme toggle only. */
 export function BareHeader() {
+  const pathname = usePathname();
   return (
     <header className={styles.top}>
       <div className={styles.inner}>
         <Logo href="/" />
         <div className={styles.right}>
+          {pathname.startsWith("/welcome") ? <HelpButton /> : null}
           <ThemeToggle />
         </div>
       </div>

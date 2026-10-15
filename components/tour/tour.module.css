@@ -1,0 +1,146 @@
+/* First-visit tour: a dimmed page with one lit element and a small card beside it (a bottom sheet on phones). */
+
+.dialog {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+  color: var(--ink);
+}
+.dialog::backdrop {
+  background: transparent;
+}
+
+/* The lit element: a rounded hole, cut by one huge shadow that dims everything else. */
+.spot {
+  position: fixed;
+  border-radius: 16px;
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 0 0 200vmax rgba(10, 20, 22, 0.58);
+  pointer-events: none;
+  transition:
+    top 280ms var(--ease-out),
+    left 280ms var(--ease-out),
+    width 280ms var(--ease-out),
+    height 280ms var(--ease-out);
+}
+.spot[data-hidden] {
+  opacity: 0;
+}
+
+.card {
+  position: fixed;
+  width: min(360px, calc(100vw - 32px));
+  background: var(--surface);
+  border-radius: var(--r-panel);
+  box-shadow: var(--shadow-overlay);
+  padding: 18px 18px 14px;
+  display: grid;
+  gap: 8px;
+  /* Transparent (not hidden) until placed, so Next can take focus on the first frame. */
+  opacity: 0;
+}
+.card[data-placed] {
+  opacity: 1;
+  animation: cardIn 220ms var(--ease-out) both;
+}
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.count {
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent-strong);
+}
+.title {
+  font: 650 18px/1.25 var(--sans);
+}
+.title:focus {
+  outline: none;
+}
+.body {
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.dots {
+  display: flex;
+  gap: 5px;
+  margin-top: 4px;
+}
+.dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--line-2);
+  transition:
+    width 200ms var(--ease-out),
+    background-color 200ms ease;
+}
+.dots span[data-on] {
+  width: 18px;
+  background: var(--accent);
+}
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+}
+.actions > span {
+  display: flex;
+  gap: 6px;
+}
+.skip {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 10px 2px;
+  font: 600 13.5px/1 var(--sans);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.skip:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.skip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Phones: the card is a sheet at the bottom; the lit element is scrolled into the space above it. */
+@media (max-width: 719px) {
+  .card {
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    width: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spot,
+  .dots span {
+    transition: none;
+  }
+  .card[data-placed] {
+    animation: none;
+  }
+}

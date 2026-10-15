@@ -39,7 +39,8 @@
   grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
   gap: 20px;
   margin-bottom: 20px;
-  align-items: start;
+  /* Both cards share a height, so the row reads as one band instead of a short card beside a tall one. */
+  align-items: stretch;
 }
 .grid {
   display: grid;
@@ -132,8 +133,12 @@
   color: var(--ink);
   font-weight: 650;
 }
+/* With the row stretched, the number sits in the middle of its card and the leaders follow it, instead of a hole between them. */
+.safe {
+  justify-content: center;
+}
 .away {
-  margin-top: auto;
+  margin-top: 4px;
   padding-top: 18px;
   display: grid;
   gap: 8px;
@@ -398,9 +403,11 @@
   color: var(--ink-2);
   font-size: 12.5px;
 }
+/* Capped so a shelf with one or two buckets still draws ribbons, not wide flat bars. */
 .gCols {
   display: grid;
   grid-template-columns: repeat(var(--gc, 2), minmax(0, 1fr));
+  max-width: calc(var(--gc, 2) * 170px);
 }
 .slot {
   appearance: none;
@@ -553,6 +560,67 @@
     text-decoration-color: var(--line-2);
   }
 }
+/* One bucket on show: a single line instead of a ribbon. */
+.solo {
+  appearance: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "name amt" "meta meta";
+  align-items: baseline;
+  gap: 4px 16px;
+  padding: 14px 16px 14px 18px;
+  border-radius: var(--r-panel);
+  background: color-mix(in srgb, var(--c) 10%, var(--surface));
+  box-shadow: inset 4px 0 0 var(--c);
+  transition: background-color var(--dur-state) ease;
+}
+.solo:hover {
+  background: color-mix(in srgb, var(--c) 16%, var(--surface));
+}
+.solo:focus-visible {
+  outline: 2.5px solid var(--accent);
+  outline-offset: 3px;
+}
+.solo .sName {
+  grid-area: name;
+  font-size: 15px;
+}
+.soloAmt {
+  grid-area: amt;
+  font: 650 22px/1.2 var(--sans);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.soloMeta {
+  grid-area: meta;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.soloMeta:empty {
+  display: none;
+}
+.soloPlan {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 16px;
+  margin-top: 12px;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.soloPlan > span {
+  flex: 1 1 320px;
+}
+
 .shelfFoot {
   display: flex;
   justify-content: space-between;
@@ -879,5 +947,77 @@
   }
   [data-grow] .delta {
     display: none;
+  }
+}
+
+/* ---- the way back to Simple view */
+.switchFoot {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  margin-top: 28px;
+  padding-bottom: 12px;
+}
+.switchNote {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.switchBtn {
+  appearance: none;
+  border: 0;
+  background: none;
+  font: 600 14.5px/1.2 var(--sans);
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 10px 12px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.switchBtn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.switchBtn:focus-visible {
+  outline: 2.5px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.switchErr {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--warm);
+}
+.switchErr:empty {
+  display: none;
+}
+
+/* ---- streak (Full view) */
+.streakRow {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin: -6px 0 20px;
+  padding: 5px 6px 5px 6px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+  max-width: 100%;
+}
+.streakNote {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.streakRow > div {
+  display: contents;
+}
+@media (max-width: 720px) {
+  .streakRow {
+    border-radius: var(--r-card-mobile);
+    padding: 8px 10px;
   }
 }
