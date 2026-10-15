@@ -638,6 +638,36 @@ export type Database = {
         }
         Relationships: []
       }
+      day_checkins: {
+        Row: {
+          createdAt: number
+          day: string
+          deletedAt: number | null
+          id: string
+          kind: string
+          updatedAt: number
+          user_id: string
+        }
+        Insert: {
+          createdAt?: number
+          day: string
+          deletedAt?: number | null
+          id?: string
+          kind: string
+          updatedAt?: number
+          user_id?: string
+        }
+        Update: {
+          createdAt?: number
+          day?: string
+          deletedAt?: number | null
+          id?: string
+          kind?: string
+          updatedAt?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       debts: {
         Row: {
           contactId: string
@@ -1524,6 +1554,7 @@ export type Database = {
           deletedAt: number | null
           firstName: string | null
           homeCurrency: string
+          keepBucketId: string | null
           nextPaydayDate: string | null
           onboardedAt: number | null
           onboardingDraft: Json
@@ -1533,8 +1564,10 @@ export type Database = {
           planMode: string
           priority: string | null
           reviewDay: number
+          spendUntil: string | null
           updatedAt: number
           user_id: string
+          viewMode: string
           weekStartsOn: number
         }
         Insert: {
@@ -1542,6 +1575,7 @@ export type Database = {
           deletedAt?: number | null
           firstName?: string | null
           homeCurrency?: string
+          keepBucketId?: string | null
           nextPaydayDate?: string | null
           onboardedAt?: number | null
           onboardingDraft?: Json
@@ -1551,8 +1585,10 @@ export type Database = {
           planMode?: string
           priority?: string | null
           reviewDay?: number
+          spendUntil?: string | null
           updatedAt?: number
           user_id?: string
+          viewMode?: string
           weekStartsOn?: number
         }
         Update: {
@@ -1560,6 +1596,7 @@ export type Database = {
           deletedAt?: number | null
           firstName?: string | null
           homeCurrency?: string
+          keepBucketId?: string | null
           nextPaydayDate?: string | null
           onboardedAt?: number | null
           onboardingDraft?: Json
@@ -1569,11 +1606,21 @@ export type Database = {
           planMode?: string
           priority?: string | null
           reviewDay?: number
+          spendUntil?: string | null
           updatedAt?: number
           user_id?: string
+          viewMode?: string
           weekStartsOn?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_profiles_keepBucketId_fkey"
+            columns: ["keepBucketId"]
+            isOneToOne: false
+            referencedRelation: "buckets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       week_reviews: {
         Row: {
@@ -1971,6 +2018,10 @@ export type Database = {
       remove_category: { Args: { p_category: string }; Returns: undefined }
       remove_income_source: { Args: { p_source: string }; Returns: undefined }
       rename_plan: { Args: { p_name: string; p_plan_key: string }; Returns: undefined }
+      receive_money: {
+        Args: { p_amount: number; p_lines: Json; p_name: string | null; p_on: string; p_received_in: string; p_source_id: string | null }
+        Returns: string
+      }
       rename_income_source: {
         Args: { p_name: string; p_source: string }
         Returns: undefined
@@ -2006,8 +2057,24 @@ export type Database = {
         Args: { p_rule: string; p_source: string; p_whole_bucket?: string }
         Returns: undefined
       }
+      set_keep_bucket: {
+        Args: { p_bucket: string }
+        Returns: undefined
+      }
+      set_no_spend: {
+        Args: { p_day: string; p_on: boolean }
+        Returns: undefined
+      }
       set_plan_switch_target: {
         Args: { p_target_minor: number }
+        Returns: undefined
+      }
+      set_spend_until: {
+        Args: { p_day: string | null }
+        Returns: undefined
+      }
+      set_view_mode: {
+        Args: { p_mode: string }
         Returns: undefined
       }
       split_by_plan: {

@@ -1,0 +1,552 @@
+/*
+ * Simple Today (ticket 28). One column, one big number, generous space. Same tokens as the full Today;
+ * 44px targets, 390px first, light and dark come from the tokens.
+ */
+.wrap {
+  display: grid;
+  gap: 22px;
+  max-width: 600px;
+  margin-inline: auto;
+  width: 100%;
+}
+.wrap > * {
+  min-width: 0;
+}
+
+/* ---- Hero */
+.hero {
+  text-align: center;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 34px 22px 26px;
+  background: linear-gradient(165deg, var(--accent-soft) 0%, var(--surface) 72%);
+  transition: background-color var(--dur-state) ease;
+}
+.heroNeg {
+  background: linear-gradient(165deg, var(--warm-soft) 0%, var(--surface) 72%);
+}
+.eyebrow {
+  font: 600 14.5px/1.2 var(--sans);
+  color: var(--ink-2);
+}
+.big {
+  font: 700 clamp(56px, 19vw, 84px) / 1.02 var(--sans);
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  margin-block: 6px 2px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.big .cur {
+  font-size: 0.4em;
+  font-weight: 600;
+  color: var(--ink-2);
+  margin-right: 4px;
+  vertical-align: 0.5em;
+  letter-spacing: 0;
+}
+.big .cents {
+  font-size: 0.36em;
+  font-weight: 600;
+  color: var(--ink-2);
+  letter-spacing: 0;
+  margin-left: 2px;
+}
+.big.neg .cents {
+  color: inherit;
+}
+.neg,
+.big.neg .cur {
+  color: var(--warm);
+}
+.heroNote {
+  font-size: 14.5px;
+  color: var(--warm);
+  font-weight: 600;
+}
+.sub {
+  color: var(--ink-2);
+  font-size: 15px;
+  margin-top: 10px;
+}
+.sub b {
+  color: var(--ink);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.untilBtn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font: 600 14.5px/1.25 var(--sans);
+  color: var(--accent-strong);
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: var(--r-control);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 4px;
+  transition:
+    background-color var(--dur-state) ease,
+    transform var(--dur-press) var(--ease-out);
+}
+.untilBtn:active {
+  transform: scale(0.97);
+}
+.untilBtn:focus-visible,
+.day:focus-visible,
+.chipBtn:focus-visible,
+.linkBtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .untilBtn:hover {
+    background: var(--accent-soft);
+  }
+}
+
+/* ---- Week strip */
+.stripCard {
+  padding: 18px 14px 14px;
+}
+.stripHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding-inline: 6px;
+  margin-bottom: 10px;
+}
+.stripHead h2 {
+  font: 650 14.5px/1.2 var(--sans);
+}
+.stripHead span {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.strip {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+.day {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  width: 100%;
+  min-height: 44px;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  padding: 6px 0 8px;
+  border-radius: var(--r-control);
+  cursor: pointer;
+  color: var(--ink-2);
+  font: 600 11.5px/1 var(--sans);
+  transition: background-color var(--dur-state) ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .day:hover {
+    background: var(--surface-2);
+  }
+}
+.dayTrack {
+  width: 70%;
+  max-width: 30px;
+  height: 64px;
+  border-radius: var(--r-box);
+  background: var(--surface-2);
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+.dayFill {
+  width: 100%;
+  min-height: 3px;
+  border-radius: 4px;
+  background: var(--surface-3);
+  transition: height var(--dur-chip) var(--ease-out);
+}
+.past .dayFill {
+  background: var(--ink-3);
+  opacity: 0.45;
+}
+.today .dayTrack {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.today .dayFill {
+  background: var(--accent);
+}
+.today {
+  color: var(--ink);
+}
+.future .dayFill {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+  opacity: 0.8;
+}
+.dayAmt {
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.today .dayAmt {
+  color: var(--ink);
+}
+.dayAmt.neg {
+  color: var(--warm);
+}
+
+/* ---- Actions */
+.actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+.actions > * {
+  min-width: 0;
+}
+.actions button {
+  width: 100%;
+  min-height: 52px;
+  font-size: 15.5px;
+}
+.actions button.softBtn {
+  background: var(--surface-2);
+  color: var(--ink);
+  box-shadow: none;
+}
+.logCell {
+  display: grid;
+  gap: 8px;
+}
+.habit {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  text-align: center;
+}
+.habitNote {
+  font-size: 14px;
+  color: var(--ink-2);
+  max-width: 34ch;
+}
+.linkBtn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--accent-strong);
+  font: 600 14.5px/1.25 var(--sans);
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: var(--r-control);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+@media (hover: hover) and (pointer: fine) {
+  .linkBtn:hover {
+    background: var(--accent-soft);
+  }
+}
+.linkBtn:active {
+  transform: scale(0.97);
+}
+.noSpendOn {
+  color: var(--good);
+}
+.ack {
+  font-size: 14px;
+  color: var(--good);
+  font-weight: 600;
+  min-height: 1.4em;
+}
+
+/* ---- Streak chip */
+.streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+}
+.streak svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* ---- Cards: pending moves, accounts */
+.cardHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.cardHead h2 {
+  font: 650 16px/1.2 var(--sans);
+}
+.muted {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+.list {
+  list-style: none;
+  display: grid;
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  min-height: 56px;
+  border-top: 1px solid var(--line);
+}
+.row:first-child {
+  border-top: 0;
+}
+.rowMain {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.rowMain b {
+  font-weight: 650;
+  font-size: 15.5px;
+  overflow-wrap: anywhere;
+}
+.pending {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  min-height: 24px;
+  text-align: left;
+  color: var(--accent-strong);
+  font: 600 13.5px/1.3 var(--sans);
+  text-decoration: none;
+  cursor: pointer;
+}
+.pending:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.amt {
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  font-size: 16px;
+  white-space: nowrap;
+}
+.kept {
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14.5px;
+  color: var(--ink-2);
+}
+.kept b {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.moveCard {
+  background: var(--good-soft);
+  box-shadow: none;
+}
+.moveRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 6px 0;
+}
+.moveRow b {
+  font-weight: 650;
+}
+.moveSent {
+  color: var(--good);
+  font-weight: 650;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  min-height: 44px;
+}
+.err {
+  color: var(--warm);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.err:empty {
+  display: none;
+}
+.foot {
+  display: grid;
+  justify-items: center;
+  padding-bottom: 12px;
+}
+
+/* ---- Sheets (until, day, receive) */
+.form {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+}
+.amount input {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  padding-block: 12px;
+}
+.amount span[aria-hidden="true"] {
+  font-size: 26px;
+  font-weight: 600;
+}
+.group {
+  display: grid;
+  gap: 8px;
+}
+.groupLabel {
+  font: 650 13.5px/1.2 var(--sans);
+  color: var(--ink);
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chipBtn {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: 600 14px/1 var(--sans);
+  transition:
+    background-color var(--dur-state) ease,
+    transform var(--dur-press) var(--ease-out);
+}
+.chipBtn:active {
+  transform: scale(0.97);
+}
+.chipBtn[aria-pressed="true"] {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.where {
+  display: grid;
+  gap: 12px;
+  background: var(--surface-2);
+  border-radius: var(--r-panel);
+  padding: 14px;
+}
+.recvRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+.recvAmt {
+  text-align: right;
+  display: grid;
+  gap: 2px;
+  padding-bottom: 6px;
+}
+.recvAmt b {
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.recvAmt small {
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.live {
+  background: var(--good-soft);
+  border-radius: var(--r-panel);
+  padding: 14px 16px;
+  font-size: 15px;
+  line-height: 1.45;
+  min-height: 52px;
+}
+.live b {
+  font-variant-numeric: tabular-nums;
+}
+.live.idle {
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+.reason {
+  font-size: 13.5px;
+  color: var(--ink-2);
+  min-height: 1.3em;
+}
+.reason.bad {
+  color: var(--warm);
+  font-weight: 600;
+}
+.save {
+  display: grid;
+  gap: 8px;
+}
+.save button {
+  min-height: 52px;
+  width: 100%;
+  font-size: 16px;
+}
+.optional {
+  font-style: normal;
+  font-weight: 400;
+  color: var(--ink-3);
+}
+.dayStat {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+.dayStat:first-of-type {
+  border-top: 0;
+}
+.dayStat b {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 420px) {
+  .hero {
+    padding-inline: 14px;
+  }
+  .recvRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .recvAmt {
+    text-align: left;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dayFill,
+  .untilBtn,
+  .chipBtn,
+  .linkBtn,
+  .hero {
+    transition: none;
+  }
+}

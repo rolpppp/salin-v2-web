@@ -15,6 +15,9 @@ import { parseGrow } from "@/lib/motion/grow";
 import { getRequestProfile } from "@/lib/data/request-profile";
 import { getTodayInput } from "@/lib/data/today";
 import { buildTodayView, daysUntilPayday, daysUntilText, type TodayView as TodayViewModel } from "@/lib/data/today-model";
+import { SimpleToday } from "@/components/simple-today/SimpleToday";
+import { getViewMode, loadSimpleToday, simpleActions, type SimpleTodayModel } from "@/components/simple-today/seam";
+import { isoDateIn } from "@/lib/data/money-in-model";
 import { createClient } from "@/lib/supabase/server";
 import { TZ_COOKIE, nowMs, validTimeZone } from "@/lib/time";
 
@@ -28,6 +31,38 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   const supabase = await createClient();
   const tzCookie = (await cookies()).get(TZ_COOKIE)?.value ?? null;
   const timeZone = validTimeZone(tzCookie ? decodeURIComponent(tzCookie) : null);
+
+  // Simple view (ticket 28): a second Today on the same data. Anyone not on "simple" gets the full Today below.
+  if ((await getViewMode(user.id)) === "simple") {
+    let model: SimpleTodayModel | null = null;
+    if (supabase) {
+      try {
+        const now = nowMs();
+        model = await loadSimpleToday({ userId: user.id, nowMs: now, timeZone, todayIso: isoDateIn(now, timeZone) });
+      } catch (err) {
+        console.error("[today] simple view could not load", err);
+      }
+    }
+    return (
+      <>
+        <TimezoneSync serverZone={tzCookie ? timeZone : null} />
+        <PasswordUpdatedNotice />
+        {model ? (
+          <SimpleToday
+            model={model}
+            actions={simpleActions}
+            logSlot={
+              <Suspense fallback={<Skeleton width={170} height={52} radius={12} />}>
+                <LogSpendingSlot variant="primary" />
+              </Suspense>
+            }
+          />
+        ) : (
+          <EmptyState title="Couldn't load your numbers">Check your connection and reload the page. Nothing was changed.</EmptyState>
+        )}
+      </>
+    );
+  }
 
   let view: TodayViewModel | null = null;
   let firstName: string | null = displayFirstName(null, user);

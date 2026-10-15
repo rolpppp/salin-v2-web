@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
+import type { ComponentProps } from "react";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { cn } from "@/lib/cn";
 import { AvatarMenu } from "./AvatarMenu";
@@ -21,7 +22,7 @@ export type TabBadge = { tone: "needs" | "due"; label: string; count?: number };
  * Sticky top bar. `badges` maps a tab href to a status dot (Money in: coral dot + count while income
  * waits, Review: a dot on the review day while the week is open). The layout loads them (SPEC §0).
  */
-export function AppHeader({ badges = {}, email }: { badges?: Partial<Record<string, TabBadge>>; email?: string | null }) {
+export function AppHeader({ badges = {}, email, view }: { badges?: Partial<Record<string, TabBadge>>; email?: string | null; view?: ComponentProps<typeof AvatarMenu>["view"] }) {
   const pathname = usePathname();
   // Empty on the server and during hydration, today's date afterwards (avoids a mismatch).
   const today = useSyncExternalStore(subscribeNever, todayLabel, serverLabel);
@@ -56,7 +57,7 @@ export function AppHeader({ badges = {}, email }: { badges?: Partial<Record<stri
             {today}
           </span>
           <ThemeToggle />
-          <AvatarMenu email={email} />
+          <AvatarMenu email={email} view={view} />
         </div>
       </div>
     </header>

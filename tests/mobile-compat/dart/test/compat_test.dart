@@ -193,11 +193,24 @@ class _FixtureProvider implements CloudSyncProvider {
   Future<String?> getCurrentUserEmail() async => 'web-compat@example.com';
 
   @override
-  Future<SyncPushResult> push({required Map<String, List<Json>> changes, Map<String, List<Json>>? relations}) async =>
+  Future<SyncPushResult> push({
+    required Map<String, List<Json>> changes,
+    Map<String, List<Json>>? relations,
+    bool ignoreDuplicates = false,
+  }) async =>
       SyncPushResult(success: true);
 
   @override
-  Future<SyncPullResult> pull(int sinceTimestamp) async => SyncPullResult(
+  Future<SyncPushResult> fillBackReferences(List<BackRefFix> fixes) async => SyncPushResult(success: true);
+
+  @override
+  Future<String?> getCurrentUserId() async => 'web-compat-user';
+
+  @override
+  bool get supportsRepair => false;
+
+  @override
+  Future<SyncPullResult> pull(int sinceTimestamp, {Map<String, int> sinceByTable = const {}}) async => SyncPullResult(
         success: true,
         serverTime: DateTime.now().toUtc().millisecondsSinceEpoch,
         changes: changes,

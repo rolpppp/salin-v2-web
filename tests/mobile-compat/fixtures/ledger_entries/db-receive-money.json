@@ -1,0 +1,20 @@
+{
+    "id": "d63d8851-b3f4-4ac6-a60b-8a1d8e6fea96",
+    "note": "Allowance, October",
+    "debtId": null,
+    "origin": 0,
+    "splitId": null,
+    "user_id": "aaaaaaaa-0000-0000-0000-000000000001",
+    "accountId": "acc-bank",
+    "createdAt": 1792059697986,
+    "deletedAt": null,
+    "direction": 0,
+    "updatedAt": 1792059697991,
+    "categoryId": "ce20bd6c-ecdd-4d45-afcd-7bbcf2218559",
+    "occurredAt": 1792059697986,
+    "syncStatus": 2,
+    "transferId": null,
+    "amountMinor": 150000,
+    "metadataJson": null,
+    "recurringInstanceId": null
+}

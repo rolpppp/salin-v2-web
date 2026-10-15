@@ -71,3 +71,14 @@ export function ArrowRightIcon(props: IconProps) {
     </Base>
   );
 }
+
+/** A small sprout: the daily-habit streak chip (no flames, no trophies). */
+export function SproutIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M12 21v-9" />
+      <path d="M12 12c0-4 2.6-6.5 7-6.5 0 4-2.6 6.5-7 6.5Z" />
+      <path d="M12 15c0-3-2-5-5.5-5 0 3 2 5 5.5 5Z" />
+    </Base>
+  );
+}

@@ -8,3 +8,4 @@ export * from "./buckets";
 export * from "./goals";
 export * from "./week";
 export * from "./suggest";
+export * from "./pace";

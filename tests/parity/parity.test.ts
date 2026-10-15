@@ -553,3 +553,85 @@ describe("parity: suggest_plan", () => {
     expect(sure).toBeGreaterThanOrEqual(30);
   });
 });
+
+// ------------------------------------------------------------------------------------ receive_money (Simple Money)
+
+describe("parity: receive_money lines vs the transfer checklist", () => {
+  it("60 random manual receipts (split over accounts, merged duplicate lines, a second receipt in the open cycle)", async () => {
+    let moves = 0;
+    let twoReceipts = 0;
+    for (let i = 0; i < 60; i++) {
+      const r = caseRng(9, i);
+      const nAcct = int(r, 2, 4);
+      const nBucket = 3;
+      type Receipt = { recv: number; lines: { b: number; d: number; amt: number }[] };
+      const makeReceipt = (): Receipt => {
+        const recv = int(r, 0, nAcct - 1);
+        const lines = Array.from({ length: int(r, 1, 5) }, () => ({ b: int(r, 0, nBucket - 1), d: chance(r, 0.35) ? recv : int(r, 0, nAcct - 1), amt: int(r, 1, 500_000) }));
+        return { recv, lines };
+      };
+      // SQL merges equal (bucket, account) lines and inserts in (bucket, account) order.
+      const merged = (rc: Receipt) => {
+        const m = new Map<string, { b: number; d: number; amt: number }>();
+        for (const l of rc.lines) {
+          const k = `${l.b}>${l.d}`;
+          const cur = m.get(k);
+          if (cur) cur.amt += l.amt;
+          else m.set(k, { ...l });
+        }
+        return [...m.values()].sort((a, b) => a.b - b.b || a.d - b.d);
+      };
+      const hasMove = (rc: Receipt) => rc.lines.some((l) => l.d !== rc.recv);
+      const first = makeReceipt();
+      // the checklist is the latest cycle: a second receipt joins the first's only when the first left a move open
+      const second = hasMove(first) && chance(r, 0.6) ? makeReceipt() : null;
+      const receipts = second ? [first, second] : [first];
+      const toAlloc = (rc: Receipt): TransferAllocation[] => merged(rc).map((l) => ({ fromAccountId: acctId(rc.recv), destAccountId: acctId(l.d), amount: l.amt, label: bucketId(l.b) }));
+      const expected = normalizeTs(transferPlan(receipts.flatMap(toAlloc), []));
+      if (second) twoReceipts++;
+
+      const actual = await rolledBack(db, async () => {
+        await seedUser(db, nAcct);
+        await insertBuckets(db, range(nBucket).map((k) => ({ i: k, keptIn: null })));
+        await asUser(db);
+        for (const rc of receipts) {
+          const total = rc.lines.reduce((t, l) => t + l.amt, 0);
+          await db.query("select public.receive_money($1::bigint, $2, null, null, public.entry_local_date(public.now_ms()), $3::jsonb)", [
+            total,
+            acctId(rc.recv),
+            JSON.stringify(rc.lines.map((l) => ({ bucketId: bucketId(l.b), destAccountId: acctId(l.d), amountMinor: l.amt }))),
+          ]);
+        }
+        const res = await db.query<{
+          kind: "keep" | "transfer";
+          from_account_id: string;
+          to_account_id: string;
+          amount: string;
+          netted: string;
+          sent: string;
+          done: boolean;
+          status: string;
+          send_more: string;
+          bucket_ids: string[];
+        }>("select kind, from_account_id, to_account_id, amount, netted, sent, done, status, send_more, bucket_ids::text[] as bucket_ids from transfer_plan()");
+        await asAdmin(db);
+        return res.rows.map<NormRow>((x) => ({
+          kind: x.kind,
+          from: x.from_account_id,
+          to: x.to_account_id,
+          amount: Number(x.amount),
+          netted: Number(x.netted),
+          sent: Number(x.sent),
+          done: x.done,
+          status: x.status,
+          sendMore: Number(x.send_more),
+          labels: x.bucket_ids,
+        }));
+      });
+      expect(actual, ctx("receive_money", i)).toEqual(expected);
+      if (expected.some((x) => x.kind === "transfer")) moves++;
+    }
+    expect(moves).toBeGreaterThanOrEqual(20);
+    expect(twoReceipts).toBeGreaterThanOrEqual(5);
+  });
+});

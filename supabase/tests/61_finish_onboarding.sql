@@ -95,7 +95,8 @@ select is((select jsonb_build_object('name', name, 'target', "targetMinor", 'sw'
   '{"name":"Emergency fund","target":7500000,"sw":true,"linked":true,"n":1}'::jsonb, 'one goal: Emergency fund, target = safety net, the plan switch');
 select is((select to_jsonb(u) - 'user_id' - 'createdAt' - 'updatedAt' - 'onboardedAt' - 'deletedAt' from public.user_profiles u),
   jsonb_build_object('firstName', 'Rolf', 'homeCurrency', 'PHP', 'weekStartsOn', 1, 'reviewDay', 0, 'nextPaydayDate', '2026-10-21', 'payFrequency', 'twice',
-                     'planMode', 'plan', 'priority', 'safety', 'onboardingPath', 'web', 'onboardingDraft', '{}'::jsonb, 'paydayReminder', 'email'),
+                     'planMode', 'plan', 'priority', 'safety', 'onboardingPath', 'web', 'onboardingDraft', '{}'::jsonb, 'paydayReminder', 'email',
+                     'viewMode', 'full', 'spendUntil', null, 'keepBucketId', null),
   'profile: answers saved, draft cleared');
 select ok((select "onboardedAt" is not null from public.user_profiles), 'onboardedAt is set');
 select is((select jsonb_build_object('name', name, 'kind', kind, 'rule', rule, 'lands', "landsInAccountId", 'cat', "categoryId" is not null) from public.income_sources),

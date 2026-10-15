@@ -31,6 +31,10 @@ export type EventMap = {
   sync_prompt_shown: { seconds_waited: number };
   sync_connected: { seconds_waited: number };
   spending_logged: { via: Via; bucket_group: string };
+  money_received: { amount_band: string; accounts_count: number };
+  no_spend_marked: { marked: boolean };
+  streak_milestone: { days: 3 | 7 | 14 | 30 };
+  view_mode_changed: { mode: "simple" | "full" };
 };
 
 export type EventName = keyof EventMap;
