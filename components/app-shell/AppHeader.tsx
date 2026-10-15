@@ -35,7 +35,7 @@ export function AppHeader({ badges = {}, email }: { badges?: Partial<Record<stri
             const active = isActive(pathname, item);
             const badge = badges[item.href];
             return (
-              <Link key={item.href} href={item.href} className={styles.tab} aria-current={active ? "page" : undefined}>
+              <Link key={item.href} href={item.href} prefetch className={styles.tab} aria-current={active ? "page" : undefined}>
                 {item.label}
                 {badge ? (
                   <span className={styles.badge} data-testid={`badge-${item.href.slice(1)}`}>
