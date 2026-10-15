@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -45,9 +46,9 @@ export async function saveDraft(input: unknown): Promise<ActionResult> {
  * something else), validates it, and hands it to the one SQL transaction. "Make a plan" re-entry (`planOnly`) calls
  * `apply_plan_only` instead. Returns the summary jsonb from `finish_onboarding` (null for plan-only).
  */
-// No revalidatePath here on purpose: an action that revalidates also refreshes the page it was called from, the welcome
-// layout then sees `onboardedAt` and redirects to Today, and the Done card vanishes. Today and Money in are dynamic
-// (no cached render), so they read fresh data when opened.
+// No revalidatePath for a first finish on purpose: an action that revalidates also refreshes the page it was called
+// from, the welcome layout then sees `onboardedAt` and redirects to Today, and the Done card vanishes. A first-time
+// user has never rendered Today, so the client router cache holds nothing stale. Make a plan (planOnly) does revalidate.
 export async function finishOnboarding(): Promise<ActionResult<{ summary: Json | null }>> {
   const user = await requireUser(PATH);
   const client = await createClient();
@@ -62,6 +63,10 @@ export async function finishOnboarding(): Promise<ActionResult<{ summary: Json |
     if (parsed.data.planOnly) {
       const r = await client.rpc("apply_plan_only", { p_draft: draft });
       if (r.error) return { ok: false, error: sqlFailure(r.error) };
+      // Make a plan started from Today, and the client router cache (staleTimes) may still hold that render: drop it,
+      // or Today keeps offering "Make a plan" for up to a minute. This flow leaves for Today anyway, so refreshing
+      // the welcome page here costs nothing.
+      revalidatePath("/today");
       return { ok: true, value: { summary: null } };
     }
     const r = await client.rpc("finish_onboarding", { p_draft: draft });

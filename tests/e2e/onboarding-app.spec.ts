@@ -44,14 +44,31 @@ const noHorizontalScroll = (page: Page) => page.evaluate(() => document.document
  * Priorities, Your plan and Where it lives belong to other tickets. Until they merge they're "Coming next"
  * placeholders; after, they need an answer. Either way: answer what's there and continue to Categories / First pay.
  */
+const stepOf = (page: Page) => new URL(page.url()).pathname.replace(/^\/welcome\/?/, "");
+
+/**
+ * Follows the URL, not the heading: right after a click the old heading can still be on screen for a moment, and
+ * reading it then used to send a second click that skipped a step. Stops at Categories or First pay.
+ */
 async function throughSharedSteps(page: Page) {
   for (let i = 0; i < 8; i++) {
-    const text = (await heading(page).textContent()) ?? "";
-    if (/waiting for a job|sorted your|spending categories/i.test(text)) return;
-    const safety = page.getByLabel("Build a safety net");
-    if (await safety.count()) await safety.check();
+    const step = stepOf(page);
+    if (step === "cats" || step === "first") return;
+    await expect(heading(page)).toBeVisible();
+    // Only on Priorities: while a step slides out, its controls are briefly still in the page.
+    if (step === "prio") await page.getByLabel("Build a safety net").check();
     await primary(page).click();
-    await expect(heading(page)).not.toHaveText(text);
+    await expect(page).not.toHaveURL(new RegExp(`/welcome/${step}$`));
+  }
+}
+
+/** Categories (when the phone has some) goes on to First pay. */
+async function toFirstPay(page: Page) {
+  await throughSharedSteps(page);
+  if (stepOf(page) === "cats") {
+    await expect(page.getByText("Step 6 of 7 · Categories")).toBeVisible();
+    await primary(page).click();
+    await expect(page).toHaveURL(/\/welcome\/first$/);
   }
 }
 
@@ -93,24 +110,24 @@ test("app path: Found your Salin data, Income, shared steps, Categories, then Fi
   await expect(next).toBeFocused();
   await next.fill(isoDateIn(Date.now() + 20 * DAY, TEST_TIME_ZONE));
 
-  // Back / Forward and a reload resume from the saved draft.
+  // Back / Forward and a reload resume from the saved draft. Each move waits for its save to land: a save still in
+  // flight when the page reloads can reach the server after the reloaded page's own save.
+  const storedDraft = async () => (await adminClient().from("user_profiles").select("onboardingDraft").eq("user_id", user.id).single()).data?.onboardingDraft as { step?: string } | null;
   await primary(page).click();
   await expect(page).toHaveURL(/\/welcome\/prio$/);
+  await expect.poll(async () => (await storedDraft())?.step).toBe("prio");
   await page.goBack();
   await expect(page).toHaveURL(/\/welcome\/income$/);
+  await expect.poll(async () => (await storedDraft())?.step).toBe("income");
   await page.goForward();
+  await expect(page).toHaveURL(/\/welcome\/prio$/);
+  await expect.poll(async () => (await storedDraft())?.step).toBe("prio");
   await page.reload();
   await expect(page).toHaveURL(/\/welcome\/prio$/);
-  // Autosave is debounced: the reloaded page records `step: "prio"` shortly after it renders.
-  const storedDraft = async () => (await adminClient().from("user_profiles").select("onboardingDraft").eq("user_id", user.id).single()).data?.onboardingDraft as { step?: string } | null;
-  await expect.poll(async () => (await storedDraft())?.step).toBe("prio");
+  await expect(heading(page)).toBeVisible();
   expect(await storedDraft()).toMatchObject({ path: "app", step: "prio", landingAccountId: phone.bdoId, firstPay: { entryId: phone.latestId, amountMinor: 2_500_000 } });
 
-  await throughSharedSteps(page);
-  if (/sorted your|spending categories/i.test((await heading(page).textContent()) ?? "")) {
-    await expect(page.getByText("Step 6 of 7 · Categories")).toBeVisible();
-    await primary(page).click();
-  }
+  await toFirstPay(page);
 
   await expect(heading(page)).toHaveText(`Your ${shortDate(phone.latestIso)} pay is waiting for a job`);
   await expect(page.getByText("Step 7 of 7 · First pay")).toBeVisible();
@@ -129,11 +146,7 @@ test("First pay: Give it a job opens the split (nothing finished); Do it later a
   const phone = await seedPhone(user);
   await signIn(page, user, "/welcome/app");
   await primary(page).click();
-  await throughSharedSteps(page);
-  if (/sorted your|spending categories/i.test((await heading(page).textContent()) ?? "")) {
-    await expect(page.getByText("Step 6 of 7 · Categories")).toBeVisible();
-    await primary(page).click();
-  }
+  await toFirstPay(page);
   await expect(heading(page)).toHaveText(`Your ${shortDate(phone.latestIso)} pay is waiting for a job`);
 
   await page.getByRole("button", { name: "Give it a job" }).click();
