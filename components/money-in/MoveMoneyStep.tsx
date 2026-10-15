@@ -44,6 +44,8 @@ export function MoveMoneyStep({ phase, confirmed, cycle, transferPlan, accounts,
   // Rows with a request in flight (different pairs are independent), and what the person last asked for per row.
   const inFlight = useRef(new Set<string>());
   const intent = useRef(new Map<string, boolean>());
+  // A click on a row whose request is still in flight: shown at once, sent when that request settles.
+  const queued = useRef(new Map<string, { row: TransferRowView; tick: boolean }>());
   const [plan, setOptimistic] = useOptimistic(transferPlan, (rows: ReadonlyArray<MiTransferRow>, a: { key: string; sent: number }) => applyTick(rows, a.key, a.sent));
   const model = useMemo(() => buildMoveModel(plan, accounts, buckets), [plan, accounts, buckets]);
 
@@ -63,7 +65,13 @@ export function MoveMoneyStep({ phase, confirmed, cycle, transferPlan, accounts,
   }, [transferPlan]);
 
   function run(row: TransferRowView, tick: boolean) {
-    if (inFlight.current.has(row.key)) return;
+    if (inFlight.current.has(row.key)) {
+      // Ticked by mistake and unticked straight away (or the reverse): don't drop the second click.
+      queued.current.set(row.key, { row, tick });
+      intent.current.set(row.key, tick);
+      startTransition(() => setOptimistic({ key: row.key, sent: tick ? row.amount : 0 }));
+      return;
+    }
     inFlight.current.add(row.key);
     intent.current.set(row.key, tick);
     setError(null);
@@ -87,6 +95,9 @@ export function MoveMoneyStep({ phase, confirmed, cycle, transferPlan, accounts,
         announce(msg);
       } finally {
         inFlight.current.delete(row.key);
+        const next = queued.current.get(row.key);
+        queued.current.delete(row.key);
+        if (next && next.tick !== tick) run(next.row, next.tick);
       }
     });
   }

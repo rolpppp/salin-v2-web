@@ -129,6 +129,8 @@ test("make it last until: choosing a later date lowers the daily amount to the n
   // Give the spending money something to spread.
   await receive(page, { amount: "3000" }).then((f) => f.getByRole("button", { name: "Save" }).click());
   await expect(page.getByTestId("receive-form")).toBeHidden();
+  // The hero refreshes just after the sheet closes; read it once the ₱3,000 is in.
+  await expect.poll(() => num(page, "hero", "data-spendable-left-minor")).toBeGreaterThanOrEqual(300_000);
   const spendable = await num(page, "hero", "data-spendable-left-minor");
   const before = await num(page, "pace", "data-pace-minor");
 

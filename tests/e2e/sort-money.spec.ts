@@ -19,7 +19,7 @@ async function seed(user: TestUser) {
   const must = (label: string, error: { message: string } | null) => {
     if (error) throw new Error(`seed ${label}: ${error.message}`);
   };
-  must("profile", (await db.from("user_profiles").upsert({ user_id: user.id, firstName: "Sol", homeCurrency: "PHP", weekStartsOn: 1, planMode: "plan", onboardedAt: now })).error);
+  must("profile", (await db.from("user_profiles").upsert({ user_id: user.id, firstName: "Sol", homeCurrency: "PHP", weekStartsOn: 1, planMode: "plan" })).error);
   const acct = (key: string, name: string, type: number, order: number) => ({ ...mobile, id: k(key), name, accountType: type, openingBalanceMinor: 0, currency: "PHP", icon: "wallet", color: null, displayOrder: order, isArchived: false });
   must("accounts", (await db.from("accounts").insert([acct("gc", "GCash", 3, 1), acct("maya", "Maya", 3, 2), acct("bank", "MariBank", 1, 3), acct("cash", "Cash", 0, 4)])).error);
   const { data: buckets, error } = await db

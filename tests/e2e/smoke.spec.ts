@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { createTestUser } from "./helpers/supabase";
 
 const ROUTES: Array<{ path: string; heading: string | RegExp }> = [
   { path: "/today", heading: /^(Hello|Good (morning|afternoon|evening))/ },
@@ -10,10 +11,10 @@ const ROUTES: Array<{ path: string; heading: string | RegExp }> = [
   { path: "/plans/accounts", heading: "Plans" },
   { path: "/plans/categories", heading: "Plans" },
   { path: "/plans/goals", heading: "Plans" },
-  // A user with no onboarding draft lands on the Welcome step wherever they enter (/welcome/accounts resumes by draft).
-  { path: "/welcome", heading: "Know what's fine to spend today." },
-  { path: "/welcome/accounts", heading: "Know what's fine to spend today." },
 ];
+
+// A user who hasn't started onboarding lands on the Welcome step wherever they enter (/welcome/accounts resumes by draft).
+const WELCOME_ROUTES = ["/welcome", "/welcome/accounts", "/today"];
 
 function trackConsole(page: Page) {
   const errors: string[] = [];
@@ -42,6 +43,39 @@ for (const route of ROUTES) {
   });
 }
 
+test.describe("not onboarded yet", () => {
+  test.use({ storageState: "tests/e2e/.auth/fresh.json" });
+  for (const path of WELCOME_ROUTES) {
+    test(`${path} shows the Welcome step`, async ({ page }) => {
+      const errors = trackConsole(page);
+      await page.goto(path);
+      await expect(page).toHaveURL(/\/welcome/);
+      await expect(page.getByRole("heading", { level: 1, name: "Know what's fine to spend today." })).toBeVisible();
+      await noHorizontalOverflow(page);
+      expect(errors).toEqual([]);
+    });
+  }
+
+  test("signing in before finishing onboarding opens Welcome, not Today (the sign-in redirect skips the proxy)", async ({ browser, baseURL }) => {
+    const user = await createTestUser("smoke-new", { onboarded: false });
+    const context = await browser.newContext({ baseURL, storageState: { cookies: [], origins: [] } });
+    const page = await context.newPage();
+    await page.goto("/sign-in");
+    await page.getByLabel("Email").fill(user.email);
+    await page.getByLabel("Password").fill(user.password);
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await expect(page).toHaveURL(/\/welcome/);
+    await expect(page.getByRole("heading", { level: 1, name: "Know what's fine to spend today." })).toBeVisible();
+    await context.close();
+  });
+
+  test("onboarding has no tabs", async ({ page }) => {
+    await page.goto("/welcome");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Salin" })).toHaveCount(0);
+  });
+});
+
 test("/sign-in renders for signed-out visitors", async ({ browser, baseURL }) => {
   const context = await browser.newContext({ baseURL, storageState: { cookies: [], origins: [] } });
   const page = await context.newPage();
@@ -66,14 +100,12 @@ test("unknown plans section and unknown route 404", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "Page not found" })).toBeVisible();
 });
 
-test("tabs are real links with an active state; onboarding has no tabs", async ({ page }) => {
+test("tabs are real links with an active state", async ({ page }) => {
   await page.goto("/review");
   const nav = page.getByRole("navigation", { name: "Salin" });
   await expect(nav.getByRole("link")).toHaveCount(4);
   await expect(nav.getByRole("link", { name: "Review" })).toHaveAttribute("aria-current", "page");
   await expect(nav.getByRole("link", { name: "Today" })).not.toHaveAttribute("aria-current", "page");
-  await page.goto("/welcome");
-  await expect(page.getByRole("navigation", { name: "Salin" })).toHaveCount(0);
 });
 
 test("keyboard: tab to a nav link and press Enter to navigate", async ({ page }) => {

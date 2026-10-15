@@ -21,8 +21,9 @@ test("signed-out visitors are sent to sign-in with a next param, for any app rou
   await expect(page).toHaveURL(/\/sign-in\?next=%2Freview$/);
   await page.goto("/plans/goals");
   await expect(page).toHaveURL(/\/sign-in\?next=%2Fplans%2Fgoals$/);
+  // "/" is the public landing page (ticket 30): no redirect and no app tabs.
   await page.goto("/");
-  await expect(page).toHaveURL(/\/sign-in$/);
+  await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole("navigation", { name: "Salin" })).toHaveCount(0);
 });
 
@@ -75,7 +76,7 @@ test("an unsafe next param is ignored", async ({ page }) => {
   await expect(page).toHaveURL(/\/today$/);
 });
 
-test("sign up creates an account that lands on Today", async ({ page }) => {
+test("sign up creates an account that starts onboarding at Welcome", async ({ page }) => {
   const email = `signup-${Date.now()}-${Math.floor(Math.random() * 1e6)}@e2e.salin.test`;
   await page.goto("/sign-up");
   await page.getByLabel("Email").fill(email);
@@ -84,6 +85,6 @@ test("sign up creates an account that lands on Today", async ({ page }) => {
   await expect(page.getByText("Use at least 8 characters for your password.")).toBeVisible();
   await page.getByLabel("Password").fill(TEST_PASSWORD);
   await page.getByRole("button", { name: "Create account" }).click();
-  await expect(page).toHaveURL(/\/today$/);
-  await expect(page.getByRole("status")).toContainText("Spending from your phone shows here");
+  await expect(page).toHaveURL(/\/welcome$/);
+  await expect(page.getByRole("heading", { level: 1, name: "Know what's fine to spend today." })).toBeVisible();
 });

@@ -56,7 +56,7 @@ async function throughSharedSteps(page: Page) {
 }
 
 test("app path: Found your Salin data, Income, shared steps, Categories, then First pay with the latest pay waiting", async ({ page }) => {
-  const user = await createTestUser("ob-app");
+  const user = await createTestUser("ob-app", { onboarded: false });
   const phone = await seedPhone(user);
   // A user with synced rows never sees the question (D-29): /welcome lands on Your app.
   await signIn(page, user, "/welcome");
@@ -125,7 +125,7 @@ test("app path: Found your Salin data, Income, shared steps, Categories, then Fi
 });
 
 test("First pay: Give it a job opens the split (nothing finished); Do it later asks for a reminder, then finishes and opens Today", async ({ page }) => {
-  const user = await createTestUser("ob-first");
+  const user = await createTestUser("ob-first", { onboarded: false });
   const phone = await seedPhone(user);
   await signIn(page, user, "/welcome/app");
   await primary(page).click();
@@ -154,7 +154,7 @@ test("First pay: Give it a job opens the split (nothing finished); Do it later a
 });
 
 test("no synced rows: the question, then Waiting for your phone with a way out to the web path", async ({ page }) => {
-  const user = await createTestUser("ob-none");
+  const user = await createTestUser("ob-none", { onboarded: false });
   await signIn(page, user, "/welcome");
   await expect(page.getByRole("heading", { level: 1, name: "Know what's fine to spend today." })).toBeVisible();
   expect(await noHorizontalScroll(page)).toBe(true);
@@ -174,7 +174,7 @@ test("no synced rows: the question, then Waiting for your phone with a way out t
 });
 
 test("Continue without the app starts the web path from scratch", async ({ page }) => {
-  const user = await createTestUser("ob-web");
+  const user = await createTestUser("ob-web", { onboarded: false });
   await signIn(page, user, "/welcome/app");
   await expect(page.getByText("Waiting for your phone…")).toBeVisible();
   await page.getByRole("button", { name: "Continue without the app" }).click();

@@ -24,10 +24,20 @@ export function adminClient(): SupabaseClient<Database> {
 
 export type TestUser = { id: string; email: string; password: string };
 
-export async function createTestUser(label: string): Promise<TestUser> {
+/**
+ * A confirmed user. The app is built with onboarding on (like production), so by default the user is marked as
+ * having finished it; onboarding specs pass `{ onboarded: false }` to start at Welcome.
+ */
+export async function createTestUser(label: string, opts: { onboarded?: boolean } = {}): Promise<TestUser> {
   const email = `${label}-${randomUUID().slice(0, 8)}@e2e.salin.test`;
-  const { data, error } = await adminClient().auth.admin.createUser({ email, password: TEST_PASSWORD, email_confirm: true });
+  const db = adminClient();
+  const { data, error } = await db.auth.admin.createUser({ email, password: TEST_PASSWORD, email_confirm: true });
   if (error || !data.user) throw new Error(`createUser failed: ${error?.message}`);
+  if (opts.onboarded !== false) {
+    // Finished onboarding a while back, so Today is past its "Getting started" week.
+    const marked = await db.from("user_profiles").upsert({ user_id: data.user.id, onboardedAt: Date.now() - 60 * 86_400_000 });
+    if (marked.error) throw new Error(`createUser: ${marked.error.message}`);
+  }
   return { id: data.user.id, email, password: TEST_PASSWORD };
 }
 

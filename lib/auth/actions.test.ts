@@ -12,7 +12,7 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("@/lib/analytics", () => ({ isFirstWebSignIn: async () => true, trackWith: vi.fn() }));
 
-import { forgotPasswordAction, resetPasswordAction } from "./actions";
+import { forgotPasswordAction, resetPasswordAction, signInAction } from "./actions";
 
 type AuthErr = { code?: string; status?: number; name?: string; message: string } | null;
 
@@ -109,5 +109,48 @@ describe("resetPasswordAction", () => {
   it("reports a missing recovery session as expired", async () => {
     client({ update: { name: "AuthSessionMissingError", status: 400, message: "Auth session missing!" } });
     expect(await resetPasswordAction({}, form({ password: "long-enough-1" }))).toEqual({ expired: true });
+  });
+});
+
+describe("signInAction: where it lands", () => {
+  function signInClient(profile: { onboardedAt: number | null } | null | "error") {
+    const maybeSingle = vi.fn(async () => (profile === "error" ? { data: null, error: { message: "down" } } : { data: profile, error: null }));
+    state.client = {
+      auth: {
+        signInWithPassword: vi.fn(async () => ({ data: {}, error: null })),
+        getClaims: vi.fn(async () => ({ data: { claims: { sub: "u1" } }, error: null })),
+      },
+      from: () => ({ select: () => ({ eq: () => ({ maybeSingle }) }) }),
+    };
+  }
+  const signIn = (next = "") => signInAction({}, form({ email: "a@b.co", password: "Passw0rd!x", next })).catch(() => undefined);
+
+  beforeEach(() => vi.stubEnv("NEXT_PUBLIC_ONBOARDING_ENABLED", "true"));
+
+  it("not onboarded yet (no profile, or no onboardedAt): Welcome, whatever next says", async () => {
+    signInClient(null);
+    await signIn("/money-in");
+    expect(state.redirect).toHaveBeenLastCalledWith("/welcome");
+    signInClient({ onboardedAt: null });
+    await signIn();
+    expect(state.redirect).toHaveBeenLastCalledWith("/welcome");
+  });
+
+  it("onboarded: next (or Today)", async () => {
+    signInClient({ onboardedAt: 1 });
+    await signIn("/money-in");
+    expect(state.redirect).toHaveBeenLastCalledWith("/money-in");
+    await signIn();
+    expect(state.redirect).toHaveBeenLastCalledWith("/today");
+  });
+
+  it("a failed profile read, or onboarding switched off, never blocks: next", async () => {
+    signInClient("error");
+    await signIn("/review");
+    expect(state.redirect).toHaveBeenLastCalledWith("/review");
+    vi.stubEnv("NEXT_PUBLIC_ONBOARDING_ENABLED", "false");
+    signInClient(null);
+    await signIn("/review");
+    expect(state.redirect).toHaveBeenLastCalledWith("/review");
   });
 });

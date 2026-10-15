@@ -83,7 +83,7 @@ async function throughIncomeAndAccounts(page: Page) {
 }
 
 test("web path: Income, Accounts, then the shared steps, and the draft carries stable account ids", async ({ page }) => {
-  const user = await createTestUser("obw-path");
+  const user = await createTestUser("obw-path", { onboarded: false });
   await signIn(page, user, "/welcome");
   await throughIncomeAndAccounts(page);
 
@@ -140,7 +140,7 @@ test("web path: Income, Accounts, then the shared steps, and the draft carries s
 });
 
 test("Just track for now: First pay follows Priorities, Back undoes the skip, Today offers Make a plan, Save my plan applies it", async ({ page }) => {
-  const user = await createTestUser("obw-track");
+  const user = await createTestUser("obw-track", { onboarded: false });
   await signIn(page, user, "/welcome");
   await throughIncomeAndAccounts(page);
 

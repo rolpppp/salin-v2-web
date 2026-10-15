@@ -67,7 +67,7 @@ const primary = (page: Page) => page.locator("#ob-primary");
 const noHorizontalScroll = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
 
 test("web path First pay: yes, split, move the money, Done", async ({ page }) => {
-  const user = await createTestUser("ob-fp-yes");
+  const user = await createTestUser("ob-fp-yes", { onboarded: false });
   await seedDraft(user);
   await signIn(page, user, "/welcome/first");
 
@@ -135,7 +135,7 @@ test("web path First pay: yes, split, move the money, Done", async ({ page }) =>
 });
 
 test("web path First pay: Back walks the stages; I'll send them later finishes with transfers open", async ({ page }) => {
-  const user = await createTestUser("ob-fp-later-moves");
+  const user = await createTestUser("ob-fp-later-moves", { onboarded: false });
   await seedDraft(user);
   await signIn(page, user, "/welcome/first");
 
@@ -158,7 +158,7 @@ test("web path First pay: Back walks the stages; I'll send them later finishes w
 });
 
 test("web path First pay: Not yet asks for a reminder, then Open Today", async ({ page }) => {
-  const user = await createTestUser("ob-fp-no");
+  const user = await createTestUser("ob-fp-no", { onboarded: false });
   await seedDraft(user);
   await signIn(page, user, "/welcome/first");
 

@@ -35,5 +35,7 @@ export default defineConfig({
     url: `http://localhost:${PORT}/sign-in`,
     reuseExistingServer: !process.env.CI,
     timeout: 240_000,
+    // Build like production: onboarding on. Specs that need a finished user seed `onboardedAt`.
+    env: { NEXT_PUBLIC_ONBOARDING_ENABLED: "true" },
   },
 });

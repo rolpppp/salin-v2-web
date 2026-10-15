@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { isFirstWebSignIn, trackWith } from "@/lib/analytics";
 import { createClient } from "@/lib/supabase/server";
 import { isFreshRecoverySession } from "./recovery";
+import { isOnboardingEnabled } from "./redirects";
 import { fieldErrors, forgotPasswordSchema, resetPasswordSchema, safeNext, signInSchema, signUpSchema, type FieldErrors } from "./schemas";
 
 export type AuthFormState = {
@@ -32,6 +33,24 @@ async function recordSignIn(): Promise<void> {
   await trackWith(supabase, "web_signed_in", { first_time: firstTime });
 }
 
+/**
+ * Where to go after signing in or up. A server action's redirect is rendered in the action's own response, so the
+ * proxy's "not onboarded -> /welcome" rule never sees it; apply it here. A failed read never blocks sign-in.
+ */
+async function afterSignIn(supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>, next: string): Promise<string> {
+  if (!isOnboardingEnabled() || next.startsWith("/welcome")) return next;
+  try {
+    const { data: claims } = await supabase.auth.getClaims();
+    const userId = claims?.claims?.sub;
+    if (!userId) return next;
+    const { data, error } = await supabase.from("user_profiles").select("onboardedAt").eq("user_id", userId).maybeSingle();
+    if (error) return next;
+    return data?.onboardedAt != null ? next : "/welcome";
+  } catch {
+    return next;
+  }
+}
+
 export async function signInAction(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
   const raw = { email: text(formData, "email"), password: text(formData, "password") };
   const parsed = signInSchema.safeParse(raw);
@@ -55,7 +74,7 @@ export async function signInAction(_prev: AuthFormState, formData: FormData): Pr
   }
 
   await recordSignIn();
-  redirect(safeNext(text(formData, "next")));
+  redirect(await afterSignIn(supabase, safeNext(text(formData, "next"))));
 }
 
 export async function signUpAction(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
@@ -90,7 +109,7 @@ export async function signUpAction(_prev: AuthFormState, formData: FormData): Pr
   }
 
   await recordSignIn();
-  redirect(safeNext(text(formData, "next")));
+  redirect(await afterSignIn(supabase, safeNext(text(formData, "next"))));
 }
 
 const RATE_LIMITED = "Too many tries. Wait a few minutes, then try again.";

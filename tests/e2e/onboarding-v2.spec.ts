@@ -19,7 +19,7 @@ async function signIn(page: Page, user: TestUser, next: string) {
 }
 
 test("Allowance: three steps, a live per-day number, finishes into Simple view with the money recorded", async ({ page }) => {
-  const user = await createTestUser("obv2-allowance");
+  const user = await createTestUser("obv2-allowance", { onboarded: false });
   await signIn(page, user, "/welcome");
   expect(await noHorizontalScroll(page)).toBe(true);
   await page.getByRole("button", { name: /Allowance or stipend/ }).click();
@@ -86,7 +86,7 @@ test("Allowance: three steps, a live per-day number, finishes into Simple view w
 });
 
 test("Mix with no date and no money yet: Skip for now still lands in Simple view", async ({ page }) => {
-  const user = await createTestUser("obv2-mix");
+  const user = await createTestUser("obv2-mix", { onboarded: false });
   await signIn(page, user, "/welcome");
   await page.getByRole("button", { name: /A mix, or it varies/ }).click();
   await primary(page).click(); // Accounts: Cash is enough
@@ -109,7 +109,7 @@ test("Mix with no date and no money yet: Skip for now still lands in Simple view
 
 test("Reduced motion: the Welcome still works and nothing slides", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  const user = await createTestUser("obv2-rm");
+  const user = await createTestUser("obv2-rm", { onboarded: false });
   await signIn(page, user, "/welcome");
   const card = page.getByRole("button", { name: /Salary or regular pay/ });
   await expect(card).toBeVisible();
@@ -117,7 +117,7 @@ test("Reduced motion: the Welcome still works and nothing slides", async ({ page
 });
 
 test("Switching views: Simple has a link to Full, Full has a link back, and the account menu offers the phone app", async ({ page }) => {
-  const user = await createTestUser("obv2-switch");
+  const user = await createTestUser("obv2-switch", { onboarded: false });
   await signIn(page, user, "/welcome");
   await page.getByRole("button", { name: /A mix, or it varies/ }).click();
   await primary(page).click();

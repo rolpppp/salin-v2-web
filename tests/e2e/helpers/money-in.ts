@@ -43,11 +43,16 @@ export type MoneyInSeed = {
   categoryIds: { work: string; side: string; gift: string };
 };
 
+/** The long-ago closed week every Money in seed has (see seedMoneyIn); specs that count reviews leave it out. */
+export const OLD_WEEK = "2026-01-05";
+
 export async function seedMoneyIn(userId: string, nowMs = Date.now()): Promise<MoneyInSeed> {
   const db = adminClient();
   const DAY = 86_400_000;
 
   must("profile", (await db.from("user_profiles").upsert({ user_id: userId, firstName: "Maria", homeCurrency: "PHP", weekStartsOn: 1 })).error);
+  // A long-time user: one week closed long ago, so Today is past "Getting started" (it lasts until a week is closed).
+  must("old week", (await db.from("week_reviews").insert({ user_id: userId, weekStart: OLD_WEEK, closedAt: Date.UTC(2026, 0, 11) })).error);
 
   const acct = (key: keyof MoneyInSeed["accountIds"], name: string, type: "bank" | "eWallet" | "cash" | "investment" | "savings", order: number) =>
     newAccountRow({ userId, nowMs, name, type, displayOrder: order, id: `${key}-${randomUUID().slice(0, 8)}` });

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { formatPeso } from "../../lib/money";
 import { zonedParts } from "../../lib/time";
-import { signInAs } from "./helpers/money-in";
+import { OLD_WEEK, signInAs } from "./helpers/money-in";
 import { SLIP, pesoToMinor, seedReview, userClient, type ReviewSeed } from "./helpers/review";
 import { adminClient, createTestUser, eventsFor, TEST_TIME_ZONE, type TestUser } from "./helpers/supabase";
 
@@ -142,7 +142,7 @@ test("closing the week stores the row, stamps the slip, marks open items and can
   await expect(page.getByTestId("live-region")).toContainText("Week closed. Monday starts fresh.");
   await expect(page.getByRole("button", { name: "Close the week" })).toHaveCount(0);
 
-  const { data: rows } = await db.from("week_reviews").select("weekStart, checks, safeToSpendMinor, observation").eq("user_id", user.id);
+  const { data: rows } = await db.from("week_reviews").select("weekStart, checks, safeToSpendMinor, observation").eq("user_id", user.id).neq("weekStart", OLD_WEEK);
   expect(rows).toHaveLength(1);
   expect(rows?.[0].checks).toEqual({ assign: false, transfers: false, living: false });
   expect(rows?.[0].safeToSpendMinor).toBe(SLIP.safe);
@@ -159,7 +159,7 @@ test("closing the week stores the row, stamps the slip, marks open items and can
   const again = await client.rpc("close_week", { p_week_start: rows?.[0].weekStart ?? "" });
   expect(again.error).toBeNull();
   expect(again.data?.[0].was_already_closed).toBe(true);
-  expect((await db.from("week_reviews").select("id").eq("user_id", user.id)).data).toHaveLength(1);
+  expect((await db.from("week_reviews").select("id").eq("user_id", user.id).neq("weekStart", OLD_WEEK)).data).toHaveLength(1);
   expect(await eventsFor(user.id, "week_closed")).toHaveLength(1);
   expect(errors).toEqual([]);
 });
@@ -170,7 +170,7 @@ test("the checks are computed by the server: a forged weekStart that isn't a wee
   const tuesday = new Date(Date.UTC(2026, 9, 6)).toISOString().slice(0, 10); // a Tuesday; weeks start on Monday
   const r = await client.rpc("close_week", { p_week_start: tuesday });
   expect(r.error?.message).toMatch(/not the first day of your week/);
-  expect((await adminClient().from("week_reviews").select("id").eq("user_id", user.id)).data).toHaveLength(0);
+  expect((await adminClient().from("week_reviews").select("id").eq("user_id", user.id).neq("weekStart", OLD_WEEK)).data).toHaveLength(0);
 });
 
 test("an empty week says how to log spending and has nothing to fix yet", async ({ page }) => {

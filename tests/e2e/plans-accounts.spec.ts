@@ -22,7 +22,7 @@ async function seed(userId: string) {
   const must = (label: string, error: { message: string } | null) => {
     if (error) throw new Error(`seed ${label}: ${error.message}`);
   };
-  must("profile", (await db.from("user_profiles").upsert({ user_id: userId, firstName: "Plans", homeCurrency: "PHP", weekStartsOn: 1, onboardedAt: now })).error);
+  must("profile", (await db.from("user_profiles").upsert({ user_id: userId, firstName: "Plans", homeCurrency: "PHP", weekStartsOn: 1 })).error);
   const acct = (key: string, name: string, type: number, order: number) => ({
     ...mobile,
     id: ids(key),

@@ -106,7 +106,8 @@ export async function seedPlans(userId: string): Promise<PlansSeed> {
   must("income category", (await db.from("categories").insert(salaryCat)).error);
   const income = newIncomeEntryRow({ id: entryId, userId, nowMs: now, accountId: mari.id, amountMinor: 100_000, occurredAt: now, categoryId: salaryCat.id });
   must("income", (await db.from("ledger_entries").insert(income)).error);
-  must("meta", (await db.from("income_meta").insert({ user_id: userId, ledgerEntryId: entryId, sourceId: work, job: null })).error);
+  // Upsert: for an onboarded user the income-recognition trigger has already written this row.
+  must("meta", (await db.from("income_meta").upsert({ user_id: userId, ledgerEntryId: entryId, sourceId: work, job: null }, { onConflict: "user_id,ledgerEntryId" })).error);
 
   return { userId, bucket: b, accounts: { mari: mari.id, gcash: gcash.id }, allocationId };
 }
