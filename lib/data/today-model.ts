@@ -94,6 +94,18 @@ export interface MonthCover {
   toBucketId: string;
   dateIso: string;
   amountMinor: number;
+  /** 'move' for "Move to another bucket" (ticket 38). */
+  note?: string | null;
+}
+
+/** Starting money (ticket 38): money that was already in an account when it was given a bucket. */
+export interface TodayStart {
+  id: string;
+  bucketId: string;
+  dateIso: string;
+  amountMinor: number;
+  /** The account the money sits in; null if that account is gone. */
+  accountName: string | null;
 }
 
 export interface TodayGoalRow {
@@ -134,6 +146,8 @@ export interface TodayInput {
   allocations: TodayAllocation[];
   spendingThisMonth: MonthSpend[];
   coversThisMonth: MonthCover[];
+  /** Live starting money, all months (a start can be removed from its bucket's history). */
+  starts?: TodayStart[];
   goals: TodayGoalRow[];
   /** A `week_reviews` row exists for this week's start. */
   weekClosed: boolean;
@@ -778,10 +792,21 @@ export function buildGoalsView(input: TodayInput): GoalsView {
 // ---------------------------------------------------------------- drawer (SPEC §1)
 
 export interface DrawerLine {
-  kind: "in" | "out" | "cover_in" | "cover_out" | "before";
+  kind: "in" | "out" | "cover_in" | "cover_out" | "before" | "start";
   label: string;
   /** Signed: + in, − out. */
   amountMinor: number;
+  /** Set on starting-money lines: the row a Remove acts on. */
+  startId?: string;
+}
+
+/** A bucket the drawer can move money to (ticket 38). */
+export interface MoveTarget {
+  bucketId: string;
+  name: string;
+  hue: string | null;
+  /** Name of the account it is kept in. */
+  keptIn: string | null;
 }
 
 export interface DrawerView {
@@ -791,6 +816,9 @@ export interface DrawerView {
   keptIn: string | null;
   leftMinor: number;
   needsMinor: number;
+  /** What "Move to another bucket" can take: what is left, never below 0. */
+  moveMaxMinor: number;
+  moveTargets: MoveTarget[];
   note: string | null;
   /** "20% of each payday on Plan A, 10% on Plan B." / "Not part of the payday split." + the rent line. */
   planText: string;
@@ -819,8 +847,14 @@ export function buildDrawers(input: TodayInput): Record<string, DrawerView> {
       if (s.bucketId === b.id) dated.push({ dateIso: s.dateIso, line: { kind: s.amountMinor < 0 ? "in" : "out", label: `${shortDate(s.dateIso)} ${s.label}`, amountMinor: -s.amountMinor } });
     }
     for (const c of input.coversThisMonth) {
-      if (c.toBucketId === b.id) dated.push({ dateIso: c.dateIso, line: { kind: "cover_in", label: `${shortDate(c.dateIso)} From ${nameOf.get(c.fromBucketId) ?? "another bucket"}`, amountMinor: c.amountMinor } });
-      if (c.fromBucketId === b.id) dated.push({ dateIso: c.dateIso, line: { kind: "cover_out", label: `${shortDate(c.dateIso)} To ${nameOf.get(c.toBucketId) ?? "another bucket"}`, amountMinor: -c.amountMinor } });
+      const verb = c.note === "move" ? ["Moved from", "Moved to"] : ["From", "To"];
+      if (c.toBucketId === b.id) dated.push({ dateIso: c.dateIso, line: { kind: "cover_in", label: `${shortDate(c.dateIso)} ${verb[0]} ${nameOf.get(c.fromBucketId) ?? "another bucket"}`, amountMinor: c.amountMinor } });
+      if (c.fromBucketId === b.id) dated.push({ dateIso: c.dateIso, line: { kind: "cover_out", label: `${shortDate(c.dateIso)} ${verb[1]} ${nameOf.get(c.toBucketId) ?? "another bucket"}`, amountMinor: -c.amountMinor } });
+    }
+    // Starting money counts whatever month it was sorted in, so it can always be found (and removed) here.
+    for (const st of input.starts ?? []) {
+      if (st.bucketId !== b.id) continue;
+      dated.push({ dateIso: st.dateIso, line: { kind: "start", label: `${shortDate(st.dateIso)} Money you already had${st.accountName ? ` in ${st.accountName}` : ""}`, amountMinor: st.amountMinor, startId: st.id } });
     }
     dated.sort((x, y) => (x.dateIso < y.dateIso ? -1 : x.dateIso > y.dateIso ? 1 : 0));
     const lines = dated.map((d) => d.line);
@@ -848,6 +882,10 @@ export function buildDrawers(input: TodayInput): Record<string, DrawerView> {
       keptIn: b.keptInAccountId ? (input.accountNames[b.keptInAccountId] ?? null) : null,
       leftMinor: f.left,
       needsMinor: bucketNeeds(f.left),
+      moveMaxMinor: Math.max(0, f.left),
+      moveTargets: input.buckets
+        .filter((t) => t.id !== b.id && !t.isArchived)
+        .map((t) => ({ bucketId: t.id, name: t.name, hue: t.hue, keptIn: t.keptInAccountId ? (input.accountNames[t.keptInAccountId] ?? null) : null })),
       note: b.note?.trim() || null,
       planText,
       monthName,

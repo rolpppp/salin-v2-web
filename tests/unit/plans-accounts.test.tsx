@@ -20,8 +20,11 @@ const acct = (over: Partial<AccountView>): AccountView => ({
   type: "bank",
   currency: "PHP",
   shouldHoldMinor: 1_024_000,
+  balanceMinor: 1_024_000,
+  gap: { kind: "even", amountMinor: 0 },
   retainedMinor: null,
-  caption: "should be here, by your buckets",
+  caption: "in the account",
+  bucketsLine: "₱10,240.00 by your buckets",
   buckets: [{ id: "b1", name: "Emergency fund", hue: "emergency" }],
   sources: [{ id: "s1", name: "Work", hue: null }],
   inUseReason: "Emergency fund is kept here",
@@ -31,8 +34,8 @@ const acct = (over: Partial<AccountView>): AccountView => ({
 const data = (over: Partial<AccountsData> = {}): AccountsData => ({
   active: [
     acct({}),
-    acct({ id: "a2", name: "Old wallet", type: "eWallet", shouldHoldMinor: 0, caption: "no buckets kept here", buckets: [], sources: [], inUseReason: null }),
-    acct({ id: "a3", name: "AUD account", currency: "AUD", shouldHoldMinor: null, retainedMinor: 1_701_000, caption: "kept in AUD after transfers", buckets: [], sources: [], inUseReason: "it holds money" }),
+    acct({ id: "a2", name: "Old wallet", type: "eWallet", shouldHoldMinor: 0, balanceMinor: 250_000, gap: { kind: "unbucketed", amountMinor: 250_000 }, bucketsLine: "₱0.00 by your buckets", buckets: [], sources: [], inUseReason: null }),
+    acct({ id: "a3", name: "AUD account", currency: "AUD", shouldHoldMinor: null, balanceMinor: null, gap: null, bucketsLine: null, retainedMinor: 1_701_000, caption: "kept in AUD after transfers", buckets: [], sources: [], inUseReason: "it holds money" }),
   ],
   archived: [{ id: "a9", name: "Closed card", currency: "PHP" }],
   ...over,

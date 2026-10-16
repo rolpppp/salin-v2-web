@@ -759,6 +759,14 @@
   gap: 8px;
   align-items: baseline;
 }
+.dLines li.dStart {
+  flex-wrap: wrap;
+}
+.dStartAct {
+  flex-basis: 100%;
+  display: flex;
+  justify-content: flex-end;
+}
 .dLines li > span:first-child {
   min-width: 0;
   overflow-wrap: anywhere;
@@ -796,6 +804,49 @@
 .dCover {
   display: grid;
   gap: 10px;
+}
+/* Move to another bucket and Remove (ticket 38) */
+.dMove,
+.dMoveForm {
+  display: grid;
+  gap: 10px;
+}
+.dMoveForm {
+  background: var(--surface-2);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+.dMoveBtns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.dReminder {
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink);
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.dRemove {
+  text-transform: none;
+  font-family: var(--sans);
+  min-height: 44px;
+  padding-inline: 10px;
+}
+.dConfirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  text-transform: none;
+  font-family: var(--sans);
+}
+.dConfirmText {
+  flex-basis: 100%;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 /* ---- Responsive (DESIGN.md: 1100 / 860 / 720) */

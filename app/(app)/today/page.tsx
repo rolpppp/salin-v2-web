@@ -21,6 +21,8 @@ import { getNotifications } from "@/lib/data/notify";
 import { SimpleToday } from "@/components/simple-today/SimpleToday";
 import { SortMoneyCard } from "@/components/sort-money/SortMoneyCard";
 import { getSortGroups } from "@/lib/data/sort-money";
+import { StartingMoneyCard } from "@/components/starting-money/StartingMoneyCard";
+import { getStartGroups } from "@/lib/data/starting";
 import { getViewMode, loadSimpleToday, simpleActions, type SimpleTodayModel } from "@/components/simple-today/seam";
 import { isoDateIn } from "@/lib/data/money-in-model";
 import { createClient } from "@/lib/supabase/server";
@@ -81,6 +83,14 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
     );
   }
 
+  // Money already in the accounts that no bucket counts yet (ticket 38), Full view only. Never blocks Today.
+  const startGroups = supabase
+    ? await getStartGroups(supabase).catch((err) => {
+        console.error("[today] starting money could not load", err);
+        return [];
+      })
+    : [];
+
   const notify = await getNotifications();
   let view: TodayViewModel | null = null;
   let firstName: string | null = displayFirstName(null, user);
@@ -120,6 +130,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
               Spending from your phone shows here when sync is on in the Salin app.
             </p>
           ) : null}
+          <StartingMoneyCard groups={startGroups} dismissible />
           {sortCard}
           <TodayView view={view} grow={grow} logSlot={
               <Suspense fallback={<Skeleton width={170} height={44} radius={12} />}>

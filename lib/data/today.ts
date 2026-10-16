@@ -5,7 +5,7 @@ import type { PlanKey } from "@/lib/money";
 import { weekRange, zonedMidnight, zonedParts } from "@/lib/time";
 import { getMoneyInData } from "./money-in";
 import { isoDateIn } from "./money-in-model";
-import type { BucketFlow, MonthCover, MonthSpend, TodayAllocation, TodayBucket, TodayGoalRow, TodayInput } from "./today-model";
+import type { BucketFlow, MonthCover, MonthSpend, TodayAllocation, TodayBucket, TodayGoalRow, TodayInput, TodayStart } from "./today-model";
 
 type Client = SupabaseClient<Database>;
 
@@ -70,7 +70,7 @@ export async function getTodayInput(client: Client, opts: { userId: string; nowM
   const onboardedAt = profile?.onboardedAt ?? null;
 
   // One wave: Money in's own loader runs alongside the rest instead of ahead of it.
-  const [mi, leftRes, activeRes, noteRows, goalRows, allocRows, metaRows, spendRows, coverRows, categoryRows, reviewRes, loggedRes, anyAccount, anyCategory, anyEntry] = await Promise.all([
+  const [mi, leftRes, activeRes, noteRows, goalRows, allocRows, metaRows, spendRows, coverRows, startRows, categoryRows, reviewRes, loggedRes, anyAccount, anyCategory, anyEntry] = await Promise.all([
     getMoneyInData(client, { nowMs, timeZone, homeCurrency: profile?.homeCurrency ?? "PHP" }),
     client.rpc("bucket_left"),
     client.rpc("active_plan", { p_user: userId }),
@@ -111,15 +111,18 @@ export async function getTodayInput(client: Client, opts: { userId: string; nowM
         .order("id")
         .range(from, to),
     ),
-    pageAll<{ fromBucketId: string; toBucketId: string; amountMinor: number; occurredAt: number }>((from, to) =>
+    pageAll<{ fromBucketId: string; toBucketId: string; amountMinor: number; occurredAt: number; note: string | null }>((from, to) =>
       client
         .from("bucket_covers")
-        .select("fromBucketId, toBucketId, amountMinor, occurredAt")
+        .select("fromBucketId, toBucketId, amountMinor, occurredAt, note")
         .is("deletedAt", null)
         .gte("occurredAt", monthStartMs)
         .lt("occurredAt", monthEndMs)
         .order("id")
         .range(from, to),
+    ),
+    pageAll<{ id: string; bucketId: string; accountId: string | null; amountMinor: number; occurredAt: number }>((from, to) =>
+      client.from("bucket_starts").select("id, bucketId, accountId, amountMinor, occurredAt").is("deletedAt", null).order("occurredAt").order("id").range(from, to),
     ),
     pageAll<{ id: string; name: string }>((from, to) => client.from("categories").select("id, name").order("id").range(from, to)),
     client.from("week_reviews").select("weekStart").is("deletedAt", null),
@@ -176,6 +179,15 @@ export async function getTodayInput(client: Client, opts: { userId: string; nowM
     toBucketId: c.toBucketId,
     dateIso: isoDateIn(c.occurredAt, timeZone),
     amountMinor: c.amountMinor,
+    note: c.note,
+  }));
+  const accountName = Object.fromEntries(mi.accounts.map((a) => [a.id, a.name]));
+  const starts: TodayStart[] = startRows.map((r) => ({
+    id: r.id,
+    bucketId: r.bucketId,
+    dateIso: isoDateIn(r.occurredAt, timeZone),
+    amountMinor: r.amountMinor,
+    accountName: r.accountId ? (accountName[r.accountId] ?? null) : null,
   }));
 
   const reviews = reviewRes.data ?? [];
@@ -204,6 +216,7 @@ export async function getTodayInput(client: Client, opts: { userId: string; nowM
     allocations,
     spendingThisMonth,
     coversThisMonth,
+    starts,
     goals: goalRows,
     weekClosed: reviews.some((r) => r.weekStart === weekStartIso),
     anyWeekClosed: reviews.length > 0,

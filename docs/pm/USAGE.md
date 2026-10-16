@@ -99,3 +99,6 @@ Running total of finished agents: ~6.31M reported, 35 agents. Ticket 27 and the 
 | Oct 16 | settings | sonnet | 37 | 235,968 | — | 69 | 24.7 min |
 
 Running total of finished agents: ~6.55M reported, 36 agents.
+| Oct 16 | starting-money | sonnet | 38 | 295,402 | — | 97 | 42.9 min |
+
+Running total of finished agents: ~6.85M reported, 37 agents.

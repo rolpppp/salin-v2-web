@@ -364,6 +364,63 @@ export type Database = {
           },
         ]
       }
+      bucket_starts: {
+        Row: {
+          accountId: string | null
+          amountMinor: number
+          batchId: string
+          bucketId: string
+          createdAt: number
+          deletedAt: number | null
+          id: string
+          note: string | null
+          occurredAt: number
+          updatedAt: number
+          user_id: string
+        }
+        Insert: {
+          accountId?: string | null
+          amountMinor: number
+          batchId?: string
+          bucketId: string
+          createdAt?: number
+          deletedAt?: number | null
+          id?: string
+          note?: string | null
+          occurredAt?: number
+          updatedAt?: number
+          user_id?: string
+        }
+        Update: {
+          accountId?: string | null
+          amountMinor?: number
+          batchId?: string
+          bucketId?: string
+          createdAt?: number
+          deletedAt?: number | null
+          id?: string
+          note?: string | null
+          occurredAt?: number
+          updatedAt?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bucket_starts_accountId_fkey"
+            columns: ["accountId"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bucket_starts_bucketId_fkey"
+            columns: ["bucketId"]
+            isOneToOne: false
+            referencedRelation: "buckets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       buckets: {
         Row: {
           createdAt: number
@@ -1683,6 +1740,16 @@ export type Database = {
     }
     Functions: {
       account_in_use_reason: { Args: { p_account: string }; Returns: string }
+      account_balances: {
+        Args: { p_user?: string }
+        Returns: {
+          account_id: string
+          balance_minor: number
+          should_hold_minor: number
+          unbucketed_minor: number
+          waiting_minor: number
+        }[]
+      }
       account_should_hold: {
         Args: { p_user?: string }
         Returns: {
@@ -1820,6 +1887,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      move_between_buckets: { Args: { p_amount: number; p_from: string; p_to: string }; Returns: string }
       cover_bucket: {
         Args: { p_amount: number; p_from: string; p_to: string }
         Returns: string
@@ -2039,6 +2107,7 @@ export type Database = {
         Args: { p_d: Json; p_mode: string }
         Returns: undefined
       }
+      remove_start: { Args: { p_id: string }; Returns: undefined }
       remove_category: { Args: { p_category: string }; Returns: undefined }
       remove_income_source: { Args: { p_source: string }; Returns: undefined }
       rename_plan: { Args: { p_name: string; p_plan_key: string }; Returns: undefined }
@@ -2109,6 +2178,7 @@ export type Database = {
         Args: { p_mode: string }
         Returns: undefined
       }
+      start_buckets: { Args: { p_lines: Json }; Returns: string }
       sort_money: { Args: { p_lines: Json }; Returns: number }
       split_by_plan: {
         Args: { p_amount: number; p_on_date: string; p_plan_key: string }
@@ -2154,6 +2224,7 @@ export type Database = {
           to_account_id: string
         }[]
       }
+      unsort_start: { Args: { p_batch: string }; Returns: number }
       unsorted_money: {
         Args: { p_user?: string }
         Returns: {

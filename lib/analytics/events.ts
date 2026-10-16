@@ -37,6 +37,8 @@ export type EventMap = {
   view_mode_changed: { mode: "simple" | "full" };
   settings_changed: { section: "income" | "week" | "about" | "keep" | "view" };
   notify_prefs_changed: { keys: string };
+  starting_money_sorted: { accounts_count: number; amount_band: string };
+  bucket_moved: { from_bucket: string; to_bucket: string; across_accounts: boolean };
   notice_opened: { kind: string; via: "inbox" | "browser" };
 };
 

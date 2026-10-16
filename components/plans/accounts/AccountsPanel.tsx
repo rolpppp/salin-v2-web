@@ -13,11 +13,16 @@ import { hueStyle, useRun } from "@/components/plans/rows/useRun";
 import { addAccountAction, archiveAccountAction, renameAccountAction, restoreAccountAction, retypeAccountAction } from "@/lib/actions/accounts";
 import { ACCOUNT_CURRENCIES, ACCOUNT_TYPE_LABELS, ACCOUNT_TYPE_NAMES, type AccountTypeName, type AccountView, type AccountsData } from "@/lib/data/accounts";
 import { formatMoney } from "@/lib/data/balances";
+import type { StartGroup } from "@/lib/data/starting-model";
+import { formatPeso } from "@/lib/money";
+import { StartingMoneyCard } from "@/components/starting-money/StartingMoneyCard";
 
-export function AccountsPanel({ data }: { data: AccountsData }) {
+export function AccountsPanel({ data, startGroups = [] }: { data: AccountsData; startGroups?: StartGroup[] }) {
   /** A row that archives or restores disappears; keep focus on the section instead of dropping to <body>. */
   const focusHeading = () => document.getElementById("acct-h")?.focus();
   return (
+    <>
+    <StartingMoneyCard groups={startGroups} />
     <Card aria-labelledby="acct-h">
       <div className={styles.head}>
         <CardTitle id="acct-h" tabIndex={-1}>
@@ -50,6 +55,7 @@ export function AccountsPanel({ data }: { data: AccountsData }) {
         ) : null}
       </div>
     </Card>
+    </>
   );
 }
 
@@ -97,9 +103,21 @@ function AccountRow({ account: a, onArchived }: { account: AccountView; onArchiv
       </div>
       <div>
         <span className={`${styles.num} ${styles.holds}`} data-testid="holds">
-          {formatMoney(a.shouldHoldMinor ?? a.retainedMinor ?? 0, a.currency)}
+          {formatMoney(a.balanceMinor ?? a.retainedMinor ?? 0, a.currency)}
         </span>
         <small className={styles.small}>{a.caption}</small>
+        {a.bucketsLine ? (
+          <small className={styles.small} data-testid="by-buckets">
+            {a.bucketsLine}
+          </small>
+        ) : null}
+        {a.gap && a.gap.kind !== "even" ? (
+          <span className={styles.gapChip} data-warn={a.gap.kind === "overcounted" || undefined} data-testid="gap-chip">
+            {a.gap.kind === "unbucketed"
+              ? `${formatPeso(a.gap.amountMinor)} not in a bucket yet`
+              : `${formatPeso(a.gap.amountMinor)} less than your buckets say`}
+          </span>
+        ) : null}
       </div>
       <div className={styles.chips}>
         {a.buckets.map((b) => (

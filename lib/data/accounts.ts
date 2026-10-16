@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { AccountType, LedgerOrigin, MoneyDirection, enumName } from "@/lib/domain/enums";
+import { formatPeso } from "@/lib/money";
+import { accountGap, type GapKind } from "@/lib/money/starting";
 
 type Client = SupabaseClient<Database>;
 
@@ -27,10 +29,16 @@ export type AccountView = {
   currency: string;
   /** PHP accounts: what the buckets say should be here (BR 5.1). Other currencies: null. */
   shouldHoldMinor: number | null;
+  /** PHP accounts: what is really in the account (opening balance + entries). Other currencies: null. */
+  balanceMinor: number | null;
+  /** PHP accounts: how the real balance compares with the buckets (ticket 38). Other currencies: null. */
+  gap: { kind: GapKind; amountMinor: number } | null;
   /** Non-PHP accounts: received minus transferred out (BR 5.2). PHP accounts: null. */
   retainedMinor: number | null;
   /** The small line under the amount. */
   caption: string;
+  /** PHP accounts: "₱Y by your buckets" (BR 5.1), under the caption. */
+  bucketsLine: string | null;
   buckets: AccountUse[];
   sources: AccountUse[];
   /** First reason it can't be archived, or null when Archive is available (BR 5.3). */
@@ -59,7 +67,7 @@ export function retained(entries: ReadonlyArray<{ direction: number; origin: num
 const PAGE = 1000;
 
 export async function getAccountsData(client: Client): Promise<AccountsData> {
-  const [accountsRes, bucketsRes, sourcesRes, holdRes, useRes] = await Promise.all([
+  const [accountsRes, bucketsRes, sourcesRes, holdRes, useRes, balRes] = await Promise.all([
     client
       .from("accounts")
       .select("id, name, accountType, currency, isArchived, displayOrder")
@@ -70,11 +78,13 @@ export async function getAccountsData(client: Client): Promise<AccountsData> {
     client.from("income_sources").select("id, name, landsInAccountId, createdAt").is("deletedAt", null).eq("isArchived", false).order("createdAt").order("id"),
     client.rpc("account_should_hold"),
     client.rpc("accounts_in_use"),
+    client.rpc("account_balances"),
   ]);
-  for (const r of [accountsRes, bucketsRes, sourcesRes, holdRes, useRes]) if (r.error) throw new Error(r.error.message);
+  for (const r of [accountsRes, bucketsRes, sourcesRes, holdRes, useRes, balRes]) if (r.error) throw new Error(r.error.message);
 
   const accounts = accountsRes.data ?? [];
   const holds = new Map((holdRes.data ?? []).map((h) => [h.account_id, h]));
+  const balances = new Map((balRes.data ?? []).map((b) => [b.account_id, b]));
   const reasons = new Map((useRes.data ?? []).map((u) => [u.account_id, u.reason]));
 
   // Non-PHP accounts show what they retained: page through their entries (rare and small).
@@ -104,14 +114,26 @@ export async function getAccountsData(client: Client): Promise<AccountsData> {
       const hold = holds.get(a.id);
       const isPhp = a.currency === "PHP";
       const should = isPhp ? (hold?.should_hold ?? 0) : null;
+      const bal = isPhp ? balances.get(a.id) : undefined;
+      // The sortable part of the gap leaves out income that landed here and is waiting for a job (it is "To assign").
+      const gap: AccountView["gap"] = !bal
+        ? null
+        : bal.balance_minor - bal.should_hold_minor < 0
+          ? accountGap(bal.balance_minor, bal.should_hold_minor)
+          : bal.unbucketed_minor > 0
+            ? { kind: "unbucketed", amountMinor: bal.unbucketed_minor }
+            : { kind: "even", amountMinor: 0 };
       return {
         id: a.id,
         name: a.name,
         type,
         currency: a.currency,
         shouldHoldMinor: should,
+        balanceMinor: bal?.balance_minor ?? null,
+        gap,
         retainedMinor: isPhp ? null : (retainedBy.get(a.id) ?? 0),
-        caption: isPhp ? holdCaption(hold?.bucket_kept_here ?? false, should ?? 0) : `kept in ${a.currency} after transfers`,
+        caption: isPhp ? "in the account" : `kept in ${a.currency} after transfers`,
+        bucketsLine: isPhp ? `${formatPeso(should ?? 0)} by your buckets${hold?.bucket_kept_here || (should ?? 0) <= 0 ? "" : ", from earlier paydays (no bucket is kept here now)"}` : null,
         buckets: (bucketsRes.data ?? []).filter((b) => b.keptInAccountId === a.id).map((b) => ({ id: b.id, name: b.name, hue: b.hue })),
         sources: (sourcesRes.data ?? []).filter((s) => s.landsInAccountId === a.id).map((s) => ({ id: s.id, name: s.name, hue: null })),
         inUseReason: reasons.get(a.id) ?? null,

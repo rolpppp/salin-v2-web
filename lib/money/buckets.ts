@@ -4,15 +4,17 @@ import type { Minor } from "./core";
 export interface BucketFlows {
   /** Σ allocations in. */
   allocated: Minor;
+  /** Σ starting money (ticket 38): money that was already in the accounts. The database folds it into `allocated`. */
+  starts?: Minor;
   /** Σ spending out. */
   spent: Minor;
   coversIn: Minor;
   coversOut: Minor;
 }
 
-/** BR §4.2: left = Σ allocations − Σ spending + Σ covers in − Σ covers out. May be negative. */
+/** BR §4.2: left = Σ allocations (+ starting money) − Σ spending + Σ covers in − Σ covers out. May be negative. */
 export function bucketLeft(f: BucketFlows): Minor {
-  return sum([f.allocated, -f.spent, f.coversIn, -f.coversOut]);
+  return sum([f.allocated, f.starts ?? 0, -f.spent, f.coversIn, -f.coversOut]);
 }
 
 /** BR §4.3: how much an overspent bucket needs (0 when not overspent). */
@@ -62,13 +64,15 @@ export function perDay(safe: Minor, daysUntilPayday: number): Minor {
 export interface AccountHoldInput {
   /** Σ allocation lines whose snapshotted destination is this account. */
   allocationsHere: Minor;
+  /** Σ starting money recorded as sitting in this account (ticket 38), counted where the money is. */
+  startsHere?: Minor;
   /** For each bucket currently KEPT in this account: covers in − covers out − spending. */
   bucketsKeptHere: readonly { coversIn: Minor; coversOut: Minor; spent: Minor }[];
 }
 
 /** BR §5.1: what an account should hold, by the buckets. */
 export function accountShouldHold(input: AccountHoldInput): Minor {
-  return sum([input.allocationsHere, ...input.bucketsKeptHere.map((b) => b.coversIn - b.coversOut - b.spent)]);
+  return sum([input.allocationsHere, input.startsHere ?? 0, ...input.bucketsKeptHere.map((b) => b.coversIn - b.coversOut - b.spent)]);
 }
 
 /** Impact line for logging spending (BR §11.3): left after and the new per-day figure. */

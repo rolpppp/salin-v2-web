@@ -90,3 +90,20 @@ describe("accountShouldHold (§5.1)", () => {
     expect(accountShouldHold({ allocationsHere: 690000, bucketsKeptHere: [] })).toBe(690000);
   });
 });
+
+describe("starting money (ticket 38)", () => {
+  it("counts in a bucket's left like an allocation", () => {
+    expect(bucketLeft({ allocated: 1000, starts: 4000, spent: 300, coversIn: 0, coversOut: 0 })).toBe(4700);
+    expect(bucketLeft({ allocated: 0, starts: 500, spent: 800, coversIn: 0, coversOut: 0 })).toBe(-300);
+  });
+  it("counts in the account it sits in, not the account its bucket is kept in", () => {
+    // Spending kept in GCash holds 1,500 there; 300 of its starting money sits in Cash, which keeps no bucket.
+    expect(accountShouldHold({ allocationsHere: 0, startsHere: 150000, bucketsKeptHere: [{ coversIn: 0, coversOut: 0, spent: 0 }] })).toBe(150000);
+    expect(accountShouldHold({ allocationsHere: 0, startsHere: 30000, bucketsKeptHere: [] })).toBe(30000);
+  });
+  it("after a sort that fills the gap, should-hold equals the real balance", () => {
+    const balance = 2_000_000;
+    const unbucketed = balance - accountShouldHold({ allocationsHere: 0, bucketsKeptHere: [] });
+    expect(accountShouldHold({ allocationsHere: 0, startsHere: unbucketed, bucketsKeptHere: [] })).toBe(balance);
+  });
+});
