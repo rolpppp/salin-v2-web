@@ -1,6 +1,6 @@
 -- Onboarding v2 (P-12, ticket 29): allowance / mix finish into Simple view with their first money.
 begin;
-select plan(16);
+select plan(18);
 
 insert into auth.users (id, instance_id, aud, role) values
   ('aaaaaaaa-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated'),
@@ -38,6 +38,7 @@ select lives_ok(
   'allowance draft with first money finishes');
 select is((select jsonb_build_object('mode', "viewMode", 'until', "spendUntil" = current_date + 5, 'plan', "planMode", 'freq', "payFrequency") from public.user_profiles),
   '{"mode":"simple","until":true,"plan":"track","freq":"weekly"}'::jsonb, 'profile: Simple view, spend-until = the next date, just tracking');
+select is((select jsonb_build_object('amt', "payAmountMinor", 'rhythm', "payRhythm") from public.user_profiles), '{"amt":150000,"rhythm":"weekly"}'::jsonb, 'the rhythm answers are stored (ticket 37)');
 select is((select count(*)::int from public.ledger_entries where direction = 0 and "amountMinor" = 200000 and "accountId" = 'a-cash'), 1, 'the first money is one inflow on the landing account');
 select is((select jsonb_object_agg(b.hue || ':' || a."destAccountId", a."amountMinor") from public.allocations a join public.buckets b on b.id = a."bucketId"),
   '{"living:a-cash":120000,"living:a-gcash":50000,"emergency:a-cash":30000}'::jsonb, 'spending in Cash and GCash, kept aside to Emergency in Cash');
@@ -46,7 +47,9 @@ select is((select count(*)::int from public.transfer_plan() where kind = 'transf
 
 -- B: next date unknown, no first money: still finishes, spendUntil null
 select pg_temp.as_user('bbbbbbbb-0000-0000-0000-000000000002');
-select lives_ok($f$select public.finish_onboarding(pg_temp.d('b', 'mix', 'null', 'null'))$f$, 'mix draft with no date and no first money finishes');
+select lives_ok($f$select public.finish_onboarding(jsonb_set(jsonb_set(pg_temp.d('b', 'mix', 'null', 'null'), '{rhythm,frequency}', '"quarterly"'), '{income,frequency}', '"varies"'))$f$, 'mix draft with no date and no first money finishes');
+select is((select jsonb_build_object('amt', "payAmountMinor", 'rhythm', "payRhythm", 'freq', "payFrequency") from public.user_profiles),
+  '{"amt":150000,"rhythm":"quarterly","freq":"varies"}'::jsonb, 'B: quarterly stays quarterly in payRhythm, varies in payFrequency (ticket 37)');
 select is((select jsonb_build_object('mode', "viewMode", 'until', "spendUntil", 'next', "nextPaydayDate") from public.user_profiles),
   '{"mode":"simple","until":null,"next":null}'::jsonb, 'unknown date: spend-until stays empty');
 select is((select count(*)::int from public.ledger_entries), 0, 'no first money, no entry');

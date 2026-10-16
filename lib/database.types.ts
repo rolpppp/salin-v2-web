@@ -1570,7 +1570,9 @@ export type Database = {
           onboardingDraft: Json
           onboardingPath: string | null
           paydayReminder: string
+          payAmountMinor: number | null
           payFrequency: string | null
+          payRhythm: string | null
           planMode: string
           priority: string | null
           reviewDay: number
@@ -1591,7 +1593,9 @@ export type Database = {
           onboardingDraft?: Json
           onboardingPath?: string | null
           paydayReminder?: string
+          payAmountMinor?: number | null
           payFrequency?: string | null
+          payRhythm?: string | null
           planMode?: string
           priority?: string | null
           reviewDay?: number
@@ -1612,7 +1616,9 @@ export type Database = {
           onboardingDraft?: Json
           onboardingPath?: string | null
           paydayReminder?: string
+          payAmountMinor?: number | null
           payFrequency?: string | null
+          payRhythm?: string | null
           planMode?: string
           priority?: string | null
           reviewDay?: number
@@ -2075,6 +2081,10 @@ export type Database = {
         Args: { p_rule: string; p_source: string; p_whole_bucket?: string }
         Returns: undefined
       }
+      set_income_rhythm: {
+        Args: { p_amount: number | null; p_next: string | null; p_rhythm: string | null }
+        Returns: undefined
+      }
       set_keep_bucket: {
         Args: { p_bucket: string }
         Returns: undefined
@@ -2089,6 +2099,10 @@ export type Database = {
       }
       set_spend_until: {
         Args: { p_day: string | null }
+        Returns: undefined
+      }
+      set_profile_basics: {
+        Args: { p_first_name: string | null; p_review_day: number; p_week_starts_on: number }
         Returns: undefined
       }
       set_view_mode: {

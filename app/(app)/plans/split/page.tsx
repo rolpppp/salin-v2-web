@@ -18,8 +18,5 @@ export default async function SplitPlanPage() {
   }
 
   if (!data) return <EmptyState title="Couldn't load your plan">Check your connection and reload the page. Nothing was changed.</EmptyState>;
-  if (data.plans.length === 0 || data.buckets.length === 0) {
-    return <EmptyState title="No split plan yet">Set what share of each payday goes to each bucket. Your plan shows here once it is set up.</EmptyState>;
-  }
   return <SplitPlanEditor data={data} />;
 }

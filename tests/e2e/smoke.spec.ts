@@ -146,10 +146,10 @@ test("follows the system colour scheme by default", async ({ page, colorScheme }
   expect(bg).toBe(colorScheme === "dark" ? "rgb(16, 24, 26)" : "rgb(245, 248, 247)");
 });
 
-test("avatar menu opens with Account and Sign out", async ({ page }) => {
+test("avatar menu opens with Settings and Sign out", async ({ page }) => {
   await page.goto("/today");
   await page.getByRole("button", { name: "Account menu" }).click();
-  await expect(page.getByRole("menuitem", { name: "Account" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Settings" })).toBeVisible();
   await expect(page.getByRole("menuitem", { name: "Sign out" })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: "Account menu" })).toBeFocused();

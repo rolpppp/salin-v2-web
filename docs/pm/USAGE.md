@@ -96,3 +96,6 @@ Running total of finished agents: ~5.32M reported, 31 agents. E2E with local rea
 | Oct 15 | simple-ui | sonnet | 28 (UI) | 203,163 | — | 91 | 26.5 min |
 
 Running total of finished agents: ~6.31M reported, 35 agents. Ticket 27 and the onboarding flake stay paused.
+| Oct 16 | settings | sonnet | 37 | 235,968 | — | 69 | 24.7 min |
+
+Running total of finished agents: ~6.55M reported, 36 agents.

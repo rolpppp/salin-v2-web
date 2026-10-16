@@ -417,3 +417,18 @@ describe("Buckets", () => {
     expect(within(group).getAllByRole("radio")).toHaveLength(8);
   });
 });
+
+describe("a user with no split plan yet (just tracking)", () => {
+  const none: SplitPlanData = { ...data, plans: [], redirectRule: null };
+
+  it("still shows the buckets and offers to start a plan instead of a dead end", async () => {
+    const a = setup(actions(), none);
+    expect(screen.getByTestId("no-plan")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Your buckets|Buckets/i })).toBeInTheDocument();
+    expect(screen.queryByText("Rules")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Start a plan" }));
+    expect(screen.queryByTestId("no-plan")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Living percent")).toBeInTheDocument();
+    expect(a.createPlan).not.toHaveBeenCalled();
+  });
+});

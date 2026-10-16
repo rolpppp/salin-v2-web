@@ -1,6 +1,7 @@
 "use client";
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PersonIcon } from "@/components/icons";
@@ -38,8 +39,11 @@ export function AvatarMenu({ email, view }: { email?: string | null; view?: View
       <Menu.Portal>
         <Menu.Content className={styles.menu} align="end" sideOffset={8}>
           {email ? <div className={styles.menuEmail}>{email}</div> : null}
-          {/* TODO(account page): link to account settings */}
-          <Menu.Item className={styles.menuItem}>Account</Menu.Item>
+          <Menu.Item asChild>
+            <Link className={styles.menuItem} href="/settings" data-testid="settings-link">
+              Settings
+            </Link>
+          </Menu.Item>
           {view ? (
             <Menu.Item className={styles.menuItem} onSelect={() => void flip()} disabled={switching} data-testid="view-toggle">
               {view.mode === "simple" ? "Full view" : "Simple view"}

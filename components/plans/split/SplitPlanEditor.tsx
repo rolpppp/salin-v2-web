@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/button/Button";
 import { Card } from "@/components/card/Card";
 import { useAnnounce } from "@/components/live-region/LiveRegion";
 import { SAVE_FAILED, type ActionResult } from "@/lib/actions/result";
@@ -69,6 +70,7 @@ export function SplitPlanEditor({ data, actions = defaultActions, typicalPayMino
   const chips = orderPlanChips(plans, settings.activeKey);
 
   const isNew = selected === NEW;
+  const noPlans = plans.length === 0;
   const current = isNew ? null : (plans.find((p) => p.key === selected) ?? plans[0] ?? null);
   const draft: PlanDraft = isNew ? { ...scratchDraft(ids), ...scratch } : current ? { ...savedDrafts[current.key], ...drafts[current.key] } : {};
 
@@ -183,23 +185,47 @@ export function SplitPlanEditor({ data, actions = defaultActions, typicalPayMino
             How each payday is split
           </h2>
         </div>
-        <div ref={barRef}>
-          <PlanBar
-            chips={chips}
-            selectedKey={isNew ? null : (current?.key ?? null)}
-            onSelect={(k) => {
-              setSelected(k);
-              setFocusNameKey(null);
-              setBarError(null);
-            }}
-            onScratch={() => {
-              setScratch(scratchDraft(ids));
-              setSelected(NEW);
-              setBarError(null);
-            }}
-            onCopy={(k) => void copyPlan(k)}
-          />
-        </div>
+        {noPlans && !isNew ? (
+          <div className={styles.stack} data-testid="no-plan">
+            <p className={styles.note}>
+              You haven&apos;t set a split plan yet. A plan says what share of each payday goes to each bucket. You can rename, recolour, add and archive buckets below without one.
+            </p>
+            {ids.length > 0 ? (
+              <div>
+                <Button
+                  variant="soft"
+                  onClick={() => {
+                    setScratch(scratchDraft(ids));
+                    setSelected(NEW);
+                    setBarError(null);
+                  }}
+                >
+                  Start a plan
+                </Button>
+              </div>
+            ) : (
+              <p className={styles.note}>Add a bucket below first, then you can start a plan.</p>
+            )}
+          </div>
+        ) : (
+          <div ref={barRef}>
+            <PlanBar
+              chips={chips}
+              selectedKey={isNew ? null : (current?.key ?? null)}
+              onSelect={(k) => {
+                setSelected(k);
+                setFocusNameKey(null);
+                setBarError(null);
+              }}
+              onScratch={() => {
+                setScratch(scratchDraft(ids));
+                setSelected(NEW);
+                setBarError(null);
+              }}
+              onCopy={(k) => void copyPlan(k)}
+            />
+          </div>
+        )}
         <p ref={barErrRef} tabIndex={-1} className={styles.err} role="alert" data-testid="plan-bar-error">
           {barError}
         </p>
@@ -223,15 +249,17 @@ export function SplitPlanEditor({ data, actions = defaultActions, typicalPayMino
         ) : null}
       </Card>
 
-      <RulesCard
-        key={plans.map((p) => p.key).join("|")}
-        settings={settings}
-        plans={plansForPick}
-        redirectRule={data.redirectRule}
-        setTarget={actions.setTarget}
-        setActivePlan={actions.setActivePlan}
-        onSaved={(s) => setSettings((cur) => ({ ...cur, ...s }))}
-      />
+      {noPlans ? null : (
+        <RulesCard
+          key={plans.map((p) => p.key).join("|")}
+          settings={settings}
+          plans={plansForPick}
+          redirectRule={data.redirectRule}
+          setTarget={actions.setTarget}
+          setActivePlan={actions.setActivePlan}
+          onSaved={(s) => setSettings((cur) => ({ ...cur, ...s }))}
+        />
+      )}
 
       <BucketsSection
         buckets={buckets}

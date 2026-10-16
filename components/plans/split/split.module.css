@@ -494,3 +494,9 @@
     padding-left: 0;
   }
 }
+
+.note {
+  font-size: 13.5px;
+  color: var(--ink-2);
+  line-height: 1.45;
+}
